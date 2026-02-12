@@ -1,1 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
+/* Reseteamos los márgenes del navegador para que todo llegue al borde */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #0f0f0f; /* Fondo oscuro desde la raíz */
+  overflow-x: hidden; /* Evita que salga barra de scroll horizontal */
+}
