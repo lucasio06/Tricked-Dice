@@ -39,7 +39,6 @@ export class AuthComponent {
       .subscribe({
         next: (res: any) => {
           if (this.esLogin) {
-            // Almacenamiento seguro de sesión
             localStorage.setItem('token', res.token); 
             localStorage.setItem('usuario', JSON.stringify(res)); 
             
@@ -51,7 +50,6 @@ export class AuthComponent {
           }
         },
         error: (err) => {
-          // Captura errores de DNI duplicado o Email ya existente del SQL
           alert(err.error || 'Error en la conexión con el servidor');
         }
       });

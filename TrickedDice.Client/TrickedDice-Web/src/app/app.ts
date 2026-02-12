@@ -16,14 +16,14 @@ export class App implements OnInit {
   constructor(public router: Router) {}
 
   ngOnInit() {
-    this.checkUser(); // Verificamos la sesión al arrancar
+    this.checkUser();
   }
 
   checkUser() {
     const user = localStorage.getItem('usuario');
     if (user) {
       this.isLoggedIn = true;
-      this.usuarioData = JSON.parse(user); // Recuperamos nombre y saldo
+      this.usuarioData = JSON.parse(user);
     } else {
       this.isLoggedIn = false;
       this.usuarioData = null;
@@ -31,10 +31,9 @@ export class App implements OnInit {
   }
 
   logout() {
-    localStorage.clear(); // Borramos todo
+    localStorage.clear();
     this.isLoggedIn = false;
     this.usuarioData = null;
-    // Forzamos la recarga para que la web "se limpie"
     window.location.href = '/'; 
   }
 }
