@@ -20,13 +20,13 @@ namespace TrickedDice.Api.Controllers {
 
         [HttpPost("registro")]
         public IActionResult Registrar([FromBody] RegistroModel model) {
-            // RNF03: Seguridad mediante Hasheo de Contraseña
+            // Hasheo de contraseñas en el registro.
             string hash = BCrypt.Net.BCrypt.HashPassword(model.Password); 
             
             try {
                 using (SqlConnection c = new SqlConnection(_conn)) {
                     c.Open();
-                    // Query completa basada en tu script SQL
+                    // Definición de la query en la base de datos.
                     string sql = @"INSERT INTO USUARIO 
                         (EMAIL, CONTRASENA, NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, 
                          NOMBRE_USUARIO, NICKNAME, FECHA_NACIMIENTO, DNI, SALDO) 
@@ -37,7 +37,6 @@ namespace TrickedDice.Api.Controllers {
                         cmd.Parameters.AddWithValue("@p", hash);
                         cmd.Parameters.AddWithValue("@n", model.Nombre);
                         cmd.Parameters.AddWithValue("@pa", model.PrimerApellido);
-                        // Corregimos CS8600: Manejo seguro de nulos
                         cmd.Parameters.AddWithValue("@sa", (object?)model.SegundoApellido ?? DBNull.Value);
                         cmd.Parameters.AddWithValue("@nu", model.NombreUsuario);
                         cmd.Parameters.AddWithValue("@nick", (object?)model.Nickname ?? DBNull.Value);
@@ -49,7 +48,7 @@ namespace TrickedDice.Api.Controllers {
                 }
                 return Ok(new { msg = "Usuario registrado" });
             } catch (Exception ex) { 
-                return BadRequest("Error de Base de Datos: " + ex.Message); 
+                return BadRequest("Error de dase de datos: " + ex.Message); 
             }
         }
 
@@ -64,7 +63,7 @@ namespace TrickedDice.Api.Controllers {
                         using (SqlDataReader r = cmd.ExecuteReader()) {
                             if (r.Read()) {
                                 string hashDB = r["CONTRASENA"].ToString()!;
-                                // Verificación de Hash BCrypt
+                                // Verificación del Hash BCrypt.
                                 if (BCrypt.Net.BCrypt.Verify(model.Password, hashDB)) {
                                     var token = GenerarToken(r["NOMBRE"].ToString()!, model.Email);
                                     return Ok(new { 
@@ -91,7 +90,6 @@ namespace TrickedDice.Api.Controllers {
         }
     }
 
-    // Modelos ajustados al 100% con el Frontend y SQL
     public record RegistroModel(
         string Email, string Password, string Nombre, string PrimerApellido, 
         string? SegundoApellido, string NombreUsuario, string? Nickname, 

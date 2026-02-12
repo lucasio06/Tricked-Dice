@@ -2,11 +2,11 @@ using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- SERVICIOS ---
+// Servicios.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// Configuración de CORS: Permite que Angular (4200) hable con C# (5069)
+// Configuración de CORS: Aquí permitimos que Angular (puerto 4200) hable con C# (puerto 5069).
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",
@@ -17,18 +17,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// --- MIDDLEWARE (EL ORDEN IMPORTA) ---
-
 if (app.Environment.IsDevelopment()) 
 { 
     app.MapOpenApi(); 
 }
 
-// 1. Primero el CORS para dar permiso
+// Usamos el CORS para dar permiso.
 app.UseCors("AllowAngular");
-
-// 2. Quitamos UseHttpsRedirection para evitar el error SSL en local
-// app.UseHttpsRedirection(); 
 
 app.UseAuthorization();
 app.MapControllers();
