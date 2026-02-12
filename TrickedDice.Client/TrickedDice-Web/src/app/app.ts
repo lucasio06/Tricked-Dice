@@ -1,30 +1,36 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { Router, RouterOutlet } from '@angular/router'; // 1. Añadimos RouterOutlet
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterOutlet], // 2. Importante para que el HTML reconozca <router-outlet>
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
 export class App implements OnInit {
-  juegos: string[] = [];
+  isLoggedIn = false; // Esta es la que necesita el HTML
+  usuarioData: any = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(public router: Router) {}
 
   ngOnInit() {
-    // URL corregida a HTTP y puerto 5069
-    this.http.get<string[]>('http://localhost:5069/api/juegos')
-      .subscribe({
-        next: (res) => {
-          console.log('¡Conexión exitosa!', res);
-          this.juegos = res;
-        },
-        error: (err) => {
-          console.error('Error de conexión detallado:', err);
-        }
-      });
+    this.checkUser();
+  }
+
+  checkUser() {
+    const user = localStorage.getItem('usuario');
+    if (user) {
+      this.isLoggedIn = true;
+      this.usuarioData = JSON.parse(user);
+    }
+  }
+
+  logout() {
+    localStorage.clear();
+    this.isLoggedIn = false;
+    this.usuarioData = null;
+    this.router.navigate(['/']);
   }
 }

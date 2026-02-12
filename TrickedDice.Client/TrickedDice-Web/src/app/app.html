@@ -1,20 +1,23 @@
-<div style="background: #0f0f0f; color: white; min-height: 100vh; padding: 40px; text-align: center; font-family: sans-serif;">
-  <h1 style="color: #d4af37; text-shadow: 2px 2px #000; font-size: 3rem;">🎰 TRICKED DICE CASINO 🎰</h1>
-  <p style="color: #888;">Servidor: localhost:5069</p>
+<nav style="display: flex; justify-content: flex-end; align-items: center; padding: 15px 30px; background: #1a1a1a; border-bottom: 2px solid #d4af37; position: sticky; top: 0; z-index: 1000;">
+  
+  <h1 (click)="router.navigate(['/'])" style="color: #d4af37; cursor: pointer; margin-right: auto; font-size: 1.2rem; font-weight: bold; margin-top: 0;">
+    🎲 TRICKED DICE
+  </h1>
 
-  <div style="margin-top: 50px;">
-    <h2 *ngIf="juegos.length > 0" style="margin-bottom: 30px;">Juegos Disponibles:</h2>
-    <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-      <div *ngFor="let juego of juegos" 
-           style="border: 2px solid #d4af37; padding: 25px; border-radius: 15px; background: #1a1a1a; min-width: 180px; transition: transform 0.3s;">
-        <span style="font-size: 3rem;">🃏</span>
-        <h3 style="color: #d4af37;">{{ juego }}</h3>
-        <button style="background: #d4af37; color: black; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">JUGAR</button>
-      </div>
-    </div>
-  </div>
+  <button *ngIf="!isLoggedIn" (click)="router.navigate(['/auth'])" 
+          style="background: #d4af37; color: black; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">
+    Iniciar Sesión / Registro
+  </button>
 
-  <div *ngIf="juegos.length === 0" style="margin-top: 50px; color: #ff4444;">
-    <p>⚠️ No se han podido cargar los juegos. Revisa que el Backend esté encendido en el puerto 5069.</p>
+  <div *ngIf="isLoggedIn" style="display: flex; align-items: center; gap: 20px;">
+    <span style="color: #d4af37; font-weight: bold;">👤 {{ usuarioData?.nombre }}</span>
+    <span style="background: #333; padding: 5px 15px; border-radius: 20px; color: #00ff00; border: 1px solid #00ff00;">
+      💰 {{ usuarioData?.saldo }} fichas
+    </span>
+    <button (click)="logout()" style="background: #ff4444; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
+      Salir
+    </button>
   </div>
-</div>
+</nav>
+
+<router-outlet></router-outlet>

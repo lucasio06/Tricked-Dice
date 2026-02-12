@@ -1,0 +1,48 @@
+<div style="background: #0f0f0f; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; font-family: sans-serif;">
+  <div style="background: #1a1a1a; padding: 30px; border-radius: 20px; border: 2px solid #d4af37; width: 450px; text-align: center; box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); max-height: 90vh; overflow-y: auto;">
+    
+    <h2 style="color: #d4af37; margin-bottom: 25px;">
+      {{ esLogin ? '♠️ LOGIN' : '♣️ REGISTRO' }}
+    </h2>
+
+    <form (ngSubmit)="enviar()">
+      <div *ngIf="!esLogin">
+        <input type="text" name="nombre" [(ngModel)]="datos.nombre" placeholder="Nombre *" required 
+               style="width: 92%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+
+        <div style="display: flex; gap: 10px; justify-content: center; width: 98%; margin: 0 auto;">
+          <input type="text" name="ap1" [(ngModel)]="datos.primerApellido" placeholder="1º Apellido *" required ...>
+          <input type="text" name="ap2" [(ngModel)]="datos.segundoApellido" placeholder="2º Apellido" 
+                 style="width: 44%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+        </div>
+
+        <input type="text" name="user" [(ngModel)]="datos.nombreUsuario" placeholder="Nombre de Usuario (@) *" required 
+               style="width: 92%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+
+        <input type="text" name="dni" [(ngModel)]="datos.dni" placeholder="DNI / NIE *" required 
+               style="width: 92%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+
+        <div style="text-align: left; width: 92%; margin: 0 auto;">
+          <label style="color: #888; font-size: 0.8rem; margin-bottom: 5px; display: block;">Fecha de Nacimiento *</label>
+          <input type="date" name="fecha" [(ngModel)]="datos.fechaNacimiento" required 
+                 style="width: 100%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+        </div>
+      </div>
+
+      <input type="email" name="email" [(ngModel)]="datos.email" placeholder="Email *" required 
+             style="width: 92%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+      
+      <input type="password" name="password" [(ngModel)]="datos.password" placeholder="Contraseña *" required 
+             style="width: 92%; padding: 12px; margin-bottom: 25px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+
+      <button type="submit" 
+              style="width: 92%; padding: 15px; background: #d4af37; color: black; font-weight: bold; border: none; cursor: pointer; border-radius: 5px; font-size: 1rem;">
+        {{ esLogin ? 'ENTRAR' : 'REGISTRARME' }}
+      </button>
+    </form>
+
+    <p (click)="toggleModo()" style="color: #d4af37; margin-top: 25px; cursor: pointer; text-decoration: underline; font-size: 0.9rem;">
+      {{ esLogin ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión' }}
+    </p>
+  </div>
+</div>
