@@ -1,0 +1,24 @@
+<nav style="display: flex; justify-content: flex-end; align-items: center; padding: 15px 30px; background: #1a1a1a; border-bottom: 2px solid #d4af37; position: sticky; top: 0; z-index: 1000;">
+  
+  <h1 (click)="router.navigate(['/'])" style="color: #d4af37; cursor: pointer; margin-right: auto; font-size: 1.2rem; font-weight: bold; margin-top: 0;">
+    🎲 TRICKED DICE
+  </h1>
+
+  <button *ngIf="!isLoggedIn" (click)="router.navigate(['/auth'])" 
+          style="background: #d4af37; color: black; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">
+    Iniciar Sesión / Registro
+  </button>
+
+  <div *ngIf="isLoggedIn" style="display: flex; align-items: center; gap: 20px;">
+    <span style="color: #d4af37; font-weight: bold;">👤 {{ usuarioData?.nombre }}</span>
+    <span style="background: #333; padding: 5px 15px; border-radius: 20px; color: #00ff00; border: 1px solid #00ff00; font-family: monospace;">
+      💰 {{ usuarioData?.saldo }} fichas
+    </span>
+    <button (click)="logout()" 
+            style="background: #ff4444; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+      Cerrar Sesión
+    </button>
+  </div>
+</nav>
+
+<router-outlet></router-outlet>

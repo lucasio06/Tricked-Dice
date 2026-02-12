@@ -1,0 +1,19 @@
+<div style="background: #0f0f0f; color: white; min-height: 90vh; padding: 40px; text-align: center; font-family: sans-serif;">
+  <h1 style="color: #d4af37; text-shadow: 2px 2px #000; font-size: 3.5rem; margin-top: 20px;">
+    🎰 TRICKED DICE CASINO 🎰
+  </h1>
+  <p style="color: #888; margin-bottom: 50px;">Servidor activo: localhost:5069</p>
+
+  <h2 *ngIf="juegos.length > 0" style="margin-bottom: 30px; font-size: 2rem;">Juegos Disponibles:</h2>
+  
+  <div style="display: flex; justify-content: center; gap: 25px; flex-wrap: wrap;">
+    <div *ngFor="let juego of juegos" 
+         style="border: 2px solid #d4af37; padding: 30px; border-radius: 20px; background: #1a1a1a; min-width: 220px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);">
+      <span style="font-size: 4rem;">🃏</span>
+      <h3 style="color: #d4af37;">{{ juego }}</h3>
+      <button style="background: #d4af37; color: black; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">
+        JUGAR
+      </button>
+    </div>
+  </div>
+</div>

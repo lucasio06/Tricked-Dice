@@ -399,3 +399,14 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+
+# ----------------------------------------------------------------IL-
+# SECRETOS DE TRICKED DICE (Añade esto al final del archivo)
+# ------------------------------------------------------------------
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+
+# Pero queremos que la plantilla de ejemplo sí se suba
+!appsettings.json.example
