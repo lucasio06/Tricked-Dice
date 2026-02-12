@@ -11,11 +11,12 @@
 
   <div *ngIf="isLoggedIn" style="display: flex; align-items: center; gap: 20px;">
     <span style="color: #d4af37; font-weight: bold;">👤 {{ usuarioData?.nombre }}</span>
-    <span style="background: #333; padding: 5px 15px; border-radius: 20px; color: #00ff00; border: 1px solid #00ff00;">
+    <span style="background: #333; padding: 5px 15px; border-radius: 20px; color: #00ff00; border: 1px solid #00ff00; font-family: monospace;">
       💰 {{ usuarioData?.saldo }} fichas
     </span>
-    <button (click)="logout()" style="background: #ff4444; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
-      Salir
+    <button (click)="logout()" 
+            style="background: #ff4444; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+      Cerrar Sesión
     </button>
   </div>
 </nav>

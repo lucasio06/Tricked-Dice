@@ -44,7 +44,7 @@ export class AuthComponent {
             localStorage.setItem('usuario', JSON.stringify(res)); 
             
             alert('¡Bienvenido al casino, ' + res.nombre + '!');
-            this.router.navigate(['/']); 
+            window.location.href = '/'; 
           } else {
             alert('Registro exitoso. ¡Inicia sesión para jugar!');
             this.esLogin = true; 
