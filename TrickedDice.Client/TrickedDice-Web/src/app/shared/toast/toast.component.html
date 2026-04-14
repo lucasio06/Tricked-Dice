@@ -1,0 +1,25 @@
+<div class="toast-container">
+  @for (toast of toastService.toasts$ | async; track toast.id) {
+    <div class="toast" [ngClass]="toast.type" (click)="toastService.remove(toast.id)">
+      <span class="icon">
+        @if (toast.type === 'success') {
+          <img src="login.png" alt="login" class="icon-img" />
+        }
+        @else if (toast.type === 'info') {
+          <img src="logout.png" alt="logout" class="icon-img" />
+        }
+        @else if (toast.type === 'error') {
+          <span>💀</span>
+        }
+        @else if (toast.type === 'warning') {
+          <span>⚡</span>
+        }
+        @else {
+          <span>🎲</span>
+        }
+      </span>
+      <span class="message">{{ toast.text }}</span>
+      <div class="progress-bar" [style.animation-duration]="(toast.duration || 4000) + 'ms'"></div>
+    </div>
+  }
+</div>

@@ -1,39 +1,68 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
+import { ToastComponent } from './shared/toast/toast.component';
+import { GlitchDirective } from './directives/glitch.directive';
+import { ToastService } from './services/toast.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, ToastComponent, GlitchDirective],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App implements OnInit {
-  isLoggedIn = false;
-  usuarioData: any = null;
-
-  constructor(public router: Router) {}
+export class App implements OnInit, OnDestroy {
+  private toast = inject(ToastService);
+  private lastToken: string | null = null;
+  private checkInterval: any;
+  private loginNotificationShown = false;
+  private wasLoggedIn = false;
 
   ngOnInit() {
-    this.checkUser();
+    this.lastToken = localStorage.getItem('token');
+    this.wasLoggedIn = !!this.lastToken;
+    this.checkInterval = setInterval(() => this.checkLogin(), 300);
   }
 
-  checkUser() {
-    const user = localStorage.getItem('usuario');
-    if (user) {
-      this.isLoggedIn = true;
-      this.usuarioData = JSON.parse(user);
-    } else {
-      this.isLoggedIn = false;
-      this.usuarioData = null;
+  ngOnDestroy() {
+    clearInterval(this.checkInterval);
+  }
+
+  private checkLogin() {
+    const token = localStorage.getItem('token');
+    const isLoggedIn = !!token;
+
+    if (isLoggedIn && token !== this.lastToken && !this.loginNotificationShown) {
+      const nombre = this.getUserNameFromToken(token);
+      this.toast.success(`¡Bienvenido, ${nombre}!`);
+      this.loginNotificationShown = true;
+      this.wasLoggedIn = true;
+      this.lastToken = token;
+    }
+
+    if (!isLoggedIn && this.wasLoggedIn) {
+      this.toast.info(`Has cerrado sesión.`);
+      this.loginNotificationShown = false;
+      this.wasLoggedIn = false;
+      this.lastToken = null;
+    }
+
+    if (isLoggedIn) {
+      this.lastToken = token;
     }
   }
 
-  logout() {
-    localStorage.clear();
-    this.isLoggedIn = false;
-    this.usuarioData = null;
-    window.location.href = '/'; 
+  private getUserNameFromToken(token: string): string {
+    try {
+      const payload = token.split('.')[1];
+      const decoded = JSON.parse(atob(payload));
+      return decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] 
+          || decoded['unique_name'] 
+          || decoded['email'] 
+          || 'Jugador';
+    } catch (e) {
+      return 'Jugador';
+    }
   }
 }
