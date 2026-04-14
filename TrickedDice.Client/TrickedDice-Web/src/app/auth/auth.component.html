@@ -11,23 +11,28 @@
                style="width: 92%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
 
         <div style="display: flex; gap: 10px; justify-content: center; width: 98%; margin: 0 auto;">
-          <input type="text" name="ap1" [(ngModel)]="datos.primerApellido" placeholder="1º Apellido *" required ...>
+          <input type="text" name="ap1" [(ngModel)]="datos.primerApellido" placeholder="1º Apellido *" required ...
+                 style="width: 44%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
           <input type="text" name="ap2" [(ngModel)]="datos.segundoApellido" placeholder="2º Apellido" 
                  style="width: 44%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
         </div>
-
+        
         <input type="text" name="user" [(ngModel)]="datos.nombreUsuario" placeholder="Nombre de Usuario (@) *" required 
                style="width: 92%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+        
+        <div style="display: flex; gap: 10px; justify-content: center; width: 98%; margin: 0 auto; align-items: flex-end;">
 
-        <input type="text" name="dni" [(ngModel)]="datos.dni" placeholder="DNI / NIE *" required 
-               style="width: 92%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+          <div style="width: 55%; text-align: left;">
+            <input type="text" name="dni" [(ngModel)]="datos.dni" placeholder="DNI / NIE *" required 
+               style="width: 100%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+          </div>
 
-        <div style="text-align: left; width: 92%; margin: 0 auto;">
-          <label style="color: #888; font-size: 0.8rem; margin-bottom: 5px; display: block;">Fecha de Nacimiento *</label>
-          <input type="date" name="fecha" [(ngModel)]="datos.fechaNacimiento" required 
-                 style="width: 100%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
+          <div style="width: 35%; text-align: left;">
+            <label style="color: #888; font-size: 0.7rem; margin-bottom: 5px; display: block;">Fecha Nac. *</label>
+            <input type="date" name="fecha" [(ngModel)]="datos.fechaNacimiento" required 
+               style="width: 100%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px; font-size: 0.8rem;">
+          </div>
         </div>
-      </div>
 
       <input type="email" name="email" [(ngModel)]="datos.email" placeholder="Email *" required 
              style="width: 92%; padding: 12px; margin-bottom: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 5px;">
