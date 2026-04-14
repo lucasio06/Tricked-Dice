@@ -280,7 +280,16 @@
         {{ esModoLogin ? 'INICIAR SESIÓN' : 'REGISTRO NUEVO' }}
       </h2>
       <ng-container *ngIf="!esModoLogin">
-        <input type="text" placeholder="DNI" class="casino-input" [(ngModel)]="usuarioData.dni">
+        <input  type="text" 
+                placeholder="DNI *" 
+                class="casino-input" 
+                [(ngModel)]="usuarioData.dni"
+                (input)="validarDNI()"
+                (blur)="validarDNI()"
+                [style.borderColor]="usuarioData.dni && dniInvalido ? '#ff4d4d' : '#3a2a50'">
+          <small  *ngIf="usuarioData.dni && dniInvalido" 
+                  style="color: #ff4d4d; font-size: 0.7rem; display: block; margin-top: -8px; margin-bottom: 12px; text-align: left;">
+                  DNI no válido. Formato: 12345678Z </small>
         <input type="text" placeholder="NOMBRE REAL" class="casino-input" [(ngModel)]="usuarioData.nombre">
         <input type="text" placeholder="APELLIDO" class="casino-input" [(ngModel)]="usuarioData.primerApellido">
         <input type="date" class="casino-input" [(ngModel)]="usuarioData.fechaNacimiento" style="color-scheme: dark;">
@@ -288,8 +297,12 @@
       </ng-container>
       <input type="email" placeholder="EMAIL" class="casino-input" [(ngModel)]="usuarioData.email">
       <input type="password" placeholder="CONTRASEÑA" class="casino-input" [(ngModel)]="usuarioData.password">
-      <button class="play-button" style="width: 100%; margin-top: 15px;" (click)="esModoLogin ? onLogin() : onRegistro()">
-        {{ esModoLogin ? 'ENTRAR' : 'CREAR CUENTA' }}
+      <button class="play-button" 
+              style="width: 100%; margin-top: 15px;" 
+              (click)="esModoLogin ? onLogin() : onRegistro()"
+              [disabled]="!esModoLogin && dniInvalido"
+              [style.opacity]="(!esModoLogin && dniInvalido) ? '0.5' : '1'">
+              {{ esModoLogin ? 'ENTRAR' : 'CREAR CUENTA' }}
       </button>
       <p style="margin-top: 25px; font-size: 0.8rem; color: #aaa;">
         <span style="color: #cca45a; cursor: pointer;" (click)="esModoLogin = !esModoLogin">

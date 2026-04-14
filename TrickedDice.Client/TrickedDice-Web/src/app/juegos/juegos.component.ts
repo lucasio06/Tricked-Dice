@@ -15,6 +15,7 @@ export class JuegosComponent implements OnInit {
   esModoLogin = true;
   usuarioActivo: string | null = null;
   saldoActivo: number = 0;
+  dniInvalido = false;
 
   usuarioData = {
     username: '',
@@ -44,6 +45,34 @@ export class JuegosComponent implements OnInit {
     return 'tricked-dice.png';
   }
 
+  validarDNI(): void {
+    const dni = this.usuarioData.dni ? this.usuarioData.dni.trim().toUpperCase() : '';
+    
+    if (dni.length !== 9) {
+      this.dniInvalido = true;
+      return;
+    }
+
+    const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
+    const numerosPart = dni.substring(0, 8);
+    const letraPart = dni.charAt(8);
+
+    const soloNumeros = /^\d+$/.test(numerosPart);
+    if (!soloNumeros) {
+      this.dniInvalido = true;
+      return;
+    }
+
+    if (!/[A-Z]/i.test(letraPart)) {
+      this.dniInvalido = true;
+      return;
+    }
+
+    const numero = parseInt(numerosPart, 10);
+    const letraCorrecta = letras[numero % 23];
+    this.dniInvalido = letraCorrecta !== letraPart;
+  }
+
   onLogin() {
     const body = {
       Email: this.usuarioData.email,
@@ -62,6 +91,12 @@ export class JuegosComponent implements OnInit {
   }
 
   onRegistro() {
+    this.validarDNI();
+    if (this.dniInvalido) {
+      alert('DNI no válido. Formato correcto: 12345678Z');
+      return;
+    }
+
     const body = {
       NombreUsuario: this.usuarioData.username,
       Email: this.usuarioData.email,
@@ -70,16 +105,34 @@ export class JuegosComponent implements OnInit {
       Nombre: this.usuarioData.nombre,
       PrimerApellido: this.usuarioData.primerApellido,
       FechaNacimiento: this.usuarioData.fechaNacimiento,
-      Saldo: 1000
+      SegundoApellido: null,
+      Nickname: this.usuarioData.username
     };
 
     this.http.post('http://localhost:5069/api/usuarios/registro', body).subscribe({
       next: () => {
-        alert('Registro completado.');
+        alert('Registro completado. ¡Puedes iniciar sesión!');
         this.esModoLogin = true;
+        this.limpiarFormulario();
       },
-      error: (err) => alert('Error al crear la cuenta.')
+      error: (err) => {
+        console.error(err);
+        alert('Error al crear la cuenta.');
+      }
     });
+  }
+
+  limpiarFormulario() {
+    this.usuarioData = {
+      username: '',
+      email: '',
+      password: '',
+      dni: '',
+      nombre: '',
+      primerApellido: '',
+      fechaNacimiento: ''
+    };
+    this.dniInvalido = false;
   }
 
   logout() {
@@ -91,6 +144,7 @@ export class JuegosComponent implements OnInit {
   abrirModal(modo: 'login' | 'registro') {
     this.esModoLogin = (modo === 'login');
     this.mostrarModal = true;
+    this.dniInvalido = false;
   }
 
   cerrarModal() {
