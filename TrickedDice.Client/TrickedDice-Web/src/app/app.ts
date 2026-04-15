@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet } from '@angular/router';
+import { AuthService } from './auth.service';
 
 @Component({
   selector: 'app-root',
@@ -13,27 +14,20 @@ export class App implements OnInit {
   isLoggedIn = false;
   usuarioData: any = null;
 
-  constructor(public router: Router) {}
+  constructor(public router: Router, private authService: AuthService) {}
 
   ngOnInit() {
     this.checkUser();
   }
 
   checkUser() {
-    const user = localStorage.getItem('usuario');
-    if (user) {
-      this.isLoggedIn = true;
-      this.usuarioData = JSON.parse(user);
-    } else {
-      this.isLoggedIn = false;
-      this.usuarioData = null;
-    }
+    this.usuarioData = this.authService.getUsuario();
+    this.isLoggedIn = !!this.usuarioData;
   }
 
   logout() {
-    localStorage.clear();
+    this.authService.logout();
     this.isLoggedIn = false;
     this.usuarioData = null;
-    window.location.href = '/'; 
   }
 }
