@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 
@@ -5,6 +6,7 @@ namespace TrickedDice.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]   // <-- Ahora este endpoint requiere token JWT válido
     public class JuegosController : ControllerBase
     {
         private readonly string? _connectionString;
@@ -18,12 +20,12 @@ namespace TrickedDice.Api.Controllers
         public IActionResult GetJuegos()
         {
             var listaJuegos = new List<string>();
-            try 
+            try
             {
                 using (SqlConnection connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
-                    string sql = "SELECT NOMBRE_JUEGO FROM JUEGO"; 
+                    string sql = "SELECT NOMBRE_JUEGO FROM JUEGO";
                     using (SqlCommand command = new SqlCommand(sql, connection))
                     {
                         using (SqlDataReader reader = command.ExecuteReader())
