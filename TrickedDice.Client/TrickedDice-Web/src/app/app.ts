@@ -1,9 +1,10 @@
-import { Component, OnInit, inject, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { ToastComponent } from './shared/toast/toast.component';
 import { GlitchDirective } from './directives/glitch.directive';
 import { ToastService } from './services/toast.service';
+import { AuthService } from './auth.service';
 
 @Component({
   selector: 'app-root',
@@ -14,12 +15,19 @@ import { ToastService } from './services/toast.service';
 })
 export class App implements OnInit, OnDestroy {
   private toast = inject(ToastService);
+  private authService = inject(AuthService);
   private lastToken: string | null = null;
   private checkInterval: any;
   private loginNotificationShown = false;
   private wasLoggedIn = false;
 
+  isLoggedIn = false;
+  usuarioData: any = null;
+
+  constructor(public router: Router) {}
+
   ngOnInit() {
+    this.checkUser();
     this.lastToken = localStorage.getItem('token');
     this.wasLoggedIn = !!this.lastToken;
     this.checkInterval = setInterval(() => this.checkLogin(), 300);
@@ -27,6 +35,11 @@ export class App implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     clearInterval(this.checkInterval);
+  }
+
+  checkUser() {
+    this.usuarioData = this.authService.getUsuario();
+    this.isLoggedIn = !!this.usuarioData;
   }
 
   private checkLogin() {
@@ -39,6 +52,7 @@ export class App implements OnInit, OnDestroy {
       this.loginNotificationShown = true;
       this.wasLoggedIn = true;
       this.lastToken = token;
+      this.checkUser(); // Actualizar estado
     }
 
     if (!isLoggedIn && this.wasLoggedIn) {
@@ -46,6 +60,7 @@ export class App implements OnInit, OnDestroy {
       this.loginNotificationShown = false;
       this.wasLoggedIn = false;
       this.lastToken = null;
+      this.checkUser(); // Actualizar estado
     }
 
     if (isLoggedIn) {
@@ -64,5 +79,12 @@ export class App implements OnInit, OnDestroy {
     } catch (e) {
       return 'Jugador';
     }
+  }
+
+  logout() {
+    this.authService.logout();
+    this.isLoggedIn = false;
+    this.usuarioData = null;
+    this.router.navigate(['/']);
   }
 }

@@ -1,4 +1,6 @@
-using Microsoft.Data.SqlClient;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// Configuración de CORS: Aquí permitimos que Angular (puerto 4200) hable con C# (puerto 5069).
+// Configuración de CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",
@@ -15,17 +17,34 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
+// Configuración de autenticación JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
+
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment()) 
-{ 
-    app.MapOpenApi(); 
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
 }
 
-// Usamos el CORS para dar permiso.
 app.UseCors("AllowAngular");
 
+app.UseAuthentication();  // <-- Importante: antes de UseAuthorization
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-juegos',
@@ -27,13 +28,26 @@ export class JuegosComponent implements OnInit {
     fechaNacimiento: ''
   };
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
 
   ngOnInit() {
+    this.checkLoginStatus();
+    this.cargarJuegos();
+  }
+
+  checkLoginStatus() {
+    const user = this.authService.getUsuario();
+    if (user) {
+      this.usuarioActivo = user.nombre;
+      this.saldoActivo = user.saldo;
+    }
+  }
+
+  cargarJuegos() {
     this.http.get<string[]>('http://localhost:5069/api/juegos')
       .subscribe({
         next: (res) => this.juegos = res,
-        error: (err) => console.error(err)
+        error: (err) => console.error('Error cargando juegos:', err)
       });
   }
 
@@ -74,17 +88,12 @@ export class JuegosComponent implements OnInit {
   }
 
   onLogin() {
-    const body = {
-      Email: this.usuarioData.email,
-      Password: this.usuarioData.password
-    };
-
-    this.http.post('http://localhost:5069/api/usuarios/login', body).subscribe({
-      next: (res: any) => {
-        this.usuarioActivo = res.nombre; 
+    this.authService.login(this.usuarioData.email, this.usuarioData.password).subscribe({
+      next: (res) => {
+        this.usuarioActivo = res.nombre;
         this.saldoActivo = res.saldo;
-        localStorage.setItem('token', res.token); 
         this.cerrarModal();
+        this.cargarJuegos(); // Recargar juegos con el token ahora válido
       },
       error: (err) => alert('Error: Email o Contraseña incorrectos.')
     });
@@ -109,7 +118,7 @@ export class JuegosComponent implements OnInit {
       Nickname: this.usuarioData.username
     };
 
-    this.http.post('http://localhost:5069/api/usuarios/registro', body).subscribe({
+    this.authService.registro(body).subscribe({
       next: () => {
         alert('Registro completado. ¡Puedes iniciar sesión!');
         this.esModoLogin = true;
@@ -136,9 +145,9 @@ export class JuegosComponent implements OnInit {
   }
 
   logout() {
+    this.authService.logout();
     this.usuarioActivo = null;
     this.saldoActivo = 0;
-    localStorage.removeItem('token');
   }
 
   abrirModal(modo: 'login' | 'registro') {
