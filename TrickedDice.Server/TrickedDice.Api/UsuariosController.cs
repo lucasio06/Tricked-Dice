@@ -20,7 +20,10 @@ namespace TrickedDice.Api.Controllers {
 
         [HttpPost("registro")]
         public IActionResult Registrar([FromBody] RegistroModel model) {
-            // Hasheo de contraseñas en el registro.
+            if (!ValidarDNI(model.Dni)) {
+                return BadRequest("El DNI introducido no es válido.");
+            }
+            // Hash de contraseñas.
             string hash = BCrypt.Net.BCrypt.HashPassword(model.Password); 
             
             try {
@@ -50,6 +53,17 @@ namespace TrickedDice.Api.Controllers {
             } catch (Exception ex) { 
                 return BadRequest("Error de dase de datos: " + ex.Message); 
             }
+        }
+        private bool ValidarDNI(string dni) {
+            if (string.IsNullOrWhiteSpace(dni) || dni.Length != 9) return false;
+
+            string letras = "TRWAGMYFPDXBNJZSQVHLCKE";
+            string numerosPart = dni.Substring(0, 8);
+            char letraPart = char.ToUpper(dni[8]);
+
+            if (!char.IsLetter(letraPart)) return false;
+            if (!int.TryParse(numerosPart, out int numeros)) return false;
+            return letras[numeros % 23] == letraPart;
         }
 
         [HttpPost("login")]
