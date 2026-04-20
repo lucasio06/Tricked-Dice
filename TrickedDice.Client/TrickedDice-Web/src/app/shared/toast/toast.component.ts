@@ -20,8 +20,8 @@ import { ToastService } from '../../services/toast.service';
     }
     .toast {
       pointer-events: auto;
-      min-width: 280px;
-      max-width: 380px;
+      min-width: 320px;
+      max-width: 500px;
       background: linear-gradient(145deg, #1a1125 0%, #0d0516 100%);
       border: 1px solid #cca45a;
       border-radius: 8px;
@@ -69,6 +69,8 @@ import { ToastService } from '../../services/toast.service';
     .error .icon { color: #ff3366; text-shadow: 0 0 8px #ff3366; }
     .warning .icon { color: #e0c070; text-shadow: 0 0 8px #e0c070; }
     .info .icon { color: #a742f5; text-shadow: 0 0 8px #a742f5; }
+    .win .icon { color: #39FF14; text-shadow: 0 0 8px #39FF14; }
+    .lose .icon { color: #ff3366; text-shadow: 0 0 8px #ff3366; }
     .progress-bar {
       position: absolute;
       bottom: 0;
@@ -92,3 +94,4 @@ import { ToastService } from '../../services/toast.service';
 export class ToastComponent {
   toastService = inject(ToastService);
 }
+

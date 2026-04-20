@@ -1,0 +1,157 @@
+<div class="ruleta-container">
+  <div class="ruleta-card">
+    <h1 class="ruleta-title">🎲 RULETA NEON LUXURY 🎲</h1>
+    
+    <div class="ruleta-main-grid">
+      <!-- COLUMNA IZQUIERDA: RULETA Y SALDO -->
+      <div class="ruleta-left">
+        <div class="saldo-actual">
+          <span>SALDO DISPONIBLE</span>
+          <strong>{{ saldo | number:'1.2-2' }} €</strong>
+        </div>
+        <div class="rueda-container">
+          <canvas #ruletaCanvas width="400" height="400" class="ruleta-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: TAPETE DE APUESTAS -->
+      <div class="tapete-right">
+        <!-- Números del tapete -->
+        <div class="tapete-section">
+          <h3 class="section-title">🎯 NÚMEROS</h3>
+          <div class="numeros-grid">
+            <div class="fila-cero">
+              <div class="numero-casilla cero" 
+                   [class.seleccionado]="valorApuesta === '0' && tipoApuesta === 'numero'"
+                   (click)="seleccionarNumero('0')">
+                0
+              </div>
+            </div>
+            <div class="fila-numeros" *ngFor="let fila of [0,1,2]">
+              <div class="numero-casilla" 
+                   *ngFor="let num of numeros.slice(fila*12+1, fila*12+13)"
+                   [class.rojo]="esRojo(num)"
+                   [class.negro]="!esRojo(num)"
+                   [class.seleccionado]="valorApuesta === num.toString() && tipoApuesta === 'numero'"
+                   (click)="seleccionarNumero(num.toString())">
+                {{ num }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Apuestas Simples -->
+        <div class="tapete-section">
+          <h3 class="section-title">🔴 APUESTAS SIMPLES (1:1)</h3>
+          <div class="apuestas-grid">
+            <button class="apuesta-btn" [class.active]="tipoApuesta === 'color' && valorApuesta === 'rojo'" (click)="seleccionarColor('rojo')">🔴 ROJO</button>
+            <button class="apuesta-btn" [class.active]="tipoApuesta === 'color' && valorApuesta === 'negro'" (click)="seleccionarColor('negro')">⚫ NEGRO</button>
+            <button class="apuesta-btn" [class.active]="tipoApuesta === 'paridad' && valorApuesta === 'par'" (click)="seleccionarParidad('par')">🔷 PAR</button>
+            <button class="apuesta-btn" [class.active]="tipoApuesta === 'paridad' && valorApuesta === 'impar'" (click)="seleccionarParidad('impar')">🔶 IMPAR</button>
+            <button class="apuesta-btn" [class.active]="tipoApuesta === 'mitad' && valorApuesta === '1-18'" (click)="seleccionarMitad('1-18')">1-18</button>
+            <button class="apuesta-btn" [class.active]="tipoApuesta === 'mitad' && valorApuesta === '19-36'" (click)="seleccionarMitad('19-36')">19-36</button>
+          </div>
+        </div>
+
+        <!-- Docenas y Columnas -->
+        <div class="tapete-section">
+          <h3 class="section-title">📊 DOCENAS Y COLUMNAS (2:1)</h3>
+          <div class="apuestas-grid-2col">
+            <div class="apuesta-col">
+              <label class="apuesta-label">Docenas</label>
+              <div class="apuestas-grid">
+                <button class="apuesta-btn" *ngFor="let doc of docenas; let i = index" [class.active]="tipoApuesta === 'docena' && valorApuesta === (i+1).toString()" (click)="seleccionarDocena((i+1).toString())">{{ doc }}</button>
+              </div>
+            </div>
+            <div class="apuesta-col">
+              <label class="apuesta-label">Columnas</label>
+              <div class="apuestas-grid">
+                <button class="apuesta-btn" *ngFor="let col of columnas; let i = index" [class.active]="tipoApuesta === 'columna' && valorApuesta === (i+1).toString()" (click)="seleccionarColumna((i+1).toString())">{{ col }}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Apuestas Múltiples -->
+        <div class="tapete-section">
+          <h3 class="section-title">🎲 APUESTAS MÚLTIPLES</h3>
+          <div class="apuestas-grid-2col">
+            <div class="apuesta-col">
+              <label class="apuesta-label">Seisena (5:1)</label>
+              <select class="casino-select" [(ngModel)]="valorApuestaSeisena" (change)="seleccionarSeisena(valorApuestaSeisena)">
+                <option *ngFor="let s of seisenas" [value]="s">{{ s }}</option>
+              </select>
+            </div>
+            <div class="apuesta-col">
+              <label class="apuesta-label">Cuadro (8:1)</label>
+              <select class="casino-select" [(ngModel)]="valorApuestaCuadro" (change)="seleccionarCuadro(valorApuestaCuadro)">
+                <option *ngFor="let c of cuadros" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="apuesta-col">
+              <label class="apuesta-label">Calle (11:1)</label>
+              <select class="casino-select" [(ngModel)]="valorApuestaCalle" (change)="seleccionarCalle(valorApuestaCalle)">
+                <option *ngFor="let c of calles" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="apuesta-col">
+              <label class="apuesta-label">Caballo (17:1)</label>
+              <select class="casino-select" [(ngModel)]="valorApuestaCaballo" (change)="seleccionarCaballo(valorApuestaCaballo)">
+                <option *ngFor="let c of caballos" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Apuestas Avanzadas -->
+        <div class="tapete-section">
+          <h3 class="section-title">✨ APUESTAS ESPECIALES</h3>
+          <div class="apuestas-grid">
+            <button class="apuesta-btn especial" [class.active]="tipoApuesta === 'vecinos0'" (click)="seleccionarAvanzada('vecinos0')">🎯 Vecinos del 0</button>
+            <button class="apuesta-btn especial" [class.active]="tipoApuesta === 'tercio'" (click)="seleccionarAvanzada('tercio')">🍰 Tercio</button>
+            <button class="apuesta-btn especial" [class.active]="tipoApuesta === 'huerfanos'" (click)="seleccionarAvanzada('huerfanos')">🧩 Huérfanos</button>
+            <button class="apuesta-btn especial" [class.active]="tipoApuesta === 'juego0'" (click)="seleccionarAvanzada('juego0')">0️⃣ Juego al 0</button>
+          </div>
+          <div class="apuesta-col" style="margin-top: 10px;">
+            <label class="apuesta-label">Finales (último dígito)</label>
+            <select class="casino-select" [(ngModel)]="valorApuestaFinal" (change)="seleccionarFinales(valorApuestaFinal)">
+              <option *ngFor="let f of finales" [value]="f">{{ f }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Monto y Acciones -->
+        <div class="tapete-section monto-section">
+          <div class="monto-container">
+            <label>💰 CANTIDAD A APOSTAR</label>
+            <div class="monto-slider-container">
+              <span class="monto-min">1€</span>
+              <input type="range" [(ngModel)]="montoApuesta" min="1" max="500" step="1" class="monto-slider" />
+              <span class="monto-max">500€</span>
+            </div>
+            <div class="monto-valor">{{ montoApuesta }} €</div>
+          </div>
+          <button class="btn-apostar" (click)="apostar()" [disabled]="girando || !apuestaValida()">
+            {{ girando ? '🎡 GIRANDO...' : '🎲 ¡APOSTAR AHORA!' }}
+          </button>
+          <button class="btn-volver" (click)="volverAlLobby()">← VOLVER AL LOBBY</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ganador (sin cambios) -->
+  <div class="modal-overlay" *ngIf="mostrarModalGanador" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="numero-ganador" [ngClass]="colorModal">
+        {{ numeroModal }}
+      </div>
+      <p class="modal-mensaje">
+        <span *ngIf="colorModal === 'rojo'">🔴 ¡ROJO!</span>
+        <span *ngIf="colorModal === 'negro'">⚫ ¡NEGRO!</span>
+        <span *ngIf="colorModal === 'verde'">🟢 ¡CERO!</span>
+      </p>
+      <button class="btn-cerrar" (click)="cerrarModal()">CONTINUAR</button>
+    </div>
+  </div>
+</div>

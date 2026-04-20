@@ -52,7 +52,7 @@ export class App implements OnInit, OnDestroy {
       this.loginNotificationShown = true;
       this.wasLoggedIn = true;
       this.lastToken = token;
-      this.checkUser(); // Actualizar estado
+      this.checkUser(); 
     }
 
     if (!isLoggedIn && this.wasLoggedIn) {
@@ -60,7 +60,7 @@ export class App implements OnInit, OnDestroy {
       this.loginNotificationShown = false;
       this.wasLoggedIn = false;
       this.lastToken = null;
-      this.checkUser(); // Actualizar estado
+      this.checkUser(); 
     }
 
     if (isLoggedIn) {

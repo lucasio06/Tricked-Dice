@@ -32,7 +32,7 @@ export class JuegosComponent implements OnInit {
   constructor(
     private http: HttpClient, 
     private authService: AuthService,
-    private router: Router
+    public router: Router
   ) {}
 
   ngOnInit() {
@@ -98,7 +98,7 @@ export class JuegosComponent implements OnInit {
         this.usuarioActivo = res.nombre;
         this.saldoActivo = res.saldo;
         this.cerrarModal();
-        this.cargarJuegos(); // Recargar juegos con el token ahora válido
+        this.cargarJuegos();
       },
       error: (err) => alert('Error: Email o Contraseña incorrectos.')
     });

@@ -324,7 +324,7 @@
            [ngClass]="{'rotate-constantly': juego.toLowerCase().includes('ruleta')}">
       
       <h3 style="font-size: 1.8rem; margin-bottom: 25px; font-weight: 800; color: #f0d8a8;">{{ juego | uppercase }}</h3>
-      <button class="play-button" style="width: 100%;">APOSTAR AHORA</button>
+      <button class="play-button" style="width: 100%;" (click)="router.navigate(['/ruleta'])">APOSTAR AHORA</button>
     </div>
   </div>
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../auth.service';
+import { ToastService } from '../services/toast.service';
 
 @Component({
   selector: 'app-recargar-saldo',
@@ -19,7 +20,8 @@ export class RecargarSaldoComponent {
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private toast: ToastService
   ) {
     this.cargarSaldoActual();
   }
@@ -33,11 +35,10 @@ export class RecargarSaldoComponent {
 
   recargar() {
     const cantidad = parseFloat(this.cantidadSeleccionada.toString());
-  
-  if (isNaN(cantidad) || cantidad <= 0) {
-    alert('Selecciona una cantidad válida');
-    return;
-  }
+    if (isNaN(cantidad) || cantidad <= 0) {
+      this.toast.warning('Selecciona una cantidad válida');
+      return;
+    }
 
     if (this.recargando) return;
     this.recargando = true;
@@ -49,14 +50,13 @@ export class RecargarSaldoComponent {
           usuario.saldo = res.saldo;
           localStorage.setItem('usuario', JSON.stringify(usuario));
         }
-        
-        alert(`¡Has recargado ${cantidad} €! Nuevo saldo: ${res.saldo} €`);
+        this.toast.success(`¡Has recargado ${cantidad.toFixed(2)} €! Nuevo saldo: ${res.saldo.toFixed(2)} €`);
         this.recargando = false;
         this.router.navigate(['/']);
       },
       error: (err) => {
         console.error(err);
-        alert('Error al recargar saldo. Inténtalo de nuevo.');
+        this.toast.error('Error al recargar saldo. Inténtalo de nuevo.');
         this.recargando = false;
       }
     });

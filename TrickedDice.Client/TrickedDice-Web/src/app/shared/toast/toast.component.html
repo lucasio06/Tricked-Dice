@@ -3,10 +3,20 @@
     <div class="toast" [ngClass]="toast.type" (click)="toastService.remove(toast.id)">
       <span class="icon">
         @if (toast.type === 'success') {
+        @if (toast.text.includes('recargado') || toast.text.includes('€')) {
+          <img src="stonk.png" alt="recarga" class="icon-img" />
+        } @else {
           <img src="login.png" alt="login" class="icon-img" />
         }
+  }
         @else if (toast.type === 'info') {
           <img src="logout.png" alt="logout" class="icon-img" />
+        }
+        @else if (toast.type === 'win') {
+          <img src="win.png" alt="win" class="icon-img" />
+        }
+        @else if (toast.type === 'lose') {
+          <img src="lose.png" alt="lose" class="icon-img" />
         }
         @else if (toast.type === 'error') {
           <span>💀</span>

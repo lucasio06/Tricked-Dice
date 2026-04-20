@@ -23,13 +23,11 @@ namespace TrickedDice.Api.Controllers {
             if (!ValidarDNI(model.Dni)) {
                 return BadRequest("El DNI introducido no es válido.");
             }
-            // Hash de contraseñas.
             string hash = BCrypt.Net.BCrypt.HashPassword(model.Password); 
             
             try {
                 using (SqlConnection c = new SqlConnection(_conn)) {
                     c.Open();
-                    // Definición de la query en la base de datos.
                     string sql = @"INSERT INTO USUARIO 
                         (EMAIL, CONTRASENA, NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, 
                          NOMBRE_USUARIO, NICKNAME, FECHA_NACIMIENTO, DNI, SALDO) 
@@ -77,7 +75,6 @@ namespace TrickedDice.Api.Controllers {
                         using (SqlDataReader r = cmd.ExecuteReader()) {
                             if (r.Read()) {
                                 string hashDB = r["CONTRASENA"].ToString()!;
-                                // Verificación del Hash BCrypt.
                                 if (BCrypt.Net.BCrypt.Verify(model.Password, hashDB)) {
                                     var token = GenerarToken(r["NOMBRE"].ToString()!, model.Email);
                                     return Ok(new { 

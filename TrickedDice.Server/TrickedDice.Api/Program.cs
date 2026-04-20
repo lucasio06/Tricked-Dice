@@ -4,11 +4,11 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Servicios.
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// Configuración de CORS
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",
@@ -17,7 +17,7 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
-// Configuración de autenticación JWT
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -42,7 +42,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAngular");
 
-app.UseAuthentication();  // <-- Importante: antes de UseAuthorization
+app.UseAuthentication(); 
 app.UseAuthorization();
 
 app.MapControllers();

@@ -4,7 +4,7 @@ import { BehaviorSubject } from 'rxjs';
 export interface ToastMessage {
   id: number;
   text: string;
-  type: 'success' | 'error' | 'info' | 'warning';
+  type: 'success' | 'error' | 'info' | 'warning' | 'win' | 'lose';
   duration?: number;
 }
 
@@ -25,6 +25,8 @@ export class ToastService {
   error(text: string) { this.show(text, 'error'); }
   info(text: string) { this.show(text, 'info'); }
   warning(text: string) { this.show(text, 'warning'); }
+  win(text: string) { this.show(text, 'win'); }
+  lose(text: string) { this.show(text, 'lose'); }
 
   remove(id: number) {
     this.toastsSubject.next(this.toastsSubject.value.filter(t => t.id !== id));

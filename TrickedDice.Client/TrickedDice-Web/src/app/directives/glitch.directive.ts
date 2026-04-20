@@ -11,7 +11,7 @@ export class GlitchDirective implements OnInit, OnDestroy {
   constructor(private el: ElementRef<HTMLElement>) {}
 
   ngOnInit() {
-    this.originalFilter = this.el.nativeElement.style.filter || ''; // <-- Fallback seguro
+    this.originalFilter = this.el.nativeElement.style.filter || '';
     this.intervalId = setInterval(() => this.triggerGlitch(), 15000);
   }
 

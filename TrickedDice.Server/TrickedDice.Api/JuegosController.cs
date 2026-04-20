@@ -6,7 +6,7 @@ namespace TrickedDice.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]   // <-- Ahora este endpoint requiere token JWT válido
+    [Authorize]
     public class JuegosController : ControllerBase
     {
         private readonly string? _connectionString;
