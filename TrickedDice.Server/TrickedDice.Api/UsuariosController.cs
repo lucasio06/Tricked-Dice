@@ -33,7 +33,7 @@ namespace TrickedDice.Api.Controllers {
                     string sql = @"INSERT INTO USUARIO 
                         (EMAIL, CONTRASENA, NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, 
                          NOMBRE_USUARIO, NICKNAME, FECHA_NACIMIENTO, DNI, SALDO) 
-                        VALUES (@e, @p, @n, @pa, @sa, @nu, @nick, @fn, @dni, 1000)";
+                        VALUES (@e, @p, @n, @pa, @sa, @nu, @nick, @fn, @dni, 0)";
                     
                     using (SqlCommand cmd = new SqlCommand(sql, c)) {
                         cmd.Parameters.AddWithValue("@e", model.Email);
@@ -83,7 +83,7 @@ namespace TrickedDice.Api.Controllers {
                                     return Ok(new { 
                                         token = token, 
                                         nombre = r["NOMBRE"], 
-                                        saldo = r["SALDO"] 
+                                        saldo = Convert.ToDecimal(r["SALDO"])
                                     });
                                 }
                             }
@@ -92,6 +92,48 @@ namespace TrickedDice.Api.Controllers {
                 }
                 return Unauthorized("Credenciales incorrectas.");
             } catch (Exception ex) { return StatusCode(500, ex.Message); }
+        }
+
+        [HttpPut("recargar")]
+        public IActionResult RecargarSaldo([FromBody] RecargaModel model)
+        {
+            try
+            {
+                var email = User.FindFirst(ClaimTypes.Email)?.Value;
+                if (string.IsNullOrEmpty(email))
+                {
+                    return Unauthorized("Token inválido");
+                }
+
+                using (SqlConnection c = new SqlConnection(_conn))
+                {
+                    c.Open();
+                    
+                    string sqlUpdate = @"UPDATE USUARIO 
+                                SET SALDO = SALDO + @cantidad 
+                                WHERE EMAIL = @email";
+            
+                    using (SqlCommand cmdUpdate = new SqlCommand(sqlUpdate, c))
+                    {
+                        cmdUpdate.Parameters.AddWithValue("@cantidad", model.Cantidad);
+                        cmdUpdate.Parameters.AddWithValue("@email", email);
+                        cmdUpdate.ExecuteNonQuery();
+                    }
+                    string sqlSelect = "SELECT SALDO FROM USUARIO WHERE EMAIL = @email";
+                    using (SqlCommand cmdSelect = new SqlCommand(sqlSelect, c))
+                    {
+                        cmdSelect.Parameters.AddWithValue("@email", email);
+                        var nuevoSaldo = cmdSelect.ExecuteScalar();
+                        
+                        return Ok(new { saldo = Convert.ToDecimal(nuevoSaldo) });
+                    }
+                    
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
         }
 
         private string GenerarToken(string nombre, string email) {
@@ -111,4 +153,6 @@ namespace TrickedDice.Api.Controllers {
     );
 
     public record LoginModel(string Email, string Password);
+
+    public record RecargaModel(decimal Cantidad);
 }

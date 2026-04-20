@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-juegos',
@@ -28,7 +29,11 @@ export class JuegosComponent implements OnInit {
     fechaNacimiento: ''
   };
 
-  constructor(private http: HttpClient, private authService: AuthService) {}
+  constructor(
+    private http: HttpClient, 
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.checkLoginStatus();
@@ -149,6 +154,27 @@ export class JuegosComponent implements OnInit {
     this.usuarioActivo = null;
     this.saldoActivo = 0;
   }
+
+  irARecargar() {
+  this.router.navigate(['/recargar']);
+  }
+  
+  comprarFichas() {
+
+  const cantidad = 500;
+  const nuevoSaldo = this.saldoActivo + cantidad;
+  
+  this.saldoActivo = nuevoSaldo;
+  
+  const usuario = this.authService.getUsuario();
+  if (usuario) {
+    usuario.saldo = nuevoSaldo;
+    localStorage.setItem('usuario', JSON.stringify(usuario));
+  }
+  
+  alert(`¡Has añadido ${cantidad} €! Nuevo saldo: ${nuevoSaldo} €`);
+  
+}
 
   abrirModal(modo: 'login' | 'registro') {
     this.esModoLogin = (modo === 'login');

@@ -1,0 +1,37 @@
+<div class="recargar-container">
+  <div class="recargar-card">
+    <h1 class="recargar-title">RECARGAR SALDO</h1>
+    
+    <div class="saldo-actual">
+      <span>SALDO ACTUAL</span>
+      <strong>{{ saldoActual | number:'1.2-2' }} €</strong>
+    </div>
+
+    <div class="cantidades-grid">
+      <div *ngFor="let cant of cantidades" 
+           class="cantidad-card"
+           [class.selected]="cantidadSeleccionada === cant"
+           (click)="cantidadSeleccionada = cant">
+        <span class="cantidad-valor">{{ cant }} €</span>
+      </div>
+    </div>
+
+    <div class="cantidad-personalizada">
+      <label>Otra cantidad:</label>
+      <input type="number" 
+             [(ngModel)]="cantidadSeleccionada" 
+             min="1" 
+             step="0.50"
+             placeholder="Introduce una cantidad">
+    </div>
+
+    <div class="botones">
+      <button class="btn-recargar" (click)="recargar()">
+        RECARGAR AHORA
+      </button>
+      <button class="btn-volver" (click)="volver()">
+        ← VOLVER AL CASINO
+      </button>
+    </div>
+  </div>
+</div>

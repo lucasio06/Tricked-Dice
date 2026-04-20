@@ -1,0 +1,145 @@
+.recargar-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f051d 0%, #1a0b2e 50%, #090411 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.recargar-card {
+  background: #1a1125;
+  border: 2px solid #d4af37;
+  border-radius: 30px;
+  padding: 40px;
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+  box-shadow: 0 0 50px rgba(212, 175, 55, 0.3);
+}
+
+.recargar-title {
+  color: #d4af37;
+  font-size: 2rem;
+  margin-bottom: 30px;
+  text-transform: uppercase;
+}
+
+.saldo-actual {
+  background: linear-gradient(135deg, #2a1a3a, #1a0a2a);
+  padding: 15px;
+  border-radius: 15px;
+  margin-bottom: 30px;
+  border: 1px solid #d4af37;
+}
+
+.saldo-actual span {
+  display: block;
+  font-size: 0.8rem;
+  color: #d4af37;
+  margin-bottom: 5px;
+}
+
+.saldo-actual strong {
+  font-size: 2rem;
+  color: #ffd700;
+}
+
+.cantidades-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.cantidad-card {
+  background: #0f051d;
+  border: 2px solid #3a2a50;
+  border-radius: 15px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cantidad-card:hover {
+  transform: translateY(-3px);
+  border-color: #d4af37;
+}
+
+.cantidad-card.selected {
+  border-color: #d4af37;
+  background: linear-gradient(135deg, #2a1a3a, #1a0a2a);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.cantidad-valor {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #f0d8a8;
+}
+
+.cantidad-personalizada {
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.cantidad-personalizada label {
+  display: block;
+  color: #d4af37;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.cantidad-personalizada input {
+  width: 100%;
+  padding: 12px;
+  background: #0f051d;
+  border: 1px solid #3a2a50;
+  border-radius: 10px;
+  color: #f0d8a8;
+  font-size: 1rem;
+}
+
+.cantidad-personalizada input:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.botones {
+  display: flex;
+  gap: 15px;
+  flex-direction: column;
+}
+
+.btn-recargar {
+  background: linear-gradient(to bottom, #d4af37, #997530);
+  border: none;
+  padding: 15px;
+  border-radius: 30px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #130921;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-recargar:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+}
+
+.btn-volver {
+  background: transparent;
+  border: 1px solid #d4af37;
+  padding: 12px;
+  border-radius: 30px;
+  font-weight: bold;
+  color: #d4af37;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-volver:hover {
+  background: rgba(212, 175, 55, 0.1);
+}

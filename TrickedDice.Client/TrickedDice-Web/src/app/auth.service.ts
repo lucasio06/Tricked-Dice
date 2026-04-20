@@ -24,6 +24,12 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/registro`, datos);
   }
 
+  recargarSaldo(cantidad: number): Observable<any> {
+    const token = localStorage.getItem('token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    return this.http.put(`${this.apiUrl}/recargar`, { cantidad }, { headers });
+  }
+  
   logout(): void {
     localStorage.clear();
     this.router.navigate(['/']);
