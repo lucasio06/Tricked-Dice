@@ -1,0 +1,22 @@
+<div class="poker-container">
+  <h2>VIDEO POKER</h2>
+  <div class="saldo">Saldo: {{ saldo | number:'1.2-2' }} €</div>
+  <div class="apuesta">
+    <label>Apuesta: </label>
+    <input type="number" [(ngModel)]="montoApuesta" min="1" max="500" />
+  </div>
+
+  <div class="mano">
+    <div *ngFor="let carta of mano; let i = index" class="carta" (click)="toggleSeleccion(i)">
+      <div class="valor">{{ carta }}</div>
+      <div class="hold" *ngIf="cartasSeleccionadas[i]">HOLD</div>
+    </div>
+  </div>
+
+  <div class="acciones">
+    <button (click)="repartir()">REPARTIR</button>
+    <button (click)="cambiar()">CAMBIAR</button>
+  </div>
+
+  <div class="mensaje">{{ mensaje }}</div>
+</div>
