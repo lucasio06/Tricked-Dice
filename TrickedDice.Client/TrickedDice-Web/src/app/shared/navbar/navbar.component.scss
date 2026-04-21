@@ -1,0 +1,213 @@
+* {
+  font-family: 'Montserrat', sans-serif;
+}
+
+$gold: #d4af37;
+$neon-purple: #a742f5;
+
+.premium-navbar {
+  font-family: 'Montserrat', sans-serif;
+  width: 100%;
+  height: 80px;
+  background: rgba(15, 5, 29, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(204, 164, 90, 0.4);
+  box-shadow: 0 4px 30px rgba(167, 66, 245, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-logo-img {
+  height: 65px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(167, 66, 245, 0.5));
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+
+  &:hover {
+    transform: scale(1.1) rotate(-2deg);
+    filter: brightness(1.3) drop-shadow(0 0 15px rgba(204, 164, 90, 0.8));
+  }
+}
+
+.saldo-container-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, #2a1a3a, #1a0a2a);
+  padding: 5px 20px;
+  border-radius: 20px;
+  border: 1px solid $gold;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.saldo-label-nav {
+  font-size: 0.65rem;
+  color: $gold;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+.saldo-valor-nav {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+.btn-comprar-nav {
+  background: linear-gradient(to bottom, $gold, #997530);
+  border: none;
+  padding: 10px 25px;
+  border-radius: 30px;
+  font-weight: bold;
+  color: #130921;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+    background: linear-gradient(to bottom, #e0c070, #cca45a);
+  }
+}
+
+.nav-user-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: rgba(40, 20, 60, 0.4);
+  padding: 8px 25px;
+  border-radius: 50px;
+  border: 1px solid rgba(204, 164, 90, 0.2);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(60, 30, 90, 0.6);
+    border-color: #cca45a;
+    box-shadow: 0 0 20px rgba(167, 66, 245, 0.4);
+    transform: translateY(-2px);
+  }
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #39FF14;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #39FF14;
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(57, 255, 20, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
+}
+
+.status-text {
+  color: #39FF14;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
+}
+
+.user-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.user-nickname {
+  color: #f0d8a8;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.btn-movimientos {
+  background: transparent;
+  border: 1px solid $gold;
+  color: $gold;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.6rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+
+  &:hover {
+    background: rgba(212, 175, 55, 0.2);
+    box-shadow: 0 0 8px $neon-purple;
+  }
+}
+
+.btn-logout {
+  color: #ff55bb;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-decoration: underline;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #ff0000;
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+    transform: scale(1.05);
+  }
+}
+
+.play-button {
+  background: linear-gradient(to bottom, #e0c070, #cca45a, #997530);
+  color: #130921;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: 0.3s;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(204, 164, 90, 0.6);
+  }
+}
+
+.btn-login {
+  padding: 10px 25px;
+  font-size: 0.8rem;
+}

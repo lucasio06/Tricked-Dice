@@ -1,14 +1,15 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService, UsuarioPerfil } from '../auth.service';
+import { NavbarComponent } from '../shared/navbar/navbar.component';
 
 @Component({
   selector: 'app-juegos',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, NavbarComponent],
   templateUrl: './juegos.component.html'
 })
 export class JuegosComponent implements OnInit, OnDestroy {
@@ -24,6 +25,7 @@ export class JuegosComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.usuarioSub = this.authService.usuario$.subscribe(usuario => {
+      //Uso este console.log para depurar pero no hace falta
       console.log('[JuegosComponent] Usuario actualizado:', usuario);
       this.usuarioActivo = usuario;
     });

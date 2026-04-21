@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService, UsuarioPerfil } from '../auth.service';
 import { ToastService } from '../services/toast.service';
+import { NavbarComponent } from '../shared/navbar/navbar.component';
 
 interface HistorialTirada {
   numero: number;
@@ -15,7 +16,7 @@ interface HistorialTirada {
 @Component({
   selector: 'app-ruleta',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './ruleta.component.html',
   styleUrls: ['./ruleta.component.scss']
 })
@@ -43,6 +44,8 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   
   // Historial de tiradas (máximo 10)
   historialTiradas: HistorialTirada[] = [];
+
+  usuarioActivo: UsuarioPerfil | null = null;
   
   private animFrame: number | null = null;
   private anguloActual: number = 0;
@@ -84,6 +87,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.usuarioSub = this.authService.usuario$.subscribe(usuario => {
+      this.usuarioActivo = usuario;
       if (usuario) {
         this.saldo = usuario.saldo;
       }

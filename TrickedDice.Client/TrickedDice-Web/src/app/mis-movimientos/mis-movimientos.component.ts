@@ -2,11 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TransaccionesService, Transaccion } from '../services/transacciones.service';
+import { AuthService, UsuarioPerfil } from '../auth.service';
+import { NavbarComponent } from '../shared/navbar/navbar.component';
 
 @Component({
   selector: 'app-mis-movimientos',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, NavbarComponent],
   templateUrl: './mis-movimientos.component.html',
   styleUrls: ['./mis-movimientos.component.scss']
 })
@@ -14,10 +16,17 @@ export class MisMovimientosComponent implements OnInit {
   transacciones: Transaccion[] = [];
   isLoading = true;
   error: string | null = null;
+  usuarioActivo: UsuarioPerfil | null = null;
 
-  constructor(private transaccionesService: TransaccionesService) {}
+  constructor(
+    private transaccionesService: TransaccionesService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
+    this.authService.usuario$.subscribe(usuario => {
+      this.usuarioActivo = usuario;
+    });
     this.cargarTransacciones();
   }
 

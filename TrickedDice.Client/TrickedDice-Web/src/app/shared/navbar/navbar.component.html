@@ -1,0 +1,33 @@
+<nav class="premium-navbar">
+  <div class="navbar-left">
+    <img src="tricked-dice.png" alt="Tricked Dice" class="nav-logo-img" routerLink="/" />
+    
+    <div *ngIf="usuarioActivo" class="saldo-container-nav">
+      <span class="saldo-label-nav">SALDO</span>
+      <span class="saldo-valor-nav">{{ usuarioActivo.saldo | number:'1.2-2' }} €</span>
+    </div>
+    
+    <button *ngIf="usuarioActivo" class="btn-comprar-nav" (click)="irARecargar()">
+      COMPRAR
+    </button>
+  </div>
+
+  <div *ngIf="usuarioActivo" class="nav-user-info">
+    <div class="status-indicator">
+      <span class="status-dot"></span>
+      <span class="status-text">ONLINE</span>
+    </div>
+  
+    <div class="user-actions">
+      <span class="user-nickname">{{ usuarioActivo.nombre }}</span>
+      <div class="action-buttons">
+        <button class="btn-movimientos" routerLink="/mis-movimientos">📋 MOVIMIENTOS</button>
+        <button class="btn-logout" (click)="logout()">CERRAR SESIÓN</button>
+      </div>
+    </div>
+  </div>
+
+  <button *ngIf="!usuarioActivo" class="play-button btn-login" routerLink="/login">
+    LOGIN / REGISTRO
+  </button>
+</nav>
