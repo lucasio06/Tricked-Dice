@@ -52,6 +52,19 @@ export class JuegosComponent implements OnInit, OnDestroy {
     return 'tricked-dice.png';
   }
 
+navegarAJuego(juego: string): void {
+  const nombre = juego.toLowerCase();
+  if (nombre.includes('poker')) {
+    this.router.navigate(['/video-poker']);
+  } else if (nombre.includes('ruleta')) {
+    this.router.navigate(['/ruleta']);
+  } else if (nombre.includes('blackjack')) {
+    this.router.navigate(['/blackjack']); // Preparado para el futuro
+  } else {
+    this.router.navigate(['/']);
+  }
+}
+
   logout() {
     this.authService.logout();
   }
