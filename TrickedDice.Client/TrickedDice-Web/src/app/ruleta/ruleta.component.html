@@ -12,6 +12,21 @@
         <div class="rueda-container">
           <canvas #ruletaCanvas width="400" height="400" class="ruleta-canvas"></canvas>
         </div>
+        <!-- Historial de últimas tiradas (diseño horizontal fijo) -->
+        <div class="historial-container">
+          <h4 class="historial-title">ÚLTIMAS TIRADAS</h4>
+          <div class="historial-track">
+            <div *ngFor="let tirada of historialTiradas; let i = index" 
+                 class="historial-item" 
+                 [ngClass]="tirada.color"
+                 [style.animation]="i === 0 ? 'slideIn 0.3s ease-out' : 'none'">
+              {{ tirada.numero }}
+            </div>
+            <!-- Espacios vacíos para mantener el ancho fijo mientras se llena -->
+            <div *ngFor="let empty of [].constructor(10 - historialTiradas.length)" 
+                 class="historial-item empty"></div>
+          </div>
+        </div>
       </div>
 
       <!-- COLUMNA DERECHA: TAPETE DE APUESTAS -->
@@ -140,7 +155,7 @@
     </div>
   </div>
 
-  <!-- Modal ganador (sin cambios) -->
+  <!-- Modal ganador -->
   <div class="modal-overlay" *ngIf="mostrarModalGanador" (click)="cerrarModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="numero-ganador" [ngClass]="colorModal">

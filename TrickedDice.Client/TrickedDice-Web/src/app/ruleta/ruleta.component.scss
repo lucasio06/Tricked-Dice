@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 $bg-dark: #0f051d;
 $bg-card: #1a1125;
 $gold: #d4af37;
@@ -129,8 +131,8 @@ $text-light: #f0d8a8;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 0 darken(#2ecc71, 15%);
-    &:hover { background: darken(#2ecc71, 7%); }
+    box-shadow: 0 4px 0 color.adjust(#2ecc71, $lightness: -15%);
+    &:hover { background: color.adjust(#2ecc71, $lightness: -7%); }
   }
 }
 
@@ -155,8 +157,8 @@ $text-light: #f0d8a8;
   text-shadow: 0 0 5px rgba(0,0,0,0.5);
   box-shadow: 0 4px 0 rgba(0,0,0,0.3);
   
-  &.rojo { background: #e74c3c; box-shadow: 0 4px 0 darken(#e74c3c, 15%); }
-  &.negro { background: #2c3e50; box-shadow: 0 4px 0 darken(#2c3e50, 15%); }
+  &.rojo { background: #e74c3c; box-shadow: 0 4px 0 color.adjust(#e74c3c, $lightness: -15%); }
+  &.negro { background: #2c3e50; box-shadow: 0 4px 0 color.adjust(#2c3e50, $lightness: -15%); }
   
   &:hover {
     transform: translateY(-2px);
@@ -214,14 +216,14 @@ $text-light: #f0d8a8;
     border-color: $gold;
     transform: translateY(-2px);
     box-shadow: 0 6px 0 #0d0516, 0 0 15px $neon-purple;
-    background: lighten($bg-card, 5%);
+    background: color.adjust($bg-card, $lightness: 5%);
   }
   
   &.active {
     background: $gold;
     color: #130921;
     border-color: $gold-light;
-    box-shadow: 0 0 20px $gold-light, 0 4px 0 darken($gold, 20%);
+    box-shadow: 0 0 20px $gold-light, 0 4px 0 color.adjust($gold, $lightness: -20%);
   }
   
   &.especial {
@@ -297,9 +299,11 @@ $text-light: #f0d8a8;
   border-radius: 5px;
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
   
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
     width: 24px;
     height: 24px;
     background: $gold;
@@ -319,7 +323,7 @@ $text-light: #f0d8a8;
 }
 
 .btn-apostar {
-  background: linear-gradient(to bottom, $gold, darken($gold, 20%));
+  background: linear-gradient(to bottom, $gold, color.adjust($gold, $lightness: -20%));
   border: none;
   padding: 18px;
   border-radius: 40px;
@@ -330,19 +334,19 @@ $text-light: #f0d8a8;
   width: 100%;
   margin-bottom: 15px;
   transition: all 0.3s ease;
-  box-shadow: 0 6px 0 darken($gold, 30%);
+  box-shadow: 0 6px 0 color.adjust($gold, $lightness: -30%);
   text-transform: uppercase;
   letter-spacing: 2px;
   
   &:hover:not(:disabled) {
     transform: translateY(-3px);
-    box-shadow: 0 9px 0 darken($gold, 30%), 0 0 30px rgba($gold, 0.8);
+    box-shadow: 0 9px 0 color.adjust($gold, $lightness: -30%), 0 0 30px rgba($gold, 0.8);
   }
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
-    box-shadow: 0 6px 0 darken($gold, 30%);
+    box-shadow: 0 6px 0 color.adjust($gold, $lightness: -30%);
   }
 }
 
@@ -415,7 +419,7 @@ $text-light: #f0d8a8;
 }
 
 .btn-cerrar {
-  background: linear-gradient(to bottom, $gold, darken($gold, 20%));
+  background: linear-gradient(to bottom, $gold, color.adjust($gold, $lightness: -20%));
   border: none;
   padding: 15px 50px;
   border-radius: 50px;
@@ -425,10 +429,90 @@ $text-light: #f0d8a8;
   cursor: pointer;
   transition: all 0.3s ease;
   text-transform: uppercase;
-  box-shadow: 0 6px 0 darken($gold, 30%);
+  box-shadow: 0 6px 0 color.adjust($gold, $lightness: -30%);
   
   &:hover {
     transform: scale(1.05);
-    box-shadow: 0 8px 0 darken($gold, 30%), 0 0 30px $gold-light;
+    box-shadow: 0 8px 0 color.adjust($gold, $lightness: -30%), 0 0 30px $gold-light;
+  }
+}
+
+// Historial de tiradas (diseño horizontal fijo)
+.historial-container {
+  margin-top: 20px;
+  padding: 15px 10px;
+  background: rgba(26, 17, 37, 0.6);
+  border-radius: 40px;
+  border: 1px solid rgba($gold, 0.3);
+  width: 100%;
+  max-width: 500px;
+  backdrop-filter: blur(5px);
+}
+
+.historial-title {
+  color: $gold;
+  font-size: 0.9rem;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-align: center;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.historial-track {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 0 5px;
+}
+
+.historial-item {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: white;
+  text-shadow: 0 0 5px rgba(0,0,0,0.5);
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3), 0 2px 5px rgba(0,0,0,0.4);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  
+  &.rojo {
+    background: #e74c3c;
+    box-shadow: inset 0 -3px 0 color.adjust(#e74c3c, $lightness: -20%), 0 2px 5px rgba(0,0,0,0.4);
+  }
+  &.negro {
+    background: #2c3e50;
+    box-shadow: inset 0 -3px 0 color.adjust(#2c3e50, $lightness: -20%), 0 2px 5px rgba(0,0,0,0.4);
+  }
+  &.verde {
+    background: #2ecc71;
+    box-shadow: inset 0 -3px 0 color.adjust(#2ecc71, $lightness: -20%), 0 2px 5px rgba(0,0,0,0.4);
+  }
+  
+  &.empty {
+    background: rgba(58, 42, 80, 0.4);
+    box-shadow: inset 0 0 0 1px rgba($gold, 0.15);
+    border: 1px dashed rgba($gold, 0.2);
+    color: transparent;
+    text-shadow: none;
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateX(-20px) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
   }
 }

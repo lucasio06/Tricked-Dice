@@ -5,6 +5,11 @@ import { Observable } from 'rxjs';
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    // No adjuntar token a endpoints de autenticación (login, registro)
+    if (req.url.includes('/login') || req.url.includes('/registro')) {
+      return next.handle(req);
+    }
+
     const token = localStorage.getItem('token');
     if (token) {
       const cloned = req.clone({

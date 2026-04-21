@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../auth.service';
+import { AuthService, UsuarioPerfil } from '../auth.service';
 import { ToastService } from '../services/toast.service';
 
 @Component({
@@ -12,7 +12,7 @@ import { ToastService } from '../services/toast.service';
   templateUrl: './recargar-saldo.component.html',
   styleUrls: ['./recargar-saldo.component.css']
 })
-export class RecargarSaldoComponent {
+export class RecargarSaldoComponent implements OnInit {
   cantidades = [10, 20, 50, 100, 200, 500];
   cantidadSeleccionada: number = 50;
   saldoActual: number = 0;
@@ -22,15 +22,14 @@ export class RecargarSaldoComponent {
     private router: Router,
     private authService: AuthService,
     private toast: ToastService
-  ) {
-    this.cargarSaldoActual();
-  }
+  ) {}
 
-  cargarSaldoActual() {
-    const usuario = this.authService.getUsuario();
-    if (usuario) {
-      this.saldoActual = usuario.saldo;
-    }
+  ngOnInit() {
+    this.authService.usuario$.subscribe(usuario => {
+      if (usuario) {
+        this.saldoActual = usuario.saldo;
+      }
+    });
   }
 
   recargar() {
@@ -45,11 +44,6 @@ export class RecargarSaldoComponent {
 
     this.authService.recargarSaldo(cantidad).subscribe({
       next: (res) => {
-        const usuario = this.authService.getUsuario();
-        if (usuario) {
-          usuario.saldo = res.saldo;
-          localStorage.setItem('usuario', JSON.stringify(usuario));
-        }
         this.toast.success(`¡Has recargado ${cantidad.toFixed(2)} €! Nuevo saldo: ${res.saldo.toFixed(2)} €`);
         this.recargando = false;
         this.router.navigate(['/']);

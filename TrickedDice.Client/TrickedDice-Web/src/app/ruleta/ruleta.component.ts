@@ -2,9 +2,15 @@ import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy, NgZ
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { AuthService } from '../auth.service';
-import { ToastService } from '../services/toast.service';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { AuthService, UsuarioPerfil } from '../auth.service';
+import { ToastService } from '../services/toast.service';
+
+interface HistorialTirada {
+  numero: number;
+  color: string;
+}
 
 @Component({
   selector: 'app-ruleta',
@@ -35,6 +41,9 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   valorApuestaCaballo: string = '0,1';
   valorApuestaFinal: string = '0';
   
+  // Historial de tiradas (máximo 10)
+  historialTiradas: HistorialTirada[] = [];
+  
   private animFrame: number | null = null;
   private anguloActual: number = 0;
   private readonly numeroSectores: number = 37;
@@ -60,6 +69,8 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   calles: string[] = [];
   caballos: string[] = [];
 
+  private usuarioSub: Subscription | null = null;
+
   constructor(
     private http: HttpClient,
     private authService: AuthService,
@@ -72,7 +83,13 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.cargarSaldo();
+    this.usuarioSub = this.authService.usuario$.subscribe(usuario => {
+      if (usuario) {
+        this.saldo = usuario.saldo;
+      }
+    });
+    // Cargar historial inicial (vacío por ahora)
+    this.cargarHistorial();
   }
 
   ngAfterViewInit(): void {
@@ -82,6 +99,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.usuarioSub?.unsubscribe();
     if (this.animFrame) cancelAnimationFrame(this.animFrame);
   }
 
@@ -114,6 +132,11 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.valorApuestaCuadro = this.cuadros[0];
     this.valorApuestaCalle = this.calles[0];
     this.valorApuestaCaballo = this.caballos[0];
+  }
+
+  private cargarHistorial(): void {
+    // Inicialmente vacío. Podría cargarse del backend en el futuro.
+    this.historialTiradas = [];
   }
 
   private calcularAnguloParaSector(indice: number): number {
@@ -190,20 +213,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.fill();
     ctx.shadowBlur = 0;
   }
-
-  cargarSaldo(): void {
-    const usuario = this.authService.getUsuario();
-    if (usuario) {
-      this.saldo = usuario.saldo;
-    } else {
-      this.http.get<{ saldo: number }>('http://localhost:5069/api/ruleta/saldo')
-        .subscribe({
-          next: (res) => this.saldo = res.saldo,
-          error: () => this.toast.error('No se pudo cargar el saldo')
-        });
-    }
-  }
-
 
   seleccionarNumero(num: string): void {
     this.tipoApuesta = 'numero';
@@ -289,16 +298,16 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.http.post<any>('http://localhost:5069/api/ruleta/girar', body)
       .subscribe({
         next: (res) => {
-          this.numeroGanador = res.numeroGanador;
+          // Guardamos el resultado pero NO lo mostramos aún
+          const numeroFinal = res.numeroGanador;
+          const gano = res.gano;
+          const premio = res.premio;
+          
           this.saldo = res.saldoActualizado;
+          this.authService.actualizarSaldo(res.saldoActualizado);
           
-          const usuario = this.authService.getUsuario();
-          if (usuario) {
-            usuario.saldo = res.saldoActualizado;
-            localStorage.setItem('usuario', JSON.stringify(usuario));
-          }
-          
-          this.iniciarAnimacion(res.numeroGanador, res.gano, res.premio);
+          // Iniciar animación pasando los datos
+          this.iniciarAnimacion(numeroFinal, gano, premio);
         },
         error: (err) => {
           this.girando = false;
@@ -332,8 +341,13 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
         
         this.ngZone.run(() => {
           this.girando = false;
+          this.numeroGanador = numeroFinal;
           this.numeroModal = numeroFinal;
           this.colorModal = this.obtenerColor(numeroFinal);
+          
+          // Añadir al historial SOLO cuando la animación ha terminado
+          this.agregarAlHistorial(numeroFinal);
+          
           this.mostrarModalGanador = true;
           
           if (gano) {
@@ -346,6 +360,14 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     };
     
     this.animFrame = requestAnimationFrame(animar);
+  }
+
+  private agregarAlHistorial(numero: number): void {
+    const color = this.obtenerColor(numero);
+    this.historialTiradas.unshift({ numero, color });
+    if (this.historialTiradas.length > 10) {
+      this.historialTiradas.pop();
+    }
   }
 
   cerrarModal(): void {

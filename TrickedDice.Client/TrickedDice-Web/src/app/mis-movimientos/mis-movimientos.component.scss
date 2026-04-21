@@ -1,0 +1,165 @@
+$bg-dark: #0f051d;
+$bg-card: #1a1125;
+$gold: #d4af37;
+$gold-light: #ffd700;
+$neon-purple: #a742f5;
+$text-light: #f0d8a8;
+
+.movimientos-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f051d 0%, #1a0b2e 50%, #090411 100%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.movimientos-card {
+  background: $bg-card;
+  border: 2px solid $gold;
+  border-radius: 30px;
+  padding: 30px;
+  width: 100%;
+  max-width: 1000px;
+  box-shadow: 0 0 50px rgba($gold, 0.3);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+
+  h1 {
+    color: $gold;
+    font-size: 2rem;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px $neon-purple;
+  }
+}
+
+.btn-volver {
+  background: transparent;
+  border: 2px solid $gold;
+  padding: 12px 25px;
+  border-radius: 30px;
+  font-weight: bold;
+  color: $gold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+
+  &:hover {
+    background: rgba($gold, 0.1);
+    box-shadow: 0 0 20px $neon-purple;
+    border-color: $gold-light;
+  }
+}
+
+.loading {
+  text-align: center;
+  color: $text-light;
+  font-size: 1.2rem;
+  padding: 40px;
+}
+
+.error-message {
+  color: #ff3366;
+  font-size: 1rem;
+  margin: 20px 0;
+  padding: 15px;
+  background: rgba(255, 51, 102, 0.1);
+  border-radius: 10px;
+  border-left: 4px solid #ff3366;
+  text-align: center;
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 5px;
+}
+
+.transacciones-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: $text-light;
+
+  th {
+    text-align: left;
+    padding: 15px 20px;
+    background: rgba($neon-purple, 0.2);
+    color: $gold;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    border-bottom: 2px solid $gold;
+  }
+
+  td {
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba($gold, 0.2);
+    font-size: 0.95rem;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover td {
+    background: rgba($neon-purple, 0.1);
+  }
+
+  .tipo-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+
+    &.recarga {
+      background: rgba(46, 204, 113, 0.2);
+      color: #2ecc71;
+      border: 1px solid #2ecc71;
+    }
+
+    &.apuesta {
+      background: rgba(231, 76, 60, 0.2);
+      color: #e74c3c;
+      border: 1px solid #e74c3c;
+    }
+
+    &.premio {
+      background: rgba(255, 215, 0, 0.2);
+      color: $gold-light;
+      border: 1px solid $gold-light;
+    }
+  }
+
+  .positivo {
+    color: #2ecc71;
+    font-weight: bold;
+  }
+
+  .negativo {
+    color: #e74c3c;
+    font-weight: bold;
+  }
+
+  .empty-message {
+    text-align: center;
+    padding: 40px;
+    color: #7a6a90;
+    font-style: italic;
+  }
+}

@@ -1,0 +1,78 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <img src="tricked-dice.png" alt="Tricked Dice" class="auth-logo" />
+      <h1>CREAR CUENTA</h1>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #registroForm="ngForm">
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email *</label>
+        <input type="email" id="email" name="email" class="casino-input" [(ngModel)]="usuarioData.email" required [disabled]="isLoading" />
+      </div>
+
+      <!-- Contraseña -->
+      <div class="form-group">
+        <label for="password">Contraseña *</label>
+        <input type="password" id="password" name="password" class="casino-input" [(ngModel)]="usuarioData.password" required [disabled]="isLoading" />
+      </div>
+
+      <!-- Nombre y Primer Apellido -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="nombre">Nombre *</label>
+          <input type="text" id="nombre" name="nombre" class="casino-input" [(ngModel)]="usuarioData.nombre" required [disabled]="isLoading" />
+        </div>
+        <div class="form-group">
+          <label for="primerApellido">Primer Apellido *</label>
+          <input type="text" id="primerApellido" name="primerApellido" class="casino-input" [(ngModel)]="usuarioData.primerApellido" required [disabled]="isLoading" />
+        </div>
+      </div>
+
+      <!-- Segundo Apellido (Opcional) -->
+      <div class="form-group">
+        <label for="segundoApellido">Segundo Apellido (opcional)</label>
+        <input type="text" id="segundoApellido" name="segundoApellido" class="casino-input" [(ngModel)]="usuarioData.segundoApellido" [disabled]="isLoading" />
+      </div>
+
+      <!-- DNI y Fecha Nacimiento -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="dni">DNI *</label>
+          <input type="text" id="dni" name="dni" class="casino-input" [(ngModel)]="usuarioData.dni" (input)="validarDNI()" [class.invalid]="usuarioData.dni && dniInvalido" required [disabled]="isLoading" />
+          <small *ngIf="usuarioData.dni && dniInvalido" class="field-error">DNI no válido. Formato: 12345678Z</small>
+        </div>
+        <div class="form-group">
+          <label for="fechaNacimiento">Fecha Nacimiento *</label>
+          <input type="date" id="fechaNacimiento" name="fechaNacimiento" class="casino-input" [(ngModel)]="usuarioData.fechaNacimiento" required [disabled]="isLoading" style="color-scheme: dark;" />
+        </div>
+      </div>
+
+      <!-- Nombre de Usuario -->
+      <div class="form-group">
+        <label for="username">Nombre de Usuario</label>
+        <input type="text" id="username" name="username" class="casino-input" [(ngModel)]="usuarioData.username" [disabled]="isLoading" />
+      </div>
+
+      <!-- Mensaje de Error -->
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Botón Submit -->
+      <button type="submit" class="play-button" [disabled]="isLoading || (usuarioData.dni && dniInvalido)">
+        {{ isLoading ? 'CREANDO CUENTA...' : 'CREAR CUENTA' }}
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      ¿Ya tienes cuenta?
+      <a routerLink="/login">Inicia sesión aquí</a>
+    </p>
+
+    <button class="btn-volver" (click)="router.navigate(['/'])">
+      ← VOLVER AL LOBBY
+    </button>
+  </div>
+</div>

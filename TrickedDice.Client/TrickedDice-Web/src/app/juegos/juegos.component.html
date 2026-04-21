@@ -114,6 +114,25 @@
     transform: scale(1.05);
   }
 
+  .btn-movimientos {
+    background: transparent;
+    border: 1px solid #d4af37;
+    color: #d4af37;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.6rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn-movimientos:hover {
+    background: rgba(212, 175, 55, 0.2);
+    box-shadow: 0 0 8px #a742f5;
+  }
+
   .casino-title {
     font-size: 5.5rem;
     font-weight: 900;
@@ -197,103 +216,62 @@
     box-shadow: 0 0 20px rgba(204, 164, 90, 0.6);
   }
 
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(13, 5, 22, 0.95);
-    backdrop-filter: blur(10px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-  }
-
-  .modal-content {
-    background: #1a1125;
-    border: 2px solid #cca45a;
-    border-radius: 25px;
-    padding: 40px;
-    width: 450px;
-    text-align: center;
-    position: relative;
-    box-shadow: 0 0 50px rgba(167, 66, 245, 0.3);
-  }
-
-  .casino-input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 12px;
-    background: #0f051d;
-    border: 1px solid #3a2a50;
-    color: #f0d8a8;
-    border-radius: 8px;
-    outline: none;
-  }
-
-  .casino-input:focus {
-    border-color: #cca45a;
-    box-shadow: 0 0 15px rgba(167, 66, 245, 0.5);
-  }
   .saldo-container-nav {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: linear-gradient(135deg, #2a1a3a, #1a0a2a);
-  padding: 5px 20px;
-  border-radius: 20px;
-  border: 1px solid #d4af37;
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
-}
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(135deg, #2a1a3a, #1a0a2a);
+    padding: 5px 20px;
+    border-radius: 20px;
+    border: 1px solid #d4af37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+  }
 
-.saldo-label-nav {
-  font-size: 0.65rem;
-  color: #d4af37;
-  letter-spacing: 1px;
-  font-weight: bold;
-}
+  .saldo-label-nav {
+    font-size: 0.65rem;
+    color: #d4af37;
+    letter-spacing: 1px;
+    font-weight: bold;
+  }
 
-.saldo-valor-nav {
-  font-size: 1.2rem;
-  font-weight: 900;
-  color: #ffd700;
-  text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-}
+  .saldo-valor-nav {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+  }
 
-.btn-comprar-nav {
-  background: linear-gradient(to bottom, #d4af37, #997530);
-  border: none;
-  padding: 10px 25px;
-  border-radius: 30px;
-  font-weight: bold;
-  color: #130921;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
+  .btn-comprar-nav {
+    background: linear-gradient(to bottom, #d4af37, #997530);
+    border: none;
+    padding: 10px 25px;
+    border-radius: 30px;
+    font-weight: bold;
+    color: #130921;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  }
 
-.btn-comprar-nav:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
-  background: linear-gradient(to bottom, #e0c070, #cca45a);
-}
-
+  .btn-comprar-nav:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+    background: linear-gradient(to bottom, #e0c070, #cca45a);
+  }
 </style>
 
 <div class="casino-body">
   <nav class="premium-navbar">
     <div style="display: flex; align-items: center; gap: 20px;">
-      <img src="tricked-dice.png" alt="Logo" class="nav-logo-img">
+      <img src="tricked-dice.png" alt="Logo" class="nav-logo-img" routerLink="/">
     
       <div *ngIf="usuarioActivo" class="saldo-container-nav">
         <span class="saldo-label-nav">SALDO</span>
-        <span class="saldo-valor-nav">{{ saldoActivo | number:'1.2-2' }} €</span>
+        <span class="saldo-valor-nav">{{ usuarioActivo.saldo | number:'1.2-2' }} €</span>
       </div>
       <button *ngIf="usuarioActivo" class="btn-comprar-nav" (click)="irARecargar()">
-      COMPRAR
+        COMPRAR
       </button>
     </div>
 
@@ -304,13 +282,16 @@
       </div>
     
       <div style="display: flex; flex-direction: column; align-items: flex-start;">
-        <span class="user-nickname">{{ usuarioActivo }}</span>
-        <button class="btn-logout" (click)="logout()">CERRAR SESIÓN</button>
+        <span class="user-nickname">{{ usuarioActivo.nombre }}</span>
+        <div style="display: flex; gap: 10px; margin-top: 5px;">
+          <button class="btn-movimientos" routerLink="/mis-movimientos">📋 MOVIMIENTOS</button>
+          <button class="btn-logout" (click)="logout()">CERRAR SESIÓN</button>
+        </div>
       </div>
     </div>
 
-    <button *ngIf="!usuarioActivo" class="play-button" style="padding: 10px 25px; font-size: 0.8rem;" (click)="abrirModal('login')">
-    LOGIN / REGISTRO
+    <button *ngIf="!usuarioActivo" class="play-button" style="padding: 10px 25px; font-size: 0.8rem;" routerLink="/login">
+      LOGIN / REGISTRO
     </button>
   </nav>
 
@@ -325,45 +306,6 @@
       
       <h3 style="font-size: 1.8rem; margin-bottom: 25px; font-weight: 800; color: #f0d8a8;">{{ juego | uppercase }}</h3>
       <button class="play-button" style="width: 100%;" (click)="router.navigate(['/ruleta'])">APOSTAR AHORA</button>
-    </div>
-  </div>
-
-  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <h2 style="color: #cca45a; margin-bottom: 25px; font-weight: 900; font-size: 2rem;">
-        {{ esModoLogin ? 'INICIAR SESIÓN' : 'REGISTRO NUEVO' }}
-      </h2>
-      <ng-container *ngIf="!esModoLogin">
-        <input  type="text" 
-                placeholder="DNI *" 
-                class="casino-input" 
-                [(ngModel)]="usuarioData.dni"
-                (input)="validarDNI()"
-                (blur)="validarDNI()"
-                [style.borderColor]="usuarioData.dni && dniInvalido ? '#ff4d4d' : '#3a2a50'">
-          <small  *ngIf="usuarioData.dni && dniInvalido" 
-                  style="color: #ff4d4d; font-size: 0.7rem; display: block; margin-top: -8px; margin-bottom: 12px; text-align: left;">
-                  DNI no válido. Formato: 12345678Z </small>
-        <input type="text" placeholder="NOMBRE REAL" class="casino-input" [(ngModel)]="usuarioData.nombre">
-        <input type="text" placeholder="APELLIDO" class="casino-input" [(ngModel)]="usuarioData.primerApellido">
-        <input type="date" class="casino-input" [(ngModel)]="usuarioData.fechaNacimiento" style="color-scheme: dark;">
-        <input type="text" placeholder="NICKNAME" class="casino-input" [(ngModel)]="usuarioData.username">
-      </ng-container>
-      <input type="email" placeholder="EMAIL" class="casino-input" [(ngModel)]="usuarioData.email">
-      <input type="password" placeholder="CONTRASEÑA" class="casino-input" [(ngModel)]="usuarioData.password">
-      <button class="play-button" 
-              style="width: 100%; margin-top: 15px;" 
-              (click)="esModoLogin ? onLogin() : onRegistro()"
-              [disabled]="!esModoLogin && dniInvalido"
-              [style.opacity]="(!esModoLogin && dniInvalido) ? '0.5' : '1'">
-              {{ esModoLogin ? 'ENTRAR' : 'CREAR CUENTA' }}
-      </button>
-      <p style="margin-top: 25px; font-size: 0.8rem; color: #aaa;">
-        <span style="color: #cca45a; cursor: pointer;" (click)="esModoLogin = !esModoLogin">
-          {{ esModoLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia Sesión' }}
-        </span>
-      </p>
-      <button (click)="cerrarModal()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; color: #7a6a90; font-size: 2.2rem; cursor: pointer;">×</button>
     </div>
   </div>
 </div>

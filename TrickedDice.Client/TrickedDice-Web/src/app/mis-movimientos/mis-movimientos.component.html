@@ -1,0 +1,46 @@
+<div class="movimientos-container">
+  <div class="movimientos-card">
+    <div class="header">
+      <h1>📋 MIS MOVIMIENTOS</h1>
+      <button class="btn-volver" routerLink="/">← VOLVER AL LOBBY</button>
+    </div>
+
+    <div *ngIf="isLoading" class="loading">
+      <span>Cargando movimientos...</span>
+    </div>
+
+    <div *ngIf="error" class="error-message">
+      {{ error }}
+    </div>
+
+    <div *ngIf="!isLoading && !error" class="table-container">
+      <table class="transacciones-table">
+        <thead>
+          <tr>
+            <th>FECHA</th>
+            <th>TIPO</th>
+            <th>CANTIDAD (€)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of transacciones">
+            <td>{{ formatearFecha(t.fecha) }}</td>
+            <td>
+              <span class="tipo-badge" [ngClass]="{
+                'recarga': t.tipo === 'RECARGA',
+                'apuesta': t.tipo === 'APUESTA',
+                'premio': t.tipo === 'PREMIO'
+              }">{{ t.tipo }}</span>
+            </td>
+            <td [ngClass]="getClaseCantidad(t.cantidad)">
+              {{ t.cantidad > 0 ? '+' : '' }}{{ t.cantidad | number:'1.2-2' }} €
+            </td>
+          </tr>
+          <tr *ngIf="transacciones.length === 0">
+            <td colspan="3" class="empty-message">No hay movimientos registrados.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
