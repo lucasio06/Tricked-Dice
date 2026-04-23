@@ -1,10 +1,10 @@
-<app-navbar [usuarioActivo]="usuarioActivo"></app-navbar>
+<app-navbar></app-navbar>
+
 <div class="ruleta-container">
   <div class="ruleta-card">
     <h1 class="ruleta-title">🎲 RULETA NEON LUXURY 🎲</h1>
     
     <div class="ruleta-main-grid">
-      <!-- COLUMNA IZQUIERDA: RULETA Y SALDO -->
       <div class="ruleta-left">
         <div class="saldo-actual">
           <span>SALDO DISPONIBLE</span>
@@ -13,7 +13,6 @@
         <div class="rueda-container">
           <canvas #ruletaCanvas width="400" height="400" class="ruleta-canvas"></canvas>
         </div>
-        <!-- Historial de últimas tiradas (diseño horizontal fijo) -->
         <div class="historial-container">
           <h4 class="historial-title">ÚLTIMAS TIRADAS</h4>
           <div class="historial-track">
@@ -23,16 +22,13 @@
                  [style.animation]="i === 0 ? 'slideIn 0.3s ease-out' : 'none'">
               {{ tirada.numero }}
             </div>
-            <!-- Espacios vacíos para mantener el ancho fijo mientras se llena -->
             <div *ngFor="let empty of [].constructor(10 - historialTiradas.length)" 
                  class="historial-item empty"></div>
           </div>
         </div>
       </div>
 
-      <!-- COLUMNA DERECHA: TAPETE DE APUESTAS -->
       <div class="tapete-right">
-        <!-- Números del tapete -->
         <div class="tapete-section">
           <h3 class="section-title">🎯 NÚMEROS</h3>
           <div class="numeros-grid">
@@ -56,7 +52,6 @@
           </div>
         </div>
 
-        <!-- Apuestas Simples -->
         <div class="tapete-section">
           <h3 class="section-title">🔴 APUESTAS SIMPLES (1:1)</h3>
           <div class="apuestas-grid">
@@ -69,7 +64,6 @@
           </div>
         </div>
 
-        <!-- Docenas y Columnas -->
         <div class="tapete-section">
           <h3 class="section-title">📊 DOCENAS Y COLUMNAS (2:1)</h3>
           <div class="apuestas-grid-2col">
@@ -88,7 +82,6 @@
           </div>
         </div>
 
-        <!-- Apuestas Múltiples -->
         <div class="tapete-section">
           <h3 class="section-title">🎲 APUESTAS MÚLTIPLES</h3>
           <div class="apuestas-grid-2col">
@@ -119,7 +112,6 @@
           </div>
         </div>
 
-        <!-- Apuestas Avanzadas -->
         <div class="tapete-section">
           <h3 class="section-title">✨ APUESTAS ESPECIALES</h3>
           <div class="apuestas-grid">
@@ -136,7 +128,6 @@
           </div>
         </div>
 
-        <!-- Monto y Acciones -->
         <div class="tapete-section monto-section">
           <div class="monto-container">
             <label>💰 CANTIDAD A APOSTAR</label>
@@ -156,7 +147,6 @@
     </div>
   </div>
 
-  <!-- Modal ganador -->
   <div class="modal-overlay" *ngIf="mostrarModalGanador" (click)="cerrarModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="numero-ganador" [ngClass]="colorModal">

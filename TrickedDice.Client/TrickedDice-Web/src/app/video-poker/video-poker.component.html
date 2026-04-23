@@ -1,22 +1,51 @@
-<div class="poker-container">
-  <h2>VIDEO POKER</h2>
-  <div class="saldo">Saldo: {{ saldo | number:'1.2-2' }} €</div>
-  <div class="apuesta">
-    <label>Apuesta: </label>
-    <input type="number" [(ngModel)]="montoApuesta" min="1" max="500" />
-  </div>
+<app-navbar></app-navbar>
 
-  <div class="mano">
-    <div *ngFor="let carta of mano; let i = index" class="carta" (click)="toggleSeleccion(i)">
-      <div class="valor">{{ carta }}</div>
-      <div class="hold" *ngIf="cartasSeleccionadas[i]">HOLD</div>
+<div class="poker-container">
+  <div class="poker-card">
+    <h2>🃏 VIDEO POKER 🃏</h2>
+    
+    <div class="saldo">Saldo: {{ saldo | number:'1.2-2' }} €</div>
+    
+    <div class="apuesta">
+      <label>Apuesta:</label>
+      <input type="number" [(ngModel)]="montoApuesta" min="1" max="500" [disabled]="juegoIniciado || cargando" />
+    </div>
+
+    <div class="mano">
+      <div *ngFor="let carta of mano; let i = index" 
+           class="carta" 
+           [class.seleccionada]="cartasSeleccionadas[i]"
+           [class.roja]="esRojo(carta.charAt(carta.length - 1))"
+           [class.negra]="!esRojo(carta.charAt(carta.length - 1))"
+           (click)="toggleSeleccion(i)">
+        <div class="valor">{{ obtenerValor(carta) }}</div>
+        <div class="palo">{{ obtenerPalo(carta) }}</div>
+        <div class="hold" *ngIf="cartasSeleccionadas[i]">HOLD</div>
+      </div>
+    </div>
+
+    <div class="acciones">
+      <button (click)="repartir()" [disabled]="cargando || juegoIniciado">
+        {{ cargando ? 'CARGANDO...' : 'REPARTIR' }}
+      </button>
+      <button (click)="cambiar()" [disabled]="cargando || !juegoIniciado">
+        {{ cargando ? 'CARGANDO...' : 'CAMBIAR' }}
+      </button>
+    </div>
+
+    <div class="mensaje">{{ mensaje }}</div>
+    
+    <div class="tabla-pagos">
+      <h3>TABLA DE PAGOS</h3>
+      <div class="pago-item"><span>Escalera Real</span><span>250x</span></div>
+      <div class="pago-item"><span>Escalera de Color</span><span>50x</span></div>
+      <div class="pago-item"><span>Póker</span><span>25x</span></div>
+      <div class="pago-item"><span>Full House</span><span>9x</span></div>
+      <div class="pago-item"><span>Color</span><span>6x</span></div>
+      <div class="pago-item"><span>Escalera</span><span>4x</span></div>
+      <div class="pago-item"><span>Trío</span><span>3x</span></div>
+      <div class="pago-item"><span>Doble Pareja</span><span>2x</span></div>
+      <div class="pago-item"><span>Pareja (Jacks o Mejor)</span><span>1x</span></div>
     </div>
   </div>
-
-  <div class="acciones">
-    <button (click)="repartir()">REPARTIR</button>
-    <button (click)="cambiar()">CAMBIAR</button>
-  </div>
-
-  <div class="mensaje">{{ mensaje }}</div>
 </div>

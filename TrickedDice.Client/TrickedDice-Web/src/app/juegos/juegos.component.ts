@@ -25,8 +25,6 @@ export class JuegosComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.usuarioSub = this.authService.usuario$.subscribe(usuario => {
-      //Uso este console.log para depurar pero no hace falta
-      console.log('[JuegosComponent] Usuario actualizado:', usuario);
       this.usuarioActivo = usuario;
     });
     this.cargarJuegos();
@@ -52,24 +50,14 @@ export class JuegosComponent implements OnInit, OnDestroy {
     return 'tricked-dice.png';
   }
 
-navegarAJuego(juego: string): void {
-  const nombre = juego.toLowerCase();
-  if (nombre.includes('poker')) {
-    this.router.navigate(['/video-poker']);
-  } else if (nombre.includes('ruleta')) {
-    this.router.navigate(['/ruleta']);
-  } else if (nombre.includes('blackjack')) {
-    this.router.navigate(['/blackjack']); // Preparado para el futuro
-  } else {
-    this.router.navigate(['/']);
-  }
-}
-
-  logout() {
-    this.authService.logout();
-  }
-
-  irARecargar() {
-    this.router.navigate(['/recargar']);
+  navegarAJuego(juego: string): void {
+    const nombre = juego.toLowerCase();
+    if (nombre.includes('ruleta')) {
+      this.router.navigate(['/ruleta']);
+    } else if (nombre.includes('poker')) {
+      this.router.navigate(['/video-poker']);
+    } else if (nombre.includes('blackjack')) {
+      this.router.navigate(['/blackjack']);
+    }
   }
 }
