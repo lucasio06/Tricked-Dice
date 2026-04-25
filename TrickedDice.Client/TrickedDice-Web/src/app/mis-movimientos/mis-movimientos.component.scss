@@ -11,8 +11,9 @@ $text-light: #f0d8a8;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 100px 20px 40px;
+  padding: 100px 20px 40px 20px;
   font-family: 'Montserrat', sans-serif;
+  box-sizing: border-box;
 }
 
 .movimientos-card {
@@ -82,27 +83,50 @@ $text-light: #f0d8a8;
 }
 
 .table-container {
-  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 870px;
   border-radius: 15px;
   background: rgba(0, 0, 0, 0.2);
-  padding: 5px;
+  padding: 0;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $gold;
+    border-radius: 10px;
+  }
 }
 
 .transacciones-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   color: $text-light;
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
 
   th {
     text-align: left;
     padding: 15px 20px;
-    background: rgba($neon-purple, 0.2);
+    background: $bg-card;
     color: $gold;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
     font-size: 0.9rem;
     border-bottom: 2px solid $gold;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.8);
   }
 
   td {
@@ -111,11 +135,11 @@ $text-light: #f0d8a8;
     font-size: 0.95rem;
   }
 
-  tr:last-child td {
+  tbody tr:last-child td {
     border-bottom: none;
   }
 
-  tr:hover td {
+  tbody tr:hover td {
     background: rgba($neon-purple, 0.1);
   }
 

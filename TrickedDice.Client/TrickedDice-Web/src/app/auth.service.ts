@@ -21,37 +21,27 @@ export class AuthService {
   public usuario$ = this.usuarioSubject.asObservable();
 
   constructor(private http: HttpClient, private router: Router) {
-    console.log('[AuthService] Inicializando sesión. Token existe:', this.isLoggedIn());
     this.inicializarSesion();
   }
 
   private inicializarSesion(): void {
     if (!this.isLoggedIn()) {
-      console.log('[AuthService] No hay token, usuario no logueado.');
       return;
     }
 
-    // Restaurar inmediatamente desde cache
     const cachedUser = this.getCachedUser();
     if (cachedUser) {
-      console.log('[AuthService] Cache encontrado, restaurando usuario:', cachedUser);
       this.usuarioSubject.next(cachedUser);
     }
 
-    // Actualizar en segundo plano desde el backend
     this.http.get<UsuarioPerfil>(`${this.apiUrl}/perfil`).pipe(
       tap(perfil => {
-        console.log('[AuthService] Perfil actualizado desde backend:', perfil);
         this.cacheUser(perfil);
         this.usuarioSubject.next(perfil);
       }),
       catchError(err => {
-        console.warn('[AuthService] Error al obtener /perfil:', err);
         if (err.status === 401) {
-          console.log('[AuthService] Token inválido, cerrando sesión.');
           this.logout();
-        } else {
-          console.log('[AuthService] Error de red, manteniendo cache.');
         }
         return of(null);
       })
@@ -119,7 +109,7 @@ export class AuthService {
     localStorage.removeItem(STORAGE_TOKEN_KEY);
     this.clearCache();
     this.usuarioSubject.next(null);
-    this.router.navigate(['/login']);
+    this.router.navigate(['/']);
   }
 
   isLoggedIn(): boolean {

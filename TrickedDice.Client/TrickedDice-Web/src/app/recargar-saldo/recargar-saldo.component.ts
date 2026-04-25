@@ -4,12 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService, UsuarioPerfil } from '../auth.service';
 import { ToastService } from '../services/toast.service';
-import { NavbarComponent } from '../shared/navbar/navbar.component'; 
 
 @Component({
   selector: 'app-recargar-saldo',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './recargar-saldo.component.html',
   styleUrls: ['./recargar-saldo.component.css']
 })
@@ -18,8 +17,7 @@ export class RecargarSaldoComponent implements OnInit {
   cantidadSeleccionada: number = 50;
   saldoActual: number = 0;
   recargando = false;
-  usuarioActivo: any = null;
-  returnUrl: string = '/';
+  private returnUrl: string = '/';
 
   constructor(
     private router: Router,
@@ -29,13 +27,12 @@ export class RecargarSaldoComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
     this.authService.usuario$.subscribe(usuario => {
-      this.usuarioActivo = usuario;
       if (usuario) {
         this.saldoActual = usuario.saldo;
       }
     });
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
   }
 
   recargar() {
@@ -52,7 +49,7 @@ export class RecargarSaldoComponent implements OnInit {
       next: (res) => {
         this.toast.success(`¡Has recargado ${cantidad.toFixed(2)} €! Nuevo saldo: ${res.saldo.toFixed(2)} €`);
         this.recargando = false;
-        this.router.navigate([this.returnUrl]);
+        this.router.navigateByUrl(this.returnUrl);
       },
       error: (err) => {
         console.error(err);
@@ -63,6 +60,6 @@ export class RecargarSaldoComponent implements OnInit {
   }
 
   volver() {
-    this.router.navigate([this.returnUrl]);
+    this.router.navigateByUrl(this.returnUrl);
   }
 }

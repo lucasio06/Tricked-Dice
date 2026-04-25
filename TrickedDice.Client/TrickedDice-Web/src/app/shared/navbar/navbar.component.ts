@@ -33,6 +33,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   irARecargar(): void {
-    this.router.navigate(['/recargar']);
+    this.router.navigate(['/recargar'], { 
+      queryParams: { returnUrl: this.router.url } 
+    });
   }
 }
