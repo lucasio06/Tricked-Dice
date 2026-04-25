@@ -82,7 +82,7 @@ namespace TrickedDice.Api.Controllers
                 using (SqlConnection c = new SqlConnection(_conn))
                 {
                     c.Open();
-                    string sql = "SELECT ID_USUARIO, NOMBRE, CONTRASENA, SALDO FROM USUARIO WHERE EMAIL = @e";
+                    string sql = "SELECT ID_USUARIO, NOMBRE, CONTRASENA, SALDO, BANEADO FROM USUARIO WHERE EMAIL = @e";
                     using (SqlCommand cmd = new SqlCommand(sql, c))
                     {
                         cmd.Parameters.AddWithValue("@e", model.Email);
@@ -90,6 +90,11 @@ namespace TrickedDice.Api.Controllers
                         {
                             if (r.Read())
                             {
+                                if (Convert.ToBoolean(r["BANEADO"]))
+                                {
+                                    return Unauthorized("Tu cuenta ha sido baneada. Contacta con soporte.");
+                                }
+
                                 string hashDB = r["CONTRASENA"].ToString()!;
                                 if (BCrypt.Net.BCrypt.Verify(model.Password, hashDB))
                                 {

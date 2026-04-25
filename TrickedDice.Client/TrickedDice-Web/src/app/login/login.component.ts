@@ -31,23 +31,27 @@ export class LoginComponent {
     this.isLoading = true;
     this.errorMessage = null;
 
-    console.log('[LoginComponent] Intentando login con:', this.email);
     this.authService.login(this.email, this.password).subscribe({
       next: () => {
-        console.log('[LoginComponent] Login exitoso, redirigiendo...');
         this.isLoading = false;
         this.router.navigate(['/']);
       },
       error: (err) => {
         this.isLoading = false;
-        console.error('[LoginComponent] Error en login:', err);
         if (err.status === 401) {
-          this.errorMessage = 'Email o contraseña incorrectos.';
+          if (err.error && typeof err.error === 'string') {
+            this.errorMessage = err.error;
+          } else if (err.error && err.error.mensaje) {
+            this.errorMessage = err.error.mensaje;
+          } else {
+            this.errorMessage = 'Email o contraseña incorrectos.';
+          }
         } else if (err.status === 0) {
           this.errorMessage = 'Error de conexión. Verifica que el backend esté corriendo.';
         } else {
-          this.errorMessage = err.error?.mensaje || 'Error de conexión. Inténtalo de nuevo.';
+          this.errorMessage = 'Error de conexión. Inténtalo de nuevo.';
         }
+        console.error('Login error:', err);
       }
     });
   }

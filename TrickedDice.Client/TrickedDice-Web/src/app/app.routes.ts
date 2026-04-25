@@ -7,6 +7,7 @@ import { LoginComponent } from './login/login.component';
 import { RegistroComponent } from './registro/registro.component';
 import { MisMovimientosComponent } from './mis-movimientos/mis-movimientos.component';
 import { VideoPokerComponent } from './video-poker/video-poker.component';
+import { AdminComponent } from './admin/admin.component';
 
 export const routes: Routes = [
   { path: '', component: JuegosComponent, canActivate: [AuthGuard] },
@@ -14,6 +15,7 @@ export const routes: Routes = [
   { path: 'ruleta', component: RuletaComponent, canActivate: [AuthGuard] },
   { path: 'video-poker', component: VideoPokerComponent, canActivate: [AuthGuard] },
   { path: 'mis-movimientos', component: MisMovimientosComponent, canActivate: [AuthGuard] },
+  { path: 'admin', component: AdminComponent, canActivate: [AuthGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegistroComponent },
   { path: '**', redirectTo: '' }

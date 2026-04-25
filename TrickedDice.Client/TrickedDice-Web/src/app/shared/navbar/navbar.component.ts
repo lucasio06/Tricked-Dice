@@ -37,4 +37,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
       queryParams: { returnUrl: this.router.url } 
     });
   }
+  
+  esAdmin(): boolean {
+    return this.usuarioActivo?.email === 'admin@trickeddice.com';
+  }
 }

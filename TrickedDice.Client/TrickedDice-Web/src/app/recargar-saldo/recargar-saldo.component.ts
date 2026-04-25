@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService, UsuarioPerfil } from '../auth.service';
 import { ToastService } from '../services/toast.service';
+import { NavbarComponent } from '../shared/navbar/navbar.component';
 
 @Component({
   selector: 'app-recargar-saldo',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './recargar-saldo.component.html',
   styleUrls: ['./recargar-saldo.component.css']
 })

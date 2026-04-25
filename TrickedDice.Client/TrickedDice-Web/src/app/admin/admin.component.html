@@ -1,0 +1,112 @@
+<app-navbar></app-navbar>
+
+<div class="admin-container">
+  <div class="admin-card">
+    <h1>PANEL DE ADMINISTRACIÓN</h1>
+
+    <div class="pestanas">
+      <button [class.active]="pestanaActiva === 'estadisticas'" (click)="cambiarPestana('estadisticas')">ESTADÍSTICAS</button>
+      <button [class.active]="pestanaActiva === 'usuarios'" (click)="cambiarPestana('usuarios')">USUARIOS</button>
+      <button [class.active]="pestanaActiva === 'transacciones'" (click)="cambiarPestana('transacciones')">TRANSACCIONES</button>
+    </div>
+
+    <div *ngIf="cargando" class="cargando">Cargando...</div>
+
+    <div *ngIf="pestanaActiva === 'estadisticas' && estadisticas && !cargando" class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Usuarios Totales</span>
+        <span class="stat-value">{{ estadisticas.totalUsuarios }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Total Recargado</span>
+        <span class="stat-value positivo">{{ estadisticas.totalRecargas | number:'1.2-2' }} €</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Total Apostado</span>
+        <span class="stat-value">{{ estadisticas.totalApostado | number:'1.2-2' }} €</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Total Premios</span>
+        <span class="stat-value negativo">{{ estadisticas.totalPremios | number:'1.2-2' }} €</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Beneficio Casa</span>
+        <span class="stat-value" [class.positivo]="estadisticas.beneficio >= 0" [class.negativo]="estadisticas.beneficio < 0">
+          {{ estadisticas.beneficio | number:'1.2-2' }} €
+        </span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Saldo Total Usuarios</span>
+        <span class="stat-value">{{ estadisticas.saldoTotal | number:'1.2-2' }} €</span>
+      </div>
+    </div>
+
+    <div *ngIf="pestanaActiva === 'usuarios' && !cargando" class="tabla-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>EMAIL</th>
+            <th>NOMBRE</th>
+            <th>USUARIO</th>
+            <th>SALDO</th>
+            <th>ESTADO</th>
+            <th>ACCIÓN</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of usuarios">
+            <td>{{ u.idUsuario }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.nombre }} {{ u.primerApellido }}</td>
+            <td>{{ u.nombreUsuario }}</td>
+            <td>{{ u.saldo | number:'1.2-2' }} €</td>
+            <td>
+              <span class="estado-badge" [class.baneado]="u.baneado" [class.activo]="!u.baneado">
+                {{ u.baneado ? 'BANEADO' : 'ACTIVO' }}
+              </span>
+            </td>
+            <td>
+              <button *ngIf="!u.baneado && u.email !== 'admin@trickeddice.com'" class="btn-accion banear" (click)="banearUsuario(u.idUsuario)">
+                BANEAR
+              </button>
+              <button *ngIf="u.baneado" class="btn-accion desbanear" (click)="desbanearUsuario(u.idUsuario)">
+                DESBANEAR
+              </button>
+              <span *ngIf="u.email === 'admin@trickeddice.com'" class="text-admin">ADMIN</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="pestanaActiva === 'transacciones' && !cargando" class="tabla-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>FECHA</th>
+            <th>USUARIO</th>
+            <th>TIPO</th>
+            <th>CANTIDAD</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of transacciones">
+            <td>{{ formatearFecha(t.fecha) }}</td>
+            <td>{{ t.nombre }} ({{ t.email }})</td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'recarga': t.tipo === 'RECARGA',
+                'apuesta': t.tipo === 'APUESTA',
+                'premio': t.tipo === 'PREMIO'
+              }">{{ t.tipo }}</span>
+            </td>
+            <td [class.positivo]="t.cantidad > 0" [class.negativo]="t.cantidad < 0">
+              {{ t.cantidad > 0 ? '+' : '' }}{{ t.cantidad | number:'1.2-2' }} €
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

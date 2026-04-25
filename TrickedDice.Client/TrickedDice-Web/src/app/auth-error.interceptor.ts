@@ -16,12 +16,16 @@ export class AuthErrorInterceptor implements HttpInterceptor {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
-          // Solo mostramos el toast y redirigimos a login
-          this.toast.warning('🔐 Sesión expirada. Inicia sesión de nuevo.');
-          // Limpiar token directamente (sin depender de AuthService)
-          localStorage.removeItem('token');
-          localStorage.removeItem('user_cache');
-          this.router.navigate(['/login']);
+          if (error.error && typeof error.error === 'string' && error.error.includes('baneada')) {
+            return throwError(() => error);
+          }
+          
+          if (!req.url.includes('/login')) {
+            this.toast.warning('Sesión expirada. Inicia sesión de nuevo.');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user_cache');
+            this.router.navigate(['/login']);
+          }
         }
         return throwError(() => error);
       })

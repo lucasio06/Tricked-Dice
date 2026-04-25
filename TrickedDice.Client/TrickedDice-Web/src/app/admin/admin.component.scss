@@ -1,0 +1,252 @@
+$gold: #d4af37;
+$gold-light: #ffd700;
+$neon-purple: #a742f5;
+$bg-card: #1a1125;
+
+.admin-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f051d 0%, #1a0b2e 50%, #090411 100%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 100px 20px 40px 20px;
+  font-family: 'Montserrat', sans-serif;
+  box-sizing: border-box;
+}
+
+.admin-card {
+  background: $bg-card;
+  border: 2px solid $gold;
+  border-radius: 30px;
+  padding: 30px;
+  width: 100%;
+  max-width: 1200px;
+  box-shadow: 0 0 50px rgba($gold, 0.3);
+
+  h1 {
+    color: $gold;
+    font-size: 2.2rem;
+    margin: 0 0 25px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+    text-shadow: 0 0 10px $neon-purple;
+  }
+}
+
+.pestanas {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+
+  button {
+    background: transparent;
+    border: 2px solid $gold;
+    color: $gold;
+    padding: 12px 25px;
+    border-radius: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+
+    &:hover {
+      background: rgba($gold, 0.1);
+    }
+
+    &.active {
+      background: $gold;
+      color: #130921;
+    }
+  }
+}
+
+.cargando {
+  text-align: center;
+  color: #f0d8a8;
+  font-size: 1.2rem;
+  padding: 40px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid $gold;
+  border-radius: 15px;
+  padding: 20px;
+  text-align: center;
+
+  .stat-label {
+    display: block;
+    color: $gold;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #f0d8a8;
+  }
+}
+
+.positivo { color: #2ecc71 !important; }
+.negativo { color: #e74c3c !important; }
+
+.tabla-scroll {
+  overflow-y: auto;
+  max-height: 700px;
+  border-radius: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $gold;
+    border-radius: 10px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: #f0d8a8;
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    th {
+      text-align: left;
+      padding: 12px 15px;
+      background: $bg-card;
+      color: $gold;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.8rem;
+      border-bottom: 2px solid $gold;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.8);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 10px 15px;
+      border-bottom: 1px solid rgba($gold, 0.2);
+      font-size: 0.9rem;
+    }
+
+    tbody tr:hover td {
+      background: rgba($neon-purple, 0.1);
+    }
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+
+  &.recarga {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid #2ecc71;
+  }
+
+  &.apuesta {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+  }
+
+  &.premio {
+    background: rgba(255, 215, 0, 0.2);
+    color: $gold-light;
+    border: 1px solid $gold-light;
+  }
+}
+
+.estado-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  
+  &.activo {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid #2ecc71;
+  }
+  
+  &.baneado {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+  }
+}
+
+.btn-accion {
+  padding: 8px 18px;
+  border-radius: 25px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+
+  &.banear {
+    background: linear-gradient(to bottom, #ff3366, #cc0033);
+    color: white;
+    box-shadow: 0 3px 0 #990000;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 0 #990000, 0 0 15px rgba(255, 51, 102, 0.5);
+    }
+  }
+
+  &.desbanear {
+    background: linear-gradient(to bottom, #2ecc71, #1f8b4c);
+    color: white;
+    box-shadow: 0 3px 0 #145a32;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 0 #145a32, 0 0 15px rgba(46, 204, 113, 0.5);
+    }
+  }
+}
+
+.text-admin {
+  color: $gold;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}

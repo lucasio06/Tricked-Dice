@@ -22,6 +22,7 @@
       <span class="user-nickname">{{ usuarioActivo.nombre }}</span>
       <div class="action-buttons">
         <button class="btn-movimientos" routerLink="/mis-movimientos">📋 MOVIMIENTOS</button>
+        <button *ngIf="esAdmin()" class="btn-admin" routerLink="/admin">🔧 ADMIN</button>
         <button class="btn-logout" (click)="logout()">CERRAR SESIÓN</button>
       </div>
     </div>

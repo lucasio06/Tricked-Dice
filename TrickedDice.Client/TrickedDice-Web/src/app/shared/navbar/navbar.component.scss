@@ -173,6 +173,25 @@ $neon-purple: #a742f5;
   }
 }
 
+.btn-admin {
+  background: transparent;
+  border: 1px solid #a742f5;
+  color: #a742f5;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.6rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+
+  &:hover {
+    background: rgba(167, 66, 245, 0.2);
+    box-shadow: 0 0 8px #a742f5;
+  }
+}
+
 .btn-logout {
   color: #ff55bb;
   border: none;
