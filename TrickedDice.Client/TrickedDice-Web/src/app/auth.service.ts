@@ -1,26 +1,19 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of, tap } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-
-export interface UsuarioPerfil {
-  nombre: string;
-  email: string;
-  saldo: number;
-}
+import { ApiService } from './services/api.service';
+import { LoginResponse, UsuarioPerfil, RecargarResponse } from './models/api-responses';
 
 const STORAGE_TOKEN_KEY = 'token';
 const STORAGE_USER_KEY = 'user_cache';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private apiUrl = 'http://localhost:5069/api/usuarios';
-
   private usuarioSubject = new BehaviorSubject<UsuarioPerfil | null>(null);
   public usuario$ = this.usuarioSubject.asObservable();
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(private api: ApiService, private router: Router) {
     this.inicializarSesion();
   }
 
@@ -34,7 +27,7 @@ export class AuthService {
       this.usuarioSubject.next(cachedUser);
     }
 
-    this.http.get<UsuarioPerfil>(`${this.apiUrl}/perfil`).pipe(
+    this.api.get<UsuarioPerfil>('/usuarios/perfil').pipe(
       tap(perfil => {
         this.cacheUser(perfil);
         this.usuarioSubject.next(perfil);
@@ -61,9 +54,9 @@ export class AuthService {
     localStorage.removeItem(STORAGE_USER_KEY);
   }
 
-  login(email: string, password: string): Observable<any> {
-    return this.http.post<{ token: string; nombre: string; saldo: number }>(
-      `${this.apiUrl}/login`,
+  login(email: string, password: string): Observable<LoginResponse> {
+    return this.api.post<LoginResponse>(
+      '/usuarios/login',
       { Email: email, Password: password }
     ).pipe(
       tap((res) => {
@@ -80,12 +73,12 @@ export class AuthService {
   }
 
   registro(datos: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/registro`, datos);
+    return this.api.post('/usuarios/registro', datos);
   }
 
-  recargarSaldo(cantidad: number): Observable<{ saldo: number }> {
-    return this.http.put<{ saldo: number }>(
-      `${this.apiUrl}/recargar`,
+  recargarSaldo(cantidad: number): Observable<RecargarResponse> {
+    return this.api.put<RecargarResponse>(
+      '/usuarios/recargar',
       { cantidad }
     ).pipe(
       tap((res) => this.actualizarSaldoLocal(res.saldo))

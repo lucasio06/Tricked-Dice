@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../auth.service';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
+import { ApiService } from '../services/api.service';
+import { RepartirResponse, CambiarResponse } from '../models/api-responses';
 
 @Component({
   selector: 'app-video-poker',
@@ -24,7 +25,7 @@ export class VideoPokerComponent implements OnInit {
   premioActual: number = 0;
 
   constructor(
-    private http: HttpClient,
+    private api: ApiService,
     private authService: AuthService,
     private toast: ToastService
   ) {}
@@ -44,8 +45,8 @@ export class VideoPokerComponent implements OnInit {
     }
 
     this.cargando = true;
-    this.http.post<{ mano: string[], saldoActualizado: number }>(
-      'http://localhost:5069/api/videopoker/repartir',
+    this.api.post<RepartirResponse>(
+      '/videopoker/repartir',
       { monto: this.montoApuesta }
     ).subscribe({
       next: (res) => {
@@ -76,16 +77,14 @@ export class VideoPokerComponent implements OnInit {
       .filter(i => i !== -1);
 
     this.cargando = true;
-    this.http.post<{
-      manoFinal: string[],
-      premio: number,
-      nombreMano: string,
-      saldoActualizado: number
-    }>('http://localhost:5069/api/videopoker/cambiar', {
-      mano: this.mano,
-      indicesACambiar: indices,
-      montoApostado: this.montoApuesta
-    }).subscribe({
+    this.api.post<CambiarResponse>(
+      '/videopoker/cambiar',
+      {
+        mano: this.mano,
+        indicesACambiar: indices,
+        montoApostado: this.montoApuesta
+      }
+    ).subscribe({
       next: (res) => {
         this.mano = res.manoFinal;
         this.saldo = res.saldoActualizado;

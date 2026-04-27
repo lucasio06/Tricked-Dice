@@ -26,7 +26,17 @@ export class AuthErrorInterceptor implements HttpInterceptor {
             localStorage.removeItem('user_cache');
             this.router.navigate(['/login']);
           }
+          return throwError(() => error);
         }
+
+        if (error.status === 400 && error.error?.mensaje) {
+          this.toast.error(error.error.mensaje);
+        } else if (error.status >= 500) {
+          this.toast.error('Error del servidor. Inténtalo de nuevo más tarde.');
+        } else if (!req.url.includes('/login') && !req.url.includes('/registro')) {
+          this.toast.error('Ha ocurrido un error inesperado.');
+        }
+
         return throwError(() => error);
       })
     );

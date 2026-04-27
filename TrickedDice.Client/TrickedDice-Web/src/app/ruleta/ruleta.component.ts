@@ -1,12 +1,15 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { AuthService, UsuarioPerfil } from '../auth.service';
+import { AuthService } from '../auth.service';
+import { UsuarioPerfil } from '../models/api-responses';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
+import { ApiService } from '../services/api.service';
+import { GiroRuletaResponse } from '../models/api-responses';
+import { RUTAS } from '../utils/rutas.const';
 
 interface HistorialTirada {
   numero: number;
@@ -75,7 +78,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   private usuarioSub: Subscription | null = null;
 
   constructor(
-    private http: HttpClient,
+    private api: ApiService,
     private authService: AuthService,
     private toast: ToastService,
     private router: Router,
@@ -299,10 +302,9 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       valorApuesta: this.valorApuesta
     };
 
-    this.http.post<any>('http://localhost:5069/api/ruleta/girar', body)
+    this.api.post<GiroRuletaResponse>('/ruleta/girar', body)
       .subscribe({
         next: (res) => {
-          // Guardamos el resultado pero NO lo mostramos aún
           const numeroFinal = res.numeroGanador;
           const gano = res.gano;
           const premio = res.premio;
@@ -310,7 +312,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
           this.saldo = res.saldoActualizado;
           this.authService.actualizarSaldo(res.saldoActualizado);
           
-          // Iniciar animación pasando los datos
           this.iniciarAnimacion(numeroFinal, gano, premio);
         },
         error: (err) => {
@@ -349,7 +350,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
           this.numeroModal = numeroFinal;
           this.colorModal = this.obtenerColor(numeroFinal);
           
-          // Añadir al historial SOLO cuando la animación ha terminado
           this.agregarAlHistorial(numeroFinal);
           
           this.mostrarModalGanador = true;
@@ -385,6 +385,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   volverAlLobby(): void {
-    this.router.navigate(['/']);
+    this.router.navigate([RUTAS.home]);
   }
 }

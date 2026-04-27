@@ -1,20 +1,13 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface Transaccion {
-  fecha: string;
-  cantidad: number;
-  tipo: string;
-}
+import { ApiService } from './api.service';
+import { Transaccion } from '../models/api-responses';
 
 @Injectable({ providedIn: 'root' })
 export class TransaccionesService {
-  private apiUrl = 'http://localhost:5069/api/usuarios';
-
-  constructor(private http: HttpClient) {}
+  constructor(private api: ApiService) {}
 
   getMisTransacciones(): Observable<Transaccion[]> {
-    return this.http.get<Transaccion[]>(`${this.apiUrl}/transacciones`);
+    return this.api.get<Transaccion[]>('/usuarios/transacciones');
   }
 }

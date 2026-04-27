@@ -2,7 +2,9 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { AuthService, UsuarioPerfil } from '../../auth.service';
+import { AuthService } from '../../auth.service';
+import { UsuarioPerfil } from '../../models/api-responses';
+import { RUTAS } from '../../utils/rutas.const';
 
 @Component({
   selector: 'app-navbar',
@@ -33,7 +35,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   irARecargar(): void {
-    this.router.navigate(['/recargar'], { 
+    this.router.navigate([RUTAS.recargar], { 
       queryParams: { returnUrl: this.router.url } 
     });
   }

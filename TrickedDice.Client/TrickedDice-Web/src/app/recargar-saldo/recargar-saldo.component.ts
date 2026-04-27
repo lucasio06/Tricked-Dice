@@ -2,9 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { AuthService, UsuarioPerfil } from '../auth.service';
+import { AuthService } from '../auth.service';
+import { UsuarioPerfil } from '../models/api-responses';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
+import { RUTAS } from '../utils/rutas.const';
 
 @Component({
   selector: 'app-recargar-saldo',
@@ -18,7 +20,7 @@ export class RecargarSaldoComponent implements OnInit {
   cantidadSeleccionada: number = 50;
   saldoActual: number = 0;
   recargando = false;
-  private returnUrl: string = '/';
+  private returnUrl: string = RUTAS.home;
 
   constructor(
     private router: Router,
@@ -28,7 +30,7 @@ export class RecargarSaldoComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || RUTAS.home;
     this.authService.usuario$.subscribe(usuario => {
       if (usuario) {
         this.saldoActual = usuario.saldo;

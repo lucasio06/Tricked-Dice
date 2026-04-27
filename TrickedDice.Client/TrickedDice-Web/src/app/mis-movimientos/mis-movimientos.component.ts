@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { TransaccionesService, Transaccion } from '../services/transacciones.service';
-import { AuthService, UsuarioPerfil } from '../auth.service';
+import { TransaccionesService } from '../services/transacciones.service';
+import { Transaccion } from '../models/api-responses';
+import { AuthService } from '../auth.service';
+import { UsuarioPerfil } from '../models/api-responses';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 
 @Component({

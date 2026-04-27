@@ -1,10 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { AuthService, UsuarioPerfil } from '../auth.service';
+import { AuthService } from '../auth.service';
+import { UsuarioPerfil } from '../models/api-responses';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
+import { ApiService } from '../services/api.service';
+import { RUTAS } from '../utils/rutas.const';
 
 @Component({
   selector: 'app-juegos',
@@ -18,7 +20,7 @@ export class JuegosComponent implements OnInit, OnDestroy {
   private usuarioSub: Subscription | null = null;
 
   constructor(
-    private http: HttpClient,
+    private api: ApiService,
     private authService: AuthService,
     public router: Router
   ) {}
@@ -35,7 +37,7 @@ export class JuegosComponent implements OnInit, OnDestroy {
   }
 
   cargarJuegos() {
-    this.http.get<string[]>('http://localhost:5069/api/juegos')
+    this.api.get<string[]>('/juegos')
       .subscribe({
         next: (res) => this.juegos = res,
         error: (err) => console.error('Error cargando juegos:', err)
@@ -53,11 +55,11 @@ export class JuegosComponent implements OnInit, OnDestroy {
   navegarAJuego(juego: string): void {
     const nombre = juego.toLowerCase();
     if (nombre.includes('ruleta')) {
-      this.router.navigate(['/ruleta']);
+      this.router.navigate([RUTAS.ruleta]);
     } else if (nombre.includes('poker')) {
-      this.router.navigate(['/video-poker']);
+      this.router.navigate([RUTAS.videoPoker]);
     } else if (nombre.includes('blackjack')) {
-      this.router.navigate(['/blackjack']);
+      this.router.navigate([RUTAS.blackjack]);
     }
   }
 }

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AdminService, UsuarioAdmin, TransaccionAdmin, Estadisticas } from '../services/admin.service';
+import { AdminService } from '../services/admin.service';
+import { UsuarioAdmin, TransaccionAdmin, Estadisticas } from '../models/api-responses';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 
