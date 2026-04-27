@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../auth.service';
+import { RUTAS } from '../utils/rutas.const';
 
 @Component({
   selector: 'app-registro',
@@ -19,7 +20,7 @@ export class RegistroComponent {
     dni: '',
     nombre: '',
     primerApellido: '',
-    segundoApellido: '',   // <-- Campo añadido
+    segundoApellido: '',
     fechaNacimiento: ''
   };
 
@@ -64,7 +65,6 @@ export class RegistroComponent {
   onSubmit() {
     this.errorMessage = null;
 
-    // Validaciones básicas
     if (!this.usuarioData.email || !this.usuarioData.password || !this.usuarioData.nombre || !this.usuarioData.primerApellido || !this.usuarioData.fechaNacimiento) {
       this.errorMessage = 'Por favor, completa todos los campos obligatorios.';
       return;
@@ -84,7 +84,7 @@ export class RegistroComponent {
       Dni: this.usuarioData.dni,
       Nombre: this.usuarioData.nombre,
       PrimerApellido: this.usuarioData.primerApellido,
-      SegundoApellido: this.usuarioData.segundoApellido || null,  // <-- Enviar null si está vacío
+      SegundoApellido: this.usuarioData.segundoApellido || null,
       FechaNacimiento: this.usuarioData.fechaNacimiento,
       Nickname: this.usuarioData.username
     };
@@ -93,7 +93,7 @@ export class RegistroComponent {
       next: () => {
         this.isLoading = false;
         alert('¡Registro completado! Ahora puedes iniciar sesión.');
-        this.router.navigate(['/login']);
+        this.router.navigate([RUTAS.login]);
       },
       error: (err) => {
         this.isLoading = false;
