@@ -1,0 +1,19 @@
+<div class="home-body">
+  <app-navbar></app-navbar>
+
+  <h1 class="home-title">TRICKED DICE</h1>
+
+  <p class="home-subtitle">Domina los dados. Descubre el secreto del azar.</p>
+
+  <div class="games-grid">
+    <div *ngFor="let juego of juegos" class="game-card">
+      <img [src]="getImagenJuego(juego)" 
+           [alt]="juego" 
+           class="game-img"
+           [ngClass]="{'rotate-constantly': juego.toLowerCase().includes('ruleta')}">
+      
+      <h3 class="game-name">{{ juego | uppercase }}</h3>
+      <button class="play-button" (click)="navegarAJuego(juego)">JUGAR AHORA</button>
+    </div>
+  </div>
+</div>

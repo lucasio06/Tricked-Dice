@@ -2,7 +2,7 @@ export const RUTAS = {
   home: '/',
   login: '/login',
   registro: '/registro',
-  juegos: '/',
+  juegos: '/juegos',
   ruleta: '/ruleta',
   videoPoker: '/video-poker',
   blackjack: '/blackjack',

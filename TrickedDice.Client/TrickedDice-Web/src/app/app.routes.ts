@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './auth.guard';
-import { JuegosComponent } from './juegos/juegos.component';
+import { HomeComponent } from './home/home.component';
 import { RecargarSaldoComponent } from './recargar-saldo/recargar-saldo.component';
 import { RuletaComponent } from './ruleta/ruleta.component';
 import { LoginComponent } from './login/login.component';
@@ -11,7 +11,7 @@ import { AdminComponent } from './admin/admin.component';
 import { RUTAS } from './utils/rutas.const';
 
 export const routes: Routes = [
-  { path: RUTAS.home.substring(1), component: JuegosComponent, canActivate: [AuthGuard] },
+  { path: '', component: HomeComponent },
   { path: 'recargar', component: RecargarSaldoComponent, canActivate: [AuthGuard] },
   { path: 'ruleta', component: RuletaComponent, canActivate: [AuthGuard] },
   { path: 'video-poker', component: VideoPokerComponent, canActivate: [AuthGuard] },

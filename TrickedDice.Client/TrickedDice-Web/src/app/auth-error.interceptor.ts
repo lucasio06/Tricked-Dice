@@ -4,9 +4,12 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { ToastService } from './services/toast.service';
+import { RUTAS } from './utils/rutas.const';
 
 @Injectable()
 export class AuthErrorInterceptor implements HttpInterceptor {
+  private readonly rutasPublicas = [RUTAS.home, RUTAS.login, RUTAS.registro];
+
   constructor(
     private router: Router,
     private toast: ToastService
@@ -20,11 +23,14 @@ export class AuthErrorInterceptor implements HttpInterceptor {
             return throwError(() => error);
           }
           
-          if (!req.url.includes('/login')) {
+          const rutaActual = this.router.url;
+          const esRutaPublica = this.rutasPublicas.some(ruta => rutaActual === ruta);
+
+          if (!req.url.includes('/login') && !esRutaPublica) {
             this.toast.warning('Sesión expirada. Inicia sesión de nuevo.');
             localStorage.removeItem('token');
             localStorage.removeItem('user_cache');
-            this.router.navigate(['/login']);
+            this.router.navigate([RUTAS.login]);
           }
           return throwError(() => error);
         }
