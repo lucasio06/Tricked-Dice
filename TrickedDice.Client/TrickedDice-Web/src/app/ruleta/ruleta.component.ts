@@ -222,50 +222,62 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   seleccionarNumero(num: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'numero';
     this.valorApuesta = num;
   }
   seleccionarColor(color: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'color';
     this.valorApuesta = color;
   }
   seleccionarParidad(par: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'paridad';
     this.valorApuesta = par;
   }
   seleccionarMitad(mitad: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'mitad';
     this.valorApuesta = mitad;
   }
   seleccionarDocena(doc: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'docena';
     this.valorApuesta = doc; 
   }
   seleccionarColumna(col: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'columna';
     this.valorApuesta = col; 
   }
   seleccionarSeisena(seis: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'seisena';
     this.valorApuesta = seis;
   }
   seleccionarCuadro(cuadro: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'cuadro';
     this.valorApuesta = cuadro;
   }
   seleccionarCalle(calle: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'calle';
     this.valorApuesta = calle;
   }
   seleccionarCaballo(caballo: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'caballo';
     this.valorApuesta = caballo;
   }
   seleccionarAvanzada(tipo: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = tipo;
     this.valorApuesta = ''; 
   }
   seleccionarFinales(final: string): void {
+    this.sonidoSeleccion();
     this.tipoApuesta = 'finales';
     this.valorApuesta = final;
   }
@@ -293,6 +305,8 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.girando = true;
+    this.scrollearARuleta();
+    this.sonidoGiro();
     this.mensajeResultado = '';
     this.numeroGanador = null;
     
@@ -321,7 +335,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  private iniciarAnimacion(numeroFinal: number, gano: boolean, premio: number): void {
+private iniciarAnimacion(numeroFinal: number, gano: boolean, premio: number): void {
     const indiceGanador = this.numerosRuleta.indexOf(numeroFinal);
     const anguloObjetivoBase = this.calcularAnguloParaSector(indiceGanador);
     const vueltasExtra = 5 + Math.floor(Math.random() * 4);
@@ -355,8 +369,10 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
           this.mostrarModalGanador = true;
           
           if (gano) {
+            this.sonidoGanar();
             this.toast.win(`¡Ganaste ${premio.toFixed(2)}€!`);
           } else {
+            this.sonidoPerder();
             this.toast.lose(`Perdiste. Salió el ${numeroFinal}`);
           }
         });
@@ -364,6 +380,9 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     };
     
     this.animFrame = requestAnimationFrame(animar);
+  }
+
+  private dibujarDestello(): void {
   }
 
   private agregarAlHistorial(numero: number): void {
@@ -387,4 +406,104 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   volverAlLobby(): void {
     this.router.navigate([RUTAS.home]);
   }
+private audioContext: AudioContext | null = null;
+
+private getAudioContext(): AudioContext {
+  if (!this.audioContext) {
+    this.audioContext = new AudioContext();
+  }
+  return this.audioContext;
+}
+
+private sonidoTick(): void {
+  const ctx = this.getAudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(800, ctx.currentTime);
+  gain.gain.setValueAtTime(0.08, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.05);
+}
+
+private sonidoGanar(): void {
+  const ctx = this.getAudioContext();
+  const notas = [523, 659, 784, 1047];
+  notas.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    const tiempo = ctx.currentTime + i * 0.12;
+    osc.frequency.setValueAtTime(freq, tiempo);
+    gain.gain.setValueAtTime(0.12, tiempo);
+    gain.gain.exponentialRampToValueAtTime(0.001, tiempo + 0.2);
+    osc.start(tiempo);
+    osc.stop(tiempo + 0.2);
+  });
+}
+
+private sonidoPerder(): void {
+  const ctx = this.getAudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(300, ctx.currentTime);
+  osc.frequency.linearRampToValueAtTime(150, ctx.currentTime + 0.4);
+  gain.gain.setValueAtTime(0.1, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.4);
+}
+
+private sonidoGiro(): void {
+  const ctx = this.getAudioContext();
+  const duracion = this.duracionAnimacion / 1000;
+  
+  for (let i = 0; i < 30; i++) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    const tiempo = ctx.currentTime + i * (duracion / 30);
+    const freq = 400 + Math.random() * 200;
+    osc.frequency.setValueAtTime(freq, tiempo);
+    gain.gain.setValueAtTime(0.03, tiempo);
+    gain.gain.exponentialRampToValueAtTime(0.001, tiempo + 0.06);
+    osc.start(tiempo);
+    osc.stop(tiempo + 0.06);
+  }
+}
+
+private sonidoSeleccion(): void {
+  const ctx = this.getAudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(1000, ctx.currentTime);
+  gain.gain.setValueAtTime(0.05, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.03);
+}
+
+private scrollearARuleta(): void {
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    const ruletaEl = document.querySelector('.ruleta-card');
+    if (ruletaEl) {
+      ruletaEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+}
+
 }

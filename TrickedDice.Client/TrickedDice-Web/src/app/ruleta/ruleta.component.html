@@ -1,5 +1,5 @@
 <app-navbar></app-navbar>
-
+<div class="flash-overlay" *ngIf="mostrarModalGanador"></div>
 <div class="ruleta-container">
   <div class="ruleta-card">
     <h1 class="ruleta-title">🎲 RULETA NEON LUXURY 🎲</h1>
@@ -86,25 +86,25 @@
           <h3 class="section-title">APUESTAS MÚLTIPLES</h3>
           <div class="apuestas-grid-2col">
             <div class="apuesta-col">
-              <label class="apuesta-label">Seisena (5:1)</label>
+              <label class="apuesta-label" title="Apuesta a 6 números consecutivos (5:1)">Seisena (5:1)</label>
               <select class="casino-select" [(ngModel)]="valorApuestaSeisena" (change)="seleccionarSeisena(valorApuestaSeisena)">
                 <option *ngFor="let s of seisenas" [value]="s">{{ s }}</option>
               </select>
             </div>
             <div class="apuesta-col">
-              <label class="apuesta-label">Cuadro (8:1)</label>
+              <label class="apuesta-label" title="Apuesta a un cuadrado de 4 números (8:1)">Cuadro (8:1)</label>
               <select class="casino-select" [(ngModel)]="valorApuestaCuadro" (change)="seleccionarCuadro(valorApuestaCuadro)">
                 <option *ngFor="let c of cuadros" [value]="c">{{ c }}</option>
               </select>
             </div>
             <div class="apuesta-col">
-              <label class="apuesta-label">Calle (11:1)</label>
+              <label class="apuesta-label" title="Apuesta a una fila de 3 números (11:1)">Calle (11:1)</label>
               <select class="casino-select" [(ngModel)]="valorApuestaCalle" (change)="seleccionarCalle(valorApuestaCalle)">
                 <option *ngFor="let c of calles" [value]="c">{{ c }}</option>
               </select>
             </div>
             <div class="apuesta-col">
-              <label class="apuesta-label">Caballo (17:1)</label>
+              <label class="apuesta-label" title="Apuesta a 2 números adyacentes (17:1)">Caballo (17:1)</label>
               <select class="casino-select" [(ngModel)]="valorApuestaCaballo" (change)="seleccionarCaballo(valorApuestaCaballo)">
                 <option *ngFor="let c of caballos" [value]="c">{{ c }}</option>
               </select>
@@ -115,13 +115,33 @@
         <div class="tapete-section">
           <h3 class="section-title">APUESTAS ESPECIALES</h3>
           <div class="apuestas-grid">
-            <button class="apuesta-btn especial" [class.active]="tipoApuesta === 'vecinos0'" (click)="seleccionarAvanzada('vecinos0')">Vecinos del 0</button>
-            <button class="apuesta-btn especial" [class.active]="tipoApuesta === 'tercio'" (click)="seleccionarAvanzada('tercio')">Tercio</button>
-            <button class="apuesta-btn especial" [class.active]="tipoApuesta === 'huerfanos'" (click)="seleccionarAvanzada('huerfanos')">Huérfanos</button>
-            <button class="apuesta-btn especial" [class.active]="tipoApuesta === 'juego0'" (click)="seleccionarAvanzada('juego0')">Juego al 0</button>
+            <button class="apuesta-btn especial" 
+                    [class.active]="tipoApuesta === 'vecinos0'" 
+                    (click)="seleccionarAvanzada('vecinos0')"
+                    title="Cubre el 0 y los 16 números que lo rodean: 22, 18, 29, 7, 28, 12, 35, 3, 26, 32, 15, 19, 4, 21, 2, 25 (17 números)">
+              Vecinos del 0
+            </button>
+            <button class="apuesta-btn especial" 
+                    [class.active]="tipoApuesta === 'tercio'" 
+                    (click)="seleccionarAvanzada('tercio')"
+                    title="Cubre 12 números opuestos a los vecinos del 0: 33, 16, 24, 5, 10, 23, 8, 30, 11, 36, 13, 27">
+              Tercio
+            </button>
+            <button class="apuesta-btn especial" 
+                    [class.active]="tipoApuesta === 'huerfanos'" 
+                    (click)="seleccionarAvanzada('huerfanos')"
+                    title="Cubre los 8 números que no pertenecen ni a Vecinos del 0 ni al Tercio: 1, 20, 14, 31, 9, 17, 34, 6">
+              Huérfanos
+            </button>
+            <button class="apuesta-btn especial" 
+                    [class.active]="tipoApuesta === 'juego0'" 
+                    (click)="seleccionarAvanzada('juego0')"
+                    title="Cubre el 0 y los 6 números más cercanos: 12, 35, 3, 26, 32, 15 (7 números)">
+              Juego al 0
+            </button>
           </div>
           <div class="apuesta-col" style="margin-top: 10px;">
-            <label class="apuesta-label">Finales (último dígito)</label>
+            <label class="apuesta-label" title="Apuesta a todos los números que terminan en un mismo dígito">Finales (último dígito)</label>
             <select class="casino-select" [(ngModel)]="valorApuestaFinal" (change)="seleccionarFinales(valorApuestaFinal)">
               <option *ngFor="let f of finales" [value]="f">{{ f }}</option>
             </select>

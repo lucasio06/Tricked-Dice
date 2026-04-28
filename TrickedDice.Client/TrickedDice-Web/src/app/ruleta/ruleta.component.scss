@@ -47,6 +47,9 @@ $text-light: #f0d8a8;
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: sticky;
+  top: 100px;
+  align-self: flex-start;
 }
 
 .saldo-actual {
@@ -229,7 +232,18 @@ $text-light: #f0d8a8;
   &.especial {
     background: #2a1a3a;
     border-color: $neon-purple;
-    &:hover { border-color: $gold; }
+    
+    &:hover { 
+      border-color: $gold;
+      background: color.adjust(#2a1a3a, $lightness: 8%);
+    }
+    
+    &.active {
+      background: $gold;
+      color: #130921;
+      border-color: $gold-light;
+      box-shadow: 0 0 20px $gold-light, 0 4px 0 color.adjust($gold, $lightness: -20%);
+    }
   }
 }
 
@@ -515,4 +529,120 @@ $text-light: #f0d8a8;
     transform: translateX(0) scale(1);
     opacity: 1;
   }
+}
+
+@media (max-width: 768px) {
+  .ruleta-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ruleta-left {
+    position: static;
+  }
+}
+@keyframes flashNumber {
+  0% { background: rgba(255, 215, 0, 0.8); box-shadow: 0 0 100px rgba(255, 215, 0, 0.9), 0 0 200px rgba(167, 66, 245, 0.6); }
+  100% { background: transparent; box-shadow: none; }
+}
+
+@media (max-width: 768px) {
+  .ruleta-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ruleta-left {
+    position: static;
+  }
+
+  .ruleta-title {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+  }
+
+  .ruleta-card {
+    padding: 15px;
+  }
+
+  .saldo-actual strong {
+    font-size: 1.8rem;
+  }
+
+  .ruleta-canvas {
+    width: 280px;
+    height: 280px;
+  }
+
+  .tapete-section {
+    padding: 15px;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+  }
+
+  .numero-casilla {
+    font-size: 0.85rem;
+  }
+
+  .apuesta-btn {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+
+  .apuestas-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .apuestas-grid-2col {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .casino-select {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+
+  .monto-container label {
+    font-size: 1rem;
+  }
+
+  .monto-valor {
+    font-size: 1.5rem;
+  }
+
+  .btn-apostar {
+    font-size: 1.1rem;
+    padding: 14px;
+  }
+
+  .btn-volver {
+    font-size: 1rem;
+    padding: 12px;
+  }
+
+  .modal-content {
+    min-width: auto;
+    padding: 30px 20px;
+  }
+
+  .numero-ganador {
+    font-size: 6rem;
+  }
+
+  .modal-mensaje {
+    font-size: 1.5rem;
+  }
+}
+
+.flash-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1999;
+  pointer-events: none;
+  animation: flashNumber 0.5s ease-out forwards;
 }
