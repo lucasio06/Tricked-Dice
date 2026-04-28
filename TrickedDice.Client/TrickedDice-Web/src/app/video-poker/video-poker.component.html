@@ -2,8 +2,33 @@
 
 <div class="poker-container">
   <div class="poker-card">
-    <h2>🃏 VIDEO POKER 🃏</h2>
-    
+<h2>
+  <div class="carta-3d left">
+    <div class="carta-3d-inner">
+      <div class="carta-3d-front">
+        <span class="carta-3d-palo">♦</span>
+        <span class="carta-3d-valor">A</span>
+      </div>
+      <div class="carta-3d-back">
+        <span class="carta-3d-palo">♠</span>
+        <span class="carta-3d-valor">K</span>
+      </div>
+    </div>
+  </div>
+  <span class="titulo-texto">POKER</span>
+  <div class="carta-3d right">
+    <div class="carta-3d-inner">
+      <div class="carta-3d-front">
+        <span class="carta-3d-palo">♠</span>
+        <span class="carta-3d-valor">K</span>
+      </div>
+      <div class="carta-3d-back">
+        <span class="carta-3d-palo">♦</span>
+        <span class="carta-3d-valor">A</span>
+      </div>
+    </div>
+  </div>
+</h2> 
     <div class="saldo">Saldo: {{ saldo | number:'1.2-2' }} €</div>
     
     <div class="apuesta">
@@ -13,10 +38,13 @@
 
     <div class="mano">
       <div *ngFor="let carta of mano; let i = index" 
-           class="carta" 
-           [class.seleccionada]="cartasSeleccionadas[i]"
+           class="carta"
            [class.roja]="esRojo(carta.charAt(carta.length - 1))"
            [class.negra]="!esRojo(carta.charAt(carta.length - 1))"
+           [class.seleccionada]="cartasSeleccionadas[i]"
+           [class.animando-entrada]="animandoReparto"
+           [class.animando-salida]="cambiando && cartasSeleccionadas[i]"
+           [style.animation-delay]="(i * 0.1) + 's'"
            (click)="toggleSeleccion(i)">
         <div class="valor">{{ obtenerValor(carta) }}</div>
         <div class="palo">{{ obtenerPalo(carta) }}</div>
@@ -33,7 +61,7 @@
       </button>
     </div>
 
-    <div class="mensaje">{{ mensaje }}</div>
+    <div class="mensaje" *ngIf="mensaje">{{ mensaje }}</div>
     
     <div class="tabla-pagos">
       <h3>TABLA DE PAGOS</h3>
