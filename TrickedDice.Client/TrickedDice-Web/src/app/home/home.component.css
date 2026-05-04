@@ -51,6 +51,23 @@
   letter-spacing: 2px;
   text-align: center;
   padding: 0 20px;
+  opacity: 0;
+  animation: fadeInGlow 2.4s ease-out 0.6s forwards;
+}
+
+@keyframes fadeInGlow {
+  0% {
+    opacity: 0;
+    text-shadow: 0 0 0 rgba(168, 139, 204, 0);
+  }
+  60% {
+    opacity: 1;
+    text-shadow: 0 0 20px rgba(167, 66, 245, 0.8), 0 0 40px rgba(167, 66, 245, 0.4);
+  }
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 8px rgba(167, 66, 245, 0.3);
+  }
 }
 
 .games-grid {

@@ -33,6 +33,28 @@ export interface CambiarResponse {
   saldoActualizado: number;
 }
 
+export interface RepartirBlackjackResponse {
+  idPartida: string;
+  manoJugador: string[];
+  manoCrupier: string[];
+  saldoActualizado: number;
+}
+
+export interface PedirCartaResponse {
+  carta: string;
+  manoJugador: string[];
+  terminada: boolean;
+  resultado?: string;
+  saldoActualizado?: number;
+}
+
+export interface PlantarseResponse {
+  manoCrupier: string[];
+  resultado: string;
+  premio: number;
+  saldoActualizado: number;
+}
+
 export interface UsuarioAdmin {
   idUsuario: number;
   email: string;

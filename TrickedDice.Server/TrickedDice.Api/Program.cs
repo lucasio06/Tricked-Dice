@@ -31,6 +31,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddSingleton<BlackjackService>();
 builder.Services.AddScoped<PokerService>();
 
 var app = builder.Build();

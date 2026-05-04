@@ -1,0 +1,80 @@
+<app-navbar></app-navbar>
+
+<div class="blackjack-container">
+  <div class="blackjack-card">
+    <h2>
+      <div class="carta-3d left">
+        <div class="carta-3d-inner">
+          <span class="palo-rojo">♥</span>
+          <span class="valor-negro">A</span>
+        </div>
+      </div>
+      BLACKJACK
+      <div class="carta-3d right">
+        <div class="carta-3d-inner">
+          <span class="palo-negro">♠</span>
+          <span class="valor-negro">J</span>
+        </div>
+      </div>
+    </h2>
+
+    <div class="saldo">Saldo: {{ saldo | number:'1.2-2' }} €</div>
+
+    <div class="apuesta" *ngIf="!juegoIniciado && !juegoTerminado">
+      <label>Apuesta:</label>
+      <input type="number" [(ngModel)]="montoApuesta" min="1" max="500" [disabled]="cargando" />
+    </div>
+
+    <div class="mesa">
+      <div class="zona-crupier">
+        <h3>Crupier <span *ngIf="manoCrupier.length > 0">({{ puntuacionMano(manoCrupier) }})</span></h3>
+        <div class="mano">
+          <div *ngFor="let carta of manoCrupier; let i = index" 
+               class="carta"
+               [class.roja]="esRojo(carta.charAt(carta.length - 1))"
+               [class.negra]="!esRojo(carta.charAt(carta.length - 1))"
+               [class.animando-entrada]="animandoEntrada"
+               [style.animation-delay]="(i * 0.1) + 's'">
+            <div class="valor">{{ obtenerValor(carta) }}</div>
+            <div class="palo">{{ obtenerPalo(carta) }}</div>
+          </div>
+          <div class="carta reverso" *ngIf="juegoIniciado && !juegoTerminado && manoCrupier.length > 1"></div>
+        </div>
+      </div>
+
+      <div class="zona-jugador">
+        <h3>Jugador <span *ngIf="manoJugador.length > 0">({{ puntuacionMano(manoJugador) }})</span></h3>
+        <div class="mano">
+          <div *ngFor="let carta of manoJugador; let i = index" 
+               class="carta"
+               [class.roja]="esRojo(carta.charAt(carta.length - 1))"
+               [class.negra]="!esRojo(carta.charAt(carta.length - 1))"
+               [class.animando-entrada]="animandoEntrada"
+               [style.animation-delay]="(i * 0.1) + 's'">
+            <div class="valor">{{ obtenerValor(carta) }}</div>
+            <div class="palo">{{ obtenerPalo(carta) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="resultado-overlay" *ngIf="juegoTerminado && mensaje">
+        <div class="resultado-mensaje" [ngClass]="resultado">
+          {{ mensaje }}
+          <button class="resultado-btn" (click)="nuevaPartida()">NUEVA PARTIDA</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="acciones">
+      <button (click)="repartir()" [disabled]="cargando || juegoIniciado">
+        {{ cargando ? 'CARGANDO...' : 'REPARTIR' }}
+      </button>
+      <button (click)="pedir()" [disabled]="!juegoIniciado || juegoTerminado || cargando">
+        PEDIR CARTA
+      </button>
+      <button (click)="plantarse()" [disabled]="!juegoIniciado || juegoTerminado || cargando">
+        PLANTARSE
+      </button>
+    </div>
+  </div>
+</div>
