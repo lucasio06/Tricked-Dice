@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../auth.service';
+import { ToastService } from '../services/toast.service';
 import { RUTAS } from '../utils/rutas.const';
 
 @Component({
@@ -20,6 +21,7 @@ export class LoginComponent {
 
   constructor(
     private authService: AuthService,
+    private toast: ToastService,
     public router: Router
   ) {}
 
@@ -35,6 +37,7 @@ export class LoginComponent {
     this.authService.login(this.email, this.password).subscribe({
       next: () => {
         this.isLoading = false;
+        this.toast.success('¡Ha iniciado sesión !');
         this.router.navigate([RUTAS.home]);
       },
       error: (err) => {

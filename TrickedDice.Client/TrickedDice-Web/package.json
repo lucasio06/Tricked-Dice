@@ -6,7 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
+    "test": "vitest run",
     "serve:ssr:TrickedDice-Web": "node dist/TrickedDice-Web/server/server.mjs"
   },
   "prettier": {
@@ -42,7 +42,10 @@
     "@angular/cli": "^21.1.0",
     "@angular/compiler-cli": "^21.1.0",
     "@types/express": "^5.0.1",
+    "@types/jasmine": "^6.0.0",
     "@types/node": "^20.17.19",
+    "happy-dom": "^20.9.0",
+    "jasmine-core": "^6.2.0",
     "jsdom": "^27.1.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../auth.service';
+import { ToastService } from '../../services/toast.service';
 import { UsuarioPerfil } from '../../models/api-responses';
 import { RUTAS } from '../../utils/rutas.const';
 
@@ -16,6 +17,7 @@ import { RUTAS } from '../../utils/rutas.const';
 export class NavbarComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private toast = inject(ToastService);
   
   usuarioActivo: UsuarioPerfil | null = null;
   private usuarioSub: Subscription | null = null;
@@ -31,6 +33,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
+    this.toast.info('Has cerrado sesión.');
     this.authService.logout();
   }
 
