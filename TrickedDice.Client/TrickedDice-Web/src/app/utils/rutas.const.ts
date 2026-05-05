@@ -8,5 +8,7 @@ export const RUTAS = {
   blackjack: '/blackjack',
   recargar: '/recargar',
   movimientos: '/mis-movimientos',
-  admin: '/admin'
+  admin: '/admin',
+  sobreNosotros: '/sobre-nosotros',
+  politicaPrivacidad: '/politica-privacidad'
 } as const;

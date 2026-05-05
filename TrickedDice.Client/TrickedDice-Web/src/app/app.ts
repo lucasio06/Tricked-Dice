@@ -4,11 +4,12 @@ import { RouterOutlet } from '@angular/router';
 import { ToastComponent } from './shared/toast/toast.component';
 import { GlitchDirective } from './directives/glitch.directive';
 import { AuthService } from './auth.service';
+import { FooterComponent } from './shared/footer/footer.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, ToastComponent, GlitchDirective],
+  imports: [CommonModule, RouterOutlet, ToastComponent, GlitchDirective, FooterComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

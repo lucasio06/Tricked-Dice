@@ -9,6 +9,8 @@ import { MisMovimientosComponent } from './mis-movimientos/mis-movimientos.compo
 import { VideoPokerComponent } from './video-poker/video-poker.component';
 import { BlackjackComponent } from './blackjack/blackjack.component';
 import { AdminComponent } from './admin/admin.component';
+import { SobreNosotrosComponent } from './sobre-nosotros/sobre-nosotros.component';
+import { PoliticaPrivacidadComponent } from './politica-privacidad/politica-privacidad.component';
 import { RUTAS } from './utils/rutas.const';
 
 export const routes: Routes = [
@@ -21,5 +23,7 @@ export const routes: Routes = [
   { path: 'admin', component: AdminComponent, canActivate: [AuthGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegistroComponent },
+  { path: 'sobre-nosotros', component: SobreNosotrosComponent },
+  { path: 'politica-privacidad', component: PoliticaPrivacidadComponent },
   { path: '**', redirectTo: '' }
 ];

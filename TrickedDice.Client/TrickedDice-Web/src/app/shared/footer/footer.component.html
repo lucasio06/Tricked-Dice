@@ -1,0 +1,29 @@
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-col footer-col-logo">
+      <img src="tricked-dice.png" alt="Tricked Dice" class="footer-logo">
+    </div>
+    <div class="footer-col">
+      <span class="footer-brand">Tricked Dice</span>
+      <span class="footer-copy">&copy; {{ anioActual }} | Tricked Dice. Todos los derechos reservados.</span>
+    </div>
+    <div class="footer-col">
+      <span class="footer-title">Juegos de casino</span>
+      <div class="footer-links">
+        <a [routerLink]="RUTAS.ruleta">Ruleta</a>
+        <span class="footer-separator">|</span>
+        <a [routerLink]="RUTAS.blackjack">Blackjack</a>
+        <span class="footer-separator">|</span>
+        <a [routerLink]="RUTAS.videoPoker">Poker</a>
+      </div>
+    </div>
+    <div class="footer-col" style="padding-top: 10px;">
+      <div class="footer-links">
+        <a [routerLink]="RUTAS.politicaPrivacidad">Política de privacidad</a>
+        <span class="footer-separator">|</span>
+        <a [routerLink]="RUTAS.sobreNosotros">Sobre nosotros</a>
+      </div>
+      <a href="https://github.com/lucasio06/Tricked-Dice" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
+  </div>
+</footer>
