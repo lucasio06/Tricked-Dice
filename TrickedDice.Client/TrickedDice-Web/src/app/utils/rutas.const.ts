@@ -10,5 +10,6 @@ export const RUTAS = {
   movimientos: '/mis-movimientos',
   admin: '/admin',
   sobreNosotros: '/sobre-nosotros',
-  politicaPrivacidad: '/politica-privacidad'
+  politicaPrivacidad: '/politica-privacidad',
+  soporte: '/soporte'
 } as const;

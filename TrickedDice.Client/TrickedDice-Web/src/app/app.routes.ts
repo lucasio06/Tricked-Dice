@@ -12,6 +12,7 @@ import { AdminComponent } from './admin/admin.component';
 import { SobreNosotrosComponent } from './sobre-nosotros/sobre-nosotros.component';
 import { PoliticaPrivacidadComponent } from './politica-privacidad/politica-privacidad.component';
 import { RUTAS } from './utils/rutas.const';
+import { SoporteComponent } from './soporte/soporte.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -25,5 +26,6 @@ export const routes: Routes = [
   { path: 'registro', component: RegistroComponent },
   { path: 'sobre-nosotros', component: SobreNosotrosComponent },
   { path: 'politica-privacidad', component: PoliticaPrivacidadComponent },
+  { path: 'soporte', component: SoporteComponent },
   { path: '**', redirectTo: '' }
 ];

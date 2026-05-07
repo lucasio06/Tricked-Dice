@@ -1,0 +1,105 @@
+.soporte-wrapper {
+  background: linear-gradient(135deg, #0f051d 0%, #1a0b2e 50%, #090411 100%);
+  min-height: 100vh;
+  padding: 120px 20px 120px 20px;
+  font-family: 'Montserrat', sans-serif;
+  display: flex;
+  justify-content: center;
+}
+
+.soporte-card {
+  max-width: 800px;
+  width: 100%;
+  color: #c4b5d0;
+}
+
+.soporte-title {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #d4af37;
+  margin-bottom: 20px;
+  text-align: center;
+  letter-spacing: 3px;
+  text-shadow: 0 0 15px #a742f5;
+}
+
+.soporte-intro {
+  font-size: 1.2rem;
+  color: #a88bcc;
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.soporte-heading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #d4af37;
+  margin-bottom: 25px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px #a742f5;
+}
+
+.contacto-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+.contacto-item h3 {
+  color: #e0c070;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.contacto-item p,
+.contacto-item a {
+  color: #a88bcc;
+  line-height: 1.6;
+}
+
+.contacto-item a:hover {
+  color: #d4af37;
+}
+
+.soporte-faq {
+  margin-top: 40px;
+}
+
+.faq-item {
+  background: rgba(26, 17, 37, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 20px;
+}
+
+.faq-item h3 {
+  color: #e0c070;
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+}
+
+.faq-item p {
+  color: #a88bcc;
+  line-height: 1.8;
+}
+
+.faq-item a {
+  color: #d4af37;
+  text-decoration: none;
+}
+
+.faq-item a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .contacto-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .soporte-title {
+    font-size: 2.2rem;
+  }
+}
