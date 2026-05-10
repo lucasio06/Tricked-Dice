@@ -1,11 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth.service';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
-import { ApiService } from '../services/api.service';
-import { RepartirBlackjackResponse, PedirCartaResponse, PlantarseResponse } from '../models/api-responses';
+import { SignalrService } from '../services/signalr.service';
 
 @Component({
   selector: 'app-blackjack',
@@ -14,7 +13,7 @@ import { RepartirBlackjackResponse, PedirCartaResponse, PlantarseResponse } from
   templateUrl: './blackjack.component.html',
   styleUrls: ['./blackjack.component.scss']
 })
-export class BlackjackComponent implements OnInit {
+export class BlackjackComponent implements OnInit, OnDestroy {
   montoApuesta: number = 10;
   saldo: number = 0;
   manoJugador: string[] = [];
@@ -30,20 +29,84 @@ export class BlackjackComponent implements OnInit {
   private audioContext: AudioContext | null = null;
 
   constructor(
-    private api: ApiService,
+    private signalrService: SignalrService,
     private authService: AuthService,
     private toast: ToastService
   ) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.authService.usuario$.subscribe(usuario => {
       if (usuario) {
         this.saldo = usuario.saldo;
       }
     });
+
+    const conectado = await this.signalrService.startConnection('/hubs/blackjack');
+    if (!conectado) {
+      this.toast.error('No se pudo conectar al juego.');
+      return;
+    }
+
+    this.signalrService.on('Error', (mensaje: string) => {
+      this.cargando = false;
+      this.toast.error(mensaje);
+    });
+
+    this.signalrService.on('CartasRepartidas', (data: any) => {
+      this.manoJugador = data.manoJugador;
+      this.manoCrupier = data.manoCrupier;
+      this.idPartida = data.idPartida;
+      this.saldo = data.saldoActualizado;
+      this.authService.actualizarSaldo(data.saldoActualizado);
+      this.juegoIniciado = true;
+      this.cargando = false;
+      this.animarEntrada();
+      this.sonidoRepartir();
+    });
+
+    this.signalrService.on('CartaPedida', (data: any) => {
+      this.manoJugador = data.manoJugador;
+      this.cargando = false;
+      this.animarEntrada();
+
+      if (data.carta === null) {
+        this.juegoTerminado = true;
+        this.juegoIniciado = false;
+        this.resultado = 'derrota';
+        this.mensaje = '¡Te has pasado de 21!';
+        this.sonidoPerder();
+      }
+    });
+
+    this.signalrService.on('ResultadoBlackjack', (data: any) => {
+      this.manoCrupier = data.manoCrupierCompleta;
+      this.saldo = data.saldoActualizado;
+      this.authService.actualizarSaldo(data.saldoActualizado);
+      this.juegoTerminado = true;
+      this.juegoIniciado = false;
+      this.cargando = false;
+      this.animarEntrada();
+
+      if (data.resultado === 'jugador') {
+        this.resultado = 'victoria';
+        this.mensaje = '¡Has ganado!';
+        this.sonidoGanar();
+      } else if (data.resultado === 'empate') {
+        this.resultado = 'empate';
+        this.mensaje = 'Empate. Recuperas tu apuesta.';
+      } else {
+        this.resultado = 'derrota';
+        this.mensaje = 'El crupier gana.';
+        this.sonidoPerder();
+      }
+    });
   }
 
-  repartir(): void {
+  ngOnDestroy(): void {
+    this.signalrService.stopConnection();
+  }
+
+  async repartir(): Promise<void> {
     if (this.montoApuesta <= 0 || this.montoApuesta > this.saldo) {
       this.toast.warning('Monto de apuesta inválido.');
       return;
@@ -56,99 +119,21 @@ export class BlackjackComponent implements OnInit {
     this.manoCrupier = [];
     this.manoJugador = [];
 
-    this.api.post<RepartirBlackjackResponse>(
-      '/blackjack/repartir',
-      { monto: this.montoApuesta }
-    ).subscribe({
-      next: (res) => {
-        this.manoJugador = res.manoJugador;
-        this.manoCrupier = res.manoCrupier;
-        this.idPartida = res.idPartida;
-        this.saldo = res.saldoActualizado;
-        this.authService.actualizarSaldo(res.saldoActualizado);
-        this.juegoIniciado = true;
-        this.cargando = false;
-        this.animarEntrada();
-        this.sonidoRepartir();
-      },
-      error: (err) => {
-        this.cargando = false;
-        this.toast.error(err.error?.mensaje || 'Error al repartir');
-      }
-    });
+    await this.signalrService.invoke('Repartir', 'mesa-principal', this.montoApuesta);
   }
 
-  pedir(): void {
+  async pedir(): Promise<void> {
     if (!this.juegoIniciado || this.juegoTerminado || this.cargando) return;
-
     this.cargando = true;
     this.sonidoSeleccion();
-
-    this.api.post<PedirCartaResponse>(
-      '/blackjack/pedir',
-      { idPartida: this.idPartida }
-    ).subscribe({
-      next: (res) => {
-        this.manoJugador = res.manoJugador;
-        this.cargando = false;
-        this.animarEntrada();
-
-        if (res.terminada) {
-          this.juegoTerminado = true;
-          this.juegoIniciado = false;
-          this.resultado = 'derrota';
-          this.mensaje = '¡Te has pasado de 21!';
-          if (res.saldoActualizado !== undefined) {
-            this.saldo = res.saldoActualizado;
-            this.authService.actualizarSaldo(res.saldoActualizado);
-          }
-          this.sonidoPerder();
-        }
-      },
-      error: (err) => {
-        this.cargando = false;
-        this.toast.error(err.error?.mensaje || 'Error al pedir carta');
-      }
-    });
+    await this.signalrService.invoke('PedirCarta', this.idPartida);
   }
 
-  plantarse(): void {
+  async plantarse(): Promise<void> {
     if (!this.juegoIniciado || this.juegoTerminado || this.cargando) return;
-
     this.cargando = true;
     this.sonidoSeleccion();
-
-    this.api.post<PlantarseResponse>(
-      '/blackjack/plantarse',
-      { idPartida: this.idPartida }
-    ).subscribe({
-      next: (res) => {
-        this.manoCrupier = res.manoCrupier;
-        this.saldo = res.saldoActualizado;
-        this.authService.actualizarSaldo(res.saldoActualizado);
-        this.juegoTerminado = true;
-        this.juegoIniciado = false;
-        this.cargando = false;
-        this.animarEntrada();
-
-        if (res.resultado === 'jugador') {
-          this.resultado = 'victoria';
-          this.mensaje = `¡Ganaste ${res.premio.toFixed(2)} €!`;
-          this.sonidoGanar();
-        } else if (res.resultado === 'empate') {
-          this.resultado = 'empate';
-          this.mensaje = 'Empate. Recuperas tu apuesta.';
-        } else {
-          this.resultado = 'derrota';
-          this.mensaje = 'El crupier gana.';
-          this.sonidoPerder();
-        }
-      },
-      error: (err) => {
-        this.cargando = false;
-        this.toast.error(err.error?.mensaje || 'Error al plantarse');
-      }
-    });
+    await this.signalrService.invoke('Plantarse', this.idPartida);
   }
 
   nuevaPartida(): void {

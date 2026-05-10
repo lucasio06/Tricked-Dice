@@ -11,5 +11,6 @@ export const RUTAS = {
   admin: '/admin',
   sobreNosotros: '/sobre-nosotros',
   politicaPrivacidad: '/politica-privacidad',
-  soporte: '/soporte'
+  soporte: '/soporte',
+  lobby: '/lobby'
 } as const;

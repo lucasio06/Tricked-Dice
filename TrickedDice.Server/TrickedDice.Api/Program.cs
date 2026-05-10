@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using TrickedDice.Api.Hubs;
 using TrickedDice.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,8 +14,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy => policy.WithOrigins("http://localhost:4200")
                         .AllowAnyMethod()
-                        .AllowAnyHeader());
+                        .AllowAnyHeader()
+                        .AllowCredentials());
 });
+
+builder.Services.AddSignalR();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -33,6 +37,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddSingleton<BlackjackService>();
 builder.Services.AddScoped<PokerService>();
+builder.Services.AddScoped<BlackjackGameService>();
+builder.Services.AddScoped<RuletaService>();
+builder.Services.AddScoped<PokerGameService>();
 
 var app = builder.Build();
 
@@ -47,5 +54,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<LobbyHub>("/hubs/lobby");
+app.MapHub<BlackjackHub>("/hubs/blackjack");
+app.MapHub<RuletaHub>("/hubs/ruleta");
+app.MapHub<PokerHub>("/hubs/poker");
 
 app.Run();

@@ -13,6 +13,7 @@ import { SobreNosotrosComponent } from './sobre-nosotros/sobre-nosotros.componen
 import { PoliticaPrivacidadComponent } from './politica-privacidad/politica-privacidad.component';
 import { RUTAS } from './utils/rutas.const';
 import { SoporteComponent } from './soporte/soporte.component';
+import { LobbyComponent } from './lobby/lobby.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -27,5 +28,6 @@ export const routes: Routes = [
   { path: 'sobre-nosotros', component: SobreNosotrosComponent },
   { path: 'politica-privacidad', component: PoliticaPrivacidadComponent },
   { path: 'soporte', component: SoporteComponent },
+  { path: 'lobby', component: LobbyComponent, canActivate: [AuthGuard] },
   { path: '**', redirectTo: '' }
 ];

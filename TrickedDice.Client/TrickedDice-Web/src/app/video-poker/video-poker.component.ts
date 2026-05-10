@@ -1,11 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth.service';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
-import { ApiService } from '../services/api.service';
-import { RepartirResponse, CambiarResponse } from '../models/api-responses';
+import { SignalrService } from '../services/signalr.service';
 
 @Component({
   selector: 'app-video-poker',
@@ -14,7 +13,7 @@ import { RepartirResponse, CambiarResponse } from '../models/api-responses';
   templateUrl: './video-poker.component.html',
   styleUrls: ['./video-poker.component.scss']
 })
-export class VideoPokerComponent implements OnInit {
+export class VideoPokerComponent implements OnInit, OnDestroy {
   mano: string[] = [];
   cartasSeleccionadas: boolean[] = [false, false, false, false, false];
   montoApuesta: number = 10;
@@ -29,20 +28,70 @@ export class VideoPokerComponent implements OnInit {
   private audioContext: AudioContext | null = null;
 
   constructor(
-    private api: ApiService,
+    private signalrService: SignalrService,
     private authService: AuthService,
     private toast: ToastService
   ) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.authService.usuario$.subscribe(usuario => {
       if (usuario) {
         this.saldo = usuario.saldo;
       }
     });
+
+    const conectado = await this.signalrService.startConnection('/hubs/poker');
+    if (!conectado) {
+      this.toast.error('No se pudo conectar al juego.');
+      return;
+    }
+
+    this.signalrService.on('ManoRepartida', (res: any) => {
+      this.mano = res.mano;
+      this.saldo = res.saldoActualizado;
+      this.authService.actualizarSaldo(res.saldoActualizado);
+      this.cartasSeleccionadas = [false, false, false, false, false];
+      this.juegoIniciado = true;
+      this.premioActual = 0;
+      this.mensaje = 'Selecciona las cartas que quieres cambiar';
+      this.cargando = false;
+      this.animandoReparto = true;
+      this.sonidoRepartir();
+    });
+
+    this.signalrService.on('CartasCambiadas', (res: any) => {
+      this.mano = res.manoFinal;
+      this.saldo = res.saldoActualizado;
+      this.authService.actualizarSaldo(res.saldoActualizado);
+      this.premioActual = res.premio;
+      this.juegoIniciado = false;
+      this.cambiando = false;
+      this.animandoReparto = true;
+
+      if (res.premio > 0) {
+        this.mensaje = `¡${res.nombreMano}! Ganaste ${res.premio.toFixed(2)} €`;
+        this.sonidoGanar();
+        this.toast.win(`¡${res.nombreMano}! +${res.premio.toFixed(2)}€`);
+      } else {
+        this.mensaje = 'Sin premio. ¡Mejor suerte la próxima!';
+        this.sonidoPerder();
+        this.toast.lose('Sin premio.');
+      }
+      this.cargando = false;
+    });
+
+    this.signalrService.on('Error', (mensaje: string) => {
+      this.cargando = false;
+      this.cambiando = false;
+      this.toast.error(mensaje);
+    });
   }
 
-  repartir(): void {
+  ngOnDestroy(): void {
+    this.signalrService.stopConnection();
+  }
+
+  async repartir(): Promise<void> {
     if (this.montoApuesta <= 0 || this.montoApuesta > this.saldo) {
       this.toast.warning('Monto de apuesta inválido.');
       return;
@@ -50,27 +99,10 @@ export class VideoPokerComponent implements OnInit {
 
     this.cargando = true;
     this.mensaje = '';
-    this.api.post<RepartirResponse>(
-      '/videopoker/repartir',
-      { monto: this.montoApuesta }
-    ).subscribe({
-      next: (res) => {
-        this.mano = res.mano;
-        this.saldo = res.saldoActualizado;
-        this.authService.actualizarSaldo(res.saldoActualizado);
-        this.cartasSeleccionadas = [false, false, false, false, false];
-        this.juegoIniciado = true;
-        this.premioActual = 0;
-        this.mensaje = 'Selecciona las cartas que quieres cambiar';
-        this.cargando = false;
-        this.animarEntrada();
-        this.sonidoRepartir();
-      },
-      error: (err) => {
-        this.cargando = false;
-        this.toast.error(err.error?.mensaje || 'Error al repartir');
-      }
-    });
+    this.mano = [];
+    this.cambiando = false;
+    this.animandoReparto = false;
+    await this.signalrService.invoke('Repartir', this.montoApuesta);
   }
 
   cambiar(): void {
@@ -97,54 +129,14 @@ export class VideoPokerComponent implements OnInit {
     }
   }
 
-  private procesarCambio(): void {
+  private async procesarCambio(): Promise<void> {
     const indices = this.cartasSeleccionadas
       .map((sel, i) => sel ? i : -1)
       .filter(i => i !== -1);
 
     this.cargando = true;
-    this.api.post<CambiarResponse>(
-      '/videopoker/cambiar',
-      {
-        mano: this.mano,
-        indicesACambiar: indices,
-        montoApostado: this.montoApuesta
-      }
-    ).subscribe({
-      next: (res) => {
-        this.mano = res.manoFinal;
-        this.saldo = res.saldoActualizado;
-        this.authService.actualizarSaldo(res.saldoActualizado);
-        this.premioActual = res.premio;
-        this.juegoIniciado = false;
-        this.cambiando = false;
-        this.animarEntrada();
-        
-        if (res.premio > 0) {
-          this.mensaje = `¡${res.nombreMano}! Ganaste ${res.premio.toFixed(2)} €`;
-          this.sonidoGanar();
-          this.toast.win(`¡${res.nombreMano}! +${res.premio.toFixed(2)}€`);
-        } else {
-          this.mensaje = `Sin premio. ¡Mejor suerte la próxima!`;
-          this.sonidoPerder();
-          this.toast.lose(`Sin premio.`);
-        }
-        
-        this.cargando = false;
-      },
-      error: (err) => {
-        this.cambiando = false;
-        this.cargando = false;
-        this.toast.error(err.error?.mensaje || 'Error al cambiar cartas');
-      }
-    });
-  }
-
-  private animarEntrada(): void {
     this.animandoReparto = false;
-    setTimeout(() => {
-      this.animandoReparto = true;
-    }, 10);
+    await this.signalrService.invoke('CambiarCartas', this.mano, indices, this.montoApuesta);
   }
 
   obtenerValor(carta: string): string {

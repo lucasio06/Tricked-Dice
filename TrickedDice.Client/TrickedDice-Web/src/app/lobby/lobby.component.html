@@ -1,0 +1,44 @@
+<app-navbar></app-navbar>
+<div class="lobby-wrapper">
+  <div class="lobby-card">
+    <h1 class="lobby-title">Lobby</h1>
+
+    <div class="lobby-grid">
+      <div class="lobby-section">
+        <h2 class="section-title">Online</h2>
+        <ul class="user-list">
+          <li *ngFor="let user of onlineUsers" class="user-item">
+            <span class="status-dot online"></span>
+            {{ user }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="lobby-section">
+        <h2 class="section-title">Amigos</h2>
+        <ul class="user-list">
+          <li *ngFor="let friend of friendList" class="user-item">
+            <span class="status-dot" [class.online]="isOnline(friend)"></span>
+            {{ friend }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="lobby-section">
+        <h2 class="section-title">Solicitudes</h2>
+        <ul class="user-list">
+          <li *ngFor="let req of pendingRequests" class="user-item">
+            <span>{{ req }}</span>
+            <button class="btn-accept" (click)="acceptRequest(req)">Aceptar</button>
+            <button class="btn-reject" (click)="rejectRequest(req)">Rechazar</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="lobby-actions">
+      <input [(ngModel)]="newFriendUsername" placeholder="Nombre de usuario" />
+      <button (click)="sendFriendRequest()">Enviar solicitud</button>
+    </div>
+  </div>
+</div>

@@ -42,6 +42,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
       queryParams: { returnUrl: this.router.url } 
     });
   }
+
+  irALobby(): void {
+    this.router.navigate([RUTAS.lobby]);
+  }
   
   esAdmin(): boolean {
     return this.usuarioActivo?.email === 'admin@trickeddice.com';
