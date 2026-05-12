@@ -72,6 +72,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   valorApuestaFinal: string = "0";
 
   private coloresSectores: string[] = [];
+  numerosRuedaConAngulo: { numero: number; angulo: number }[] = [];
   private numerosRuleta: number[] = [
     0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5,
     24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
@@ -134,6 +135,10 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ctx = this.canvasRef.nativeElement.getContext("2d")!;
     this.anguloActual = this.calcularAnguloParaSector(0);
     this.dibujarRuleta(this.anguloActual);
+        this.numerosRuedaConAngulo = this.numerosRuleta.map((num, i) => ({
+      numero: num,
+      angulo: this.calcularAnguloParaSector(i) + this.anguloPorSector / 2
+    }));
   }
 
   ngOnDestroy(): void {
@@ -528,6 +533,105 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (fila === 0) return [3,6,9,12,15,18,21,24,27,30,33,36];
     if (fila === 1) return [2,5,8,11,14,17,20,23,26,29,32,35];
     return [1,4,7,10,13,16,19,22,25,28,31,34];
+  }
+
+
+    obtenerHotspotsCaballo(): { posX: number; posY: number; num1: number; num2: number }[] {
+    const hotspots: { posX: number; posY: number; num1: number; num2: number }[] = [];
+    for (let fila = 0; fila < 3; fila++) {
+      const numerosFila = this.getFilaVisual(fila);
+      for (let col = 0; col < 11; col++) {
+        hotspots.push({
+          posX: 0, posY: 0, num1: numerosFila[col], num2: numerosFila[col + 1]
+        });
+      }
+    }
+    for (let fila = 0; fila < 3; fila++) {
+      const numerosFila = this.getFilaVisual(fila);
+      if (fila === 0) {
+        for (let i = 0; i < 12; i++) {
+          hotspots.push({ posX: 0, posY: 0, num1: 0, num2: numerosFila[i] });
+        }
+      }
+      if (fila < 2) {
+        const numerosFilaSiguiente = this.getFilaVisual(fila + 1);
+        for (let col = 0; col < 12; col++) {
+          hotspots.push({ posX: 0, posY: 0, num1: numerosFila[col], num2: numerosFilaSiguiente[col] });
+        }
+      }
+    }
+    hotspots.forEach(h => {
+      const pos = this.getPosicionEntreNumeros(h.num1, h.num2);
+      h.posX = pos.x;
+      h.posY = pos.y;
+    });
+    return hotspots;
+  }
+
+  obtenerHotspotsCalle(): { posX: number; posY: number; num1: number; num2: number; num3: number }[] {
+    const hotspots: { posX: number; posY: number; num1: number; num2: number; num3: number }[] = [];
+    for (let fila = 0; fila < 3; fila++) {
+      const numerosFila = this.getFilaVisual(fila);
+      for (let col = 0; col < 10; col++) {
+        hotspots.push({
+          posX: 0, posY: 0,
+          num1: numerosFila[col], num2: numerosFila[col + 1], num3: numerosFila[col + 2]
+        });
+      }
+    }
+    hotspots.push({ posX: 0, posY: 0, num1: 0, num2: 1, num3: 2 });
+    hotspots.push({ posX: 0, posY: 0, num1: 0, num2: 2, num3: 3 });
+    hotspots.forEach(h => {
+      const pos = this.getPosicionEntreNumeros(h.num1, h.num3);
+      h.posX = pos.x;
+      h.posY = pos.y;
+    });
+    return hotspots;
+  }
+
+  obtenerHotspotsCuadro(): { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number }[] {
+    const hotspots: { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number }[] = [];
+    for (let fila = 0; fila < 2; fila++) {
+      const filaActual = this.getFilaVisual(fila);
+      const filaSiguiente = this.getFilaVisual(fila + 1);
+      for (let col = 0; col < 11; col++) {
+        hotspots.push({
+          posX: 0, posY: 0,
+          num1: filaActual[col], num2: filaActual[col + 1],
+          num3: filaSiguiente[col], num4: filaSiguiente[col + 1]
+        });
+      }
+    }
+    const primeraFila = this.getFilaVisual(0);
+    hotspots.push({ posX: 0, posY: 0, num1: 0, num2: primeraFila[0], num3: 1, num4: primeraFila[1] });
+    hotspots.push({ posX: 0, posY: 0, num1: 0, num2: primeraFila[1], num3: 2, num4: primeraFila[2] });
+    hotspots.forEach(h => {
+      const pos = this.getPosicionEntreNumeros(h.num1, h.num4);
+      h.posX = pos.x;
+      h.posY = pos.y;
+    });
+    return hotspots;
+  }
+
+  obtenerHotspotsSeisena(): { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number; num5: number; num6: number }[] {
+    const hotspots: { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number; num5: number; num6: number }[] = [];
+    for (let fila = 0; fila < 2; fila++) {
+      const filaActual = this.getFilaVisual(fila);
+      const filaSiguiente = this.getFilaVisual(fila + 1);
+      for (let col = 0; col < 10; col++) {
+        hotspots.push({
+          posX: 0, posY: 0,
+          num1: filaActual[col], num2: filaActual[col + 1], num3: filaActual[col + 2],
+          num4: filaSiguiente[col], num5: filaSiguiente[col + 1], num6: filaSiguiente[col + 2]
+        });
+      }
+    }
+    hotspots.forEach(h => {
+      const pos = this.getPosicionEntreNumeros(h.num1, h.num6);
+      h.posX = pos.x;
+      h.posY = pos.y;
+    });
+    return hotspots;
   }
 
   private iniciarAnimacion(

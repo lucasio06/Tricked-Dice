@@ -78,6 +78,32 @@
                 <div class="columnas-placeholder"></div>
               </div>
             </div>
+            <div class="hotspots-layer">
+              <div *ngFor="let h of obtenerHotspotsCaballo()"
+                   class="hotspot"
+                   [style.left.%]="h.posX"
+                   [style.top.%]="h.posY"
+                   (click)="agregarApuestaCaballo(h.num1, h.num2)">
+              </div>
+              <div *ngFor="let h of obtenerHotspotsCalle()"
+                   class="hotspot"
+                   [style.left.%]="h.posX"
+                   [style.top.%]="h.posY"
+                   (click)="agregarApuestaCalle(h.num1, h.num2, h.num3)">
+              </div>
+              <div *ngFor="let h of obtenerHotspotsCuadro()"
+                   class="hotspot"
+                   [style.left.%]="h.posX"
+                   [style.top.%]="h.posY"
+                   (click)="agregarApuestaCuadro(h.num1, h.num2, h.num3, h.num4)">
+              </div>
+              <div *ngFor="let h of obtenerHotspotsSeisena()"
+                   class="hotspot"
+                   [style.left.%]="h.posX"
+                   [style.top.%]="h.posY"
+                   (click)="agregarApuestaSeisena(h.num1, h.num2, h.num3, h.num4, h.num5, h.num6)">
+              </div>
+            </div>
             <div class="fichas-layer">
               <div *ngFor="let apuesta of apuestasActuales"
                    class="ficha-visual"
