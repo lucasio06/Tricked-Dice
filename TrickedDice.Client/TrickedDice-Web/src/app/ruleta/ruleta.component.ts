@@ -23,6 +23,15 @@ interface HistorialTirada {
   color: string;
 }
 
+interface ApuestaVisual {
+  id: number;
+  tipo: 'pleno' | 'caballo' | 'calle' | 'cuadro' | 'seisena' | 'color' | 'paridad' | 'mitad' | 'docena' | 'columna' | 'vecinos0' | 'tercio' | 'huerfanos' | 'juego0' | 'finales';
+  numeros: number[];
+  monto: number;
+  posX: number;
+  posY: number;
+}
+
 @Component({
   selector: "app-ruleta",
   standalone: true,
@@ -37,8 +46,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   saldo: number = 0;
   montoApuesta: number = 10;
-  tipoApuesta: string = "numero";
-  valorApuesta: string = "";
   girando: boolean = false;
   numeroGanador: number | null = null;
 
@@ -49,11 +56,13 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   historialTiradas: HistorialTirada[] = [];
   usuarioActivo: UsuarioPerfil | null = null;
 
+  apuestasActuales: ApuestaVisual[] = [];
+  private nextIdApuesta: number = 1;
+
   private animFrame: number | null = null;
   private anguloActual: number = 0;
   private readonly numeroSectores: number = 37;
-  private readonly anguloPorSector: number =
-    (Math.PI * 2) / this.numeroSectores;
+  private readonly anguloPorSector: number = (Math.PI * 2) / this.numeroSectores;
   private readonly duracionAnimacion: number = 3000;
 
   valorApuestaSeisena: string = "1-6";
@@ -116,7 +125,8 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.signalrService.on("ResultadoGiro", (res: any) => {
       this.saldo = res.saldoActualizado;
       this.authService.actualizarSaldo(res.saldoActualizado);
-      this.iniciarAnimacion(res.numeroGanador, res.gano, res.premio);
+      this.iniciarAnimacion(Number(res.numeroGanador), res.gano, res.premio);
+      this.apuestasActuales = [];
     });
   }
 
@@ -307,65 +317,156 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.shadowBlur = 0;
   }
 
-  seleccionarNumero(num: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "numero";
-    this.valorApuesta = num;
+  private getPosicionNumero(numero: number): { x: number; y: number } {
+    const numStr = numero.toString();
+    const elemento = document.querySelector(`.numero-casilla[data-numero="${numStr}"]`);
+    if (elemento) {
+      const rect = elemento.getBoundingClientRect();
+      const contenedor = document.querySelector('.tapete-real') as HTMLElement;
+      if (contenedor) {
+        const contRect = contenedor.getBoundingClientRect();
+        return {
+          x: ((rect.left + rect.width / 2 - contRect.left) / contRect.width) * 100,
+          y: ((rect.top + rect.height / 2 - contRect.top) / contRect.height) * 100,
+        };
+      }
+    }
+    return { x: 50, y: 50 };
   }
-  seleccionarColor(color: string): void {
+
+  private getPosicionEntreNumeros(num1: number, num2: number): { x: number; y: number } {
+    const pos1 = this.getPosicionNumero(num1);
+    const pos2 = this.getPosicionNumero(num2);
+    return {
+      x: (pos1.x + pos2.x) / 2,
+      y: (pos1.y + pos2.y) / 2,
+    };
+  }
+
+  agregarApuestaPleno(num: number): void {
+    const pos = this.getPosicionNumero(num);
+    const apuesta: ApuestaVisual = {
+      id: this.nextIdApuesta++,
+      tipo: 'pleno',
+      numeros: [num],
+      monto: this.montoApuesta,
+      posX: pos.x,
+      posY: pos.y,
+    };
+    this.apuestasActuales.push(apuesta);
     this.sonidoSeleccion();
-    this.tipoApuesta = "color";
-    this.valorApuesta = color;
+  }
+
+  agregarApuestaCaballo(num1: number, num2: number): void {
+    const pos = this.getPosicionEntreNumeros(num1, num2);
+    const apuesta: ApuestaVisual = {
+      id: this.nextIdApuesta++,
+      tipo: 'caballo',
+      numeros: [num1, num2],
+      monto: this.montoApuesta,
+      posX: pos.x,
+      posY: pos.y,
+    };
+    this.apuestasActuales.push(apuesta);
+    this.sonidoSeleccion();
+  }
+
+  agregarApuestaCalle(num1: number, num2: number, num3: number): void {
+    const pos = this.getPosicionEntreNumeros(num1, num3);
+    const apuesta: ApuestaVisual = {
+      id: this.nextIdApuesta++,
+      tipo: 'calle',
+      numeros: [num1, num2, num3],
+      monto: this.montoApuesta,
+      posX: pos.x,
+      posY: pos.y,
+    };
+    this.apuestasActuales.push(apuesta);
+    this.sonidoSeleccion();
+  }
+
+  agregarApuestaCuadro(num1: number, num2: number, num3: number, num4: number): void {
+    const pos = this.getPosicionEntreNumeros(num1, num4);
+    const apuesta: ApuestaVisual = {
+      id: this.nextIdApuesta++,
+      tipo: 'cuadro',
+      numeros: [num1, num2, num3, num4],
+      monto: this.montoApuesta,
+      posX: pos.x,
+      posY: pos.y,
+    };
+    this.apuestasActuales.push(apuesta);
+    this.sonidoSeleccion();
+  }
+
+  agregarApuestaSeisena(num1: number, num2: number, num3: number, num4: number, num5: number, num6: number): void {
+    const pos = this.getPosicionEntreNumeros(num1, num6);
+    const apuesta: ApuestaVisual = {
+      id: this.nextIdApuesta++,
+      tipo: 'seisena',
+      numeros: [num1, num2, num3, num4, num5, num6],
+      monto: this.montoApuesta,
+      posX: pos.x,
+      posY: pos.y,
+    };
+    this.apuestasActuales.push(apuesta);
+    this.sonidoSeleccion();
+  }
+
+  agregarApuestaExterna(tipo: ApuestaVisual['tipo'], numeros: number[], evento: MouseEvent): void {
+    const contenedor = document.querySelector('.tapete-real') as HTMLElement;
+    if (!contenedor) return;
+    const contRect = contenedor.getBoundingClientRect();
+    const x = ((evento.clientX - contRect.left) / contRect.width) * 100;
+    const y = ((evento.clientY - contRect.top) / contRect.height) * 100;
+    const apuesta: ApuestaVisual = {
+      id: this.nextIdApuesta++,
+      tipo,
+      numeros,
+      monto: this.montoApuesta,
+      posX: x,
+      posY: y,
+    };
+    this.apuestasActuales.push(apuesta);
+    this.sonidoSeleccion();
+  }
+
+  limpiarApuestas(): void {
+    this.apuestasActuales = [];
+  }
+
+  get montoTotalApostado(): number {
+    return this.apuestasActuales.reduce((sum, a) => sum + a.monto, 0);
+  }
+
+  seleccionarColor(color: string): void {
+    const numeros = color === 'rojo'
+      ? [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]
+      : [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
+    this.agregarApuestaExterna('color', numeros, window.event as MouseEvent);
   }
   seleccionarParidad(par: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "paridad";
-    this.valorApuesta = par;
+    const numeros = par === 'par'
+      ? Array.from({length: 18}, (_, i) => (i+1)*2)
+      : Array.from({length: 18}, (_, i) => (i*2)+1);
+    this.agregarApuestaExterna('paridad', numeros, window.event as MouseEvent);
   }
   seleccionarMitad(mitad: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "mitad";
-    this.valorApuesta = mitad;
+    const numeros = mitad === '1-18'
+      ? Array.from({length: 18}, (_, i) => i+1)
+      : Array.from({length: 18}, (_, i) => i+19);
+    this.agregarApuestaExterna('mitad', numeros, window.event as MouseEvent);
   }
   seleccionarDocena(doc: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "docena";
-    this.valorApuesta = doc;
+    const base = (parseInt(doc)-1)*12;
+    const numeros = Array.from({length: 12}, (_, i) => base + i + 1);
+    this.agregarApuestaExterna('docena', numeros, window.event as MouseEvent);
   }
   seleccionarColumna(col: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "columna";
-    this.valorApuesta = col;
-  }
-  seleccionarSeisena(seis: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "seisena";
-    this.valorApuesta = seis;
-  }
-  seleccionarCuadro(cuadro: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "cuadro";
-    this.valorApuesta = cuadro;
-  }
-  seleccionarCalle(calle: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "calle";
-    this.valorApuesta = calle;
-  }
-  seleccionarCaballo(caballo: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "caballo";
-    this.valorApuesta = caballo;
-  }
-  seleccionarAvanzada(tipo: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = tipo;
-    this.valorApuesta = "";
-  }
-  seleccionarFinales(final: string): void {
-    this.sonidoSeleccion();
-    this.tipoApuesta = "finales";
-    this.valorApuesta = final;
+    const inicio = parseInt(col);
+    const numeros: number[] = [];
+    for (let i = inicio; i <= 36; i += 3) numeros.push(i);
+    this.agregarApuestaExterna('columna', numeros, window.event as MouseEvent);
   }
 
   esRojo(num: number): boolean {
@@ -375,26 +476,58 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     ].includes(num);
   }
 
+  seleccionarAvanzada(tipo: string): void {
+    this.sonidoSeleccion();
+    let numeros: number[] = [];
+    switch(tipo) {
+      case 'vecinos0':
+        numeros = [0,2,3,4,7,12,15,18,19,21,22,25,26,28,29,32,35];
+        break;
+      case 'tercio':
+        numeros = [5,8,10,11,13,16,23,24,27,30,33,36];
+        break;
+      case 'huerfanos':
+        numeros = [1,6,9,14,17,20,31,34];
+        break;
+      case 'juego0':
+        numeros = [0,3,12,15,26,32,35];
+        break;
+    }
+    if (numeros.length > 0) {
+      this.agregarApuestaExterna(tipo as ApuestaVisual['tipo'], numeros, window.event as MouseEvent);
+    }
+  }
+
   apuestaValida(): boolean {
-    if (this.montoApuesta <= 0 || this.montoApuesta > this.saldo) return false;
-    return true;
+    return this.apuestasActuales.length > 0 && this.montoTotalApostado <= this.saldo;
   }
 
   async apostar(): Promise<void> {
     if (!this.apuestaValida()) {
-      this.toast.warning("Apuesta inválida.");
+      this.toast.warning("Apuesta inválida o saldo insuficiente.");
       return;
     }
     this.girando = true;
     this.sonidoGiro();
     this.numeroGanador = null;
+
+    const apuestasParaBackend = this.apuestasActuales.map(a => ({
+      tipo: a.tipo,
+      valor: a.numeros.join(','),
+      monto: a.monto,
+    }));
+
     await this.signalrService.invoke(
-      "Girar",
+      "GirarMultiple",
       "mesa-principal",
-      this.montoApuesta,
-      this.tipoApuesta,
-      this.valorApuesta,
+      apuestasParaBackend,
     );
+  }
+
+  getFilaVisual(fila: number): number[] {
+    if (fila === 0) return [3,6,9,12,15,18,21,24,27,30,33,36];
+    if (fila === 1) return [2,5,8,11,14,17,20,23,26,29,32,35];
+    return [1,4,7,10,13,16,19,22,25,28,31,34];
   }
 
   private iniciarAnimacion(
@@ -407,9 +540,15 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     const indice = this.numerosRuleta.indexOf(numeroFinal);
-    const anguloObj =
-      this.calcularAnguloParaSector(indice) -
-      (5 + Math.random() * 4) * 2 * Math.PI;
+    if (indice === -1) {
+      this.girando = false;
+      return;
+    }
+
+    const anguloBase = this.calcularAnguloParaSector(indice);
+    const vueltas = (5 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+    const anguloObj = anguloBase - vueltas;
+
     const inicio = this.anguloActual;
     const start = performance.now();
     const animar = (t: number) => {
@@ -419,7 +558,9 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.dibujarRuleta(this.anguloActual);
       if (p < 1) this.animFrame = requestAnimationFrame(animar);
       else {
-        this.anguloActual = anguloObj % (2 * Math.PI);
+        let anguloFinal = anguloObj % (2 * Math.PI);
+        if (anguloFinal < 0) anguloFinal += 2 * Math.PI;
+        this.anguloActual = anguloFinal;
         this.dibujarRuleta(this.anguloActual);
         this.animFrame = null;
         this.ngZone.run(() => {
@@ -430,6 +571,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
           this.agregarAlHistorial(numeroFinal);
           this.mostrarModalGanador = true;
           gano ? this.sonidoGanar() : this.sonidoPerder();
+          this.apuestasActuales = [];
         });
       }
     };

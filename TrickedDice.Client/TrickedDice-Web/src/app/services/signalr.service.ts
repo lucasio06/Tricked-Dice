@@ -8,10 +8,15 @@ export class SignalrService {
   private authService = inject(AuthService);
   private hubConnection!: signalR.HubConnection;
   private signalRBase = environment.apiUrl.replace('/api', '');
+  private pendingListeners: { event: string; callback: (...args: any[]) => void }[] = [];
 
   public async startConnection(hubUrl: string) {
     const token = this.authService.getToken();
-    if (!token) return;
+    if (!token) return false;
+
+    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
+      await this.hubConnection.stop();
+    }
 
     this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl(`${this.signalRBase}${hubUrl}`, { accessTokenFactory: () => token })
@@ -21,6 +26,12 @@ export class SignalrService {
     try {
       await this.hubConnection.start();
       console.log(`Conectado a ${hubUrl}`);
+
+      this.pendingListeners.forEach(({ event, callback }) => {
+        this.hubConnection.on(event, callback);
+      });
+      this.pendingListeners = [];
+
       return true;
     } catch (err) {
       console.error(`Error al conectar a ${hubUrl}:`, err);
@@ -29,7 +40,11 @@ export class SignalrService {
   }
 
   public on(event: string, callback: (...args: any[]) => void) {
-    this.hubConnection?.on(event, callback);
+    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
+      this.hubConnection.on(event, callback);
+    } else {
+      this.pendingListeners.push({ event, callback });
+    }
   }
 
   public async invoke(method: string, ...args: any[]) {
@@ -40,6 +55,9 @@ export class SignalrService {
   }
 
   public async stopConnection() {
-    await this.hubConnection?.stop();
+    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
+      await this.hubConnection.stop();
+    }
+    this.pendingListeners = [];
   }
 }

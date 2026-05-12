@@ -39,5 +39,25 @@ namespace TrickedDice.Api.Hubs
                 await Clients.Caller.SendAsync("Error", ex.Message);
             }
         }
+
+        public async Task GirarMultiple(string mesaId, List<ApuestaDto> apuestas)
+        {
+            var email = GetEmail();
+            if (string.IsNullOrEmpty(email))
+            {
+                await Clients.Caller.SendAsync("Error", "No autorizado.");
+                return;
+            }
+
+            try
+            {
+                var resultado = _service.GirarRuletaMultiple(email, apuestas);
+                await Clients.Caller.SendAsync("ResultadoGiro", resultado);
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.SendAsync("Error", ex.Message);
+            }
+        }
     }
 }

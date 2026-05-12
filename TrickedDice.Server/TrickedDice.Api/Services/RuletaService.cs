@@ -52,6 +52,58 @@ namespace TrickedDice.Api.Services
             }
         }
 
+        public object GirarRuletaMultiple(string email, List<ApuestaDto> apuestas)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                var idUsuario = ObtenerIdUsuario(connection, transaction, email);
+                var saldoActual = ObtenerSaldo(connection, transaction, idUsuario);
+
+                var montoTotal = apuestas.Sum(a => a.Monto);
+                if (saldoActual < montoTotal) throw new InvalidOperationException("Saldo insuficiente");
+
+                var rnd = new Random();
+                int numeroGanador = NumerosRuleta[rnd.Next(0, NumerosRuleta.Length)];
+
+                decimal premioTotal = 0;
+                bool algunaGanadora = false;
+
+                foreach (var apuesta in apuestas)
+                {
+                    var (gano, premio) = CalcularPremio(apuesta.Monto, apuesta.Tipo, apuesta.Valor, numeroGanador);
+                    if (gano)
+                    {
+                        algunaGanadora = true;
+                        premioTotal += premio;
+                    }
+                }
+
+                var nuevoSaldo = saldoActual - montoTotal + premioTotal;
+
+                ActualizarSaldo(connection, transaction, idUsuario, nuevoSaldo);
+                RegistrarTransaccion(connection, transaction, idUsuario, -montoTotal, "APUESTA");
+                if (premioTotal > 0) RegistrarTransaccion(connection, transaction, idUsuario, premioTotal, "PREMIO");
+
+                transaction.Commit();
+
+                return new
+                {
+                    numeroGanador,
+                    gano = algunaGanadora,
+                    premio = premioTotal,
+                    saldoActualizado = nuevoSaldo
+                };
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
         private (bool gano, decimal premio) CalcularPremio(decimal monto, string tipo, string valor, int numero)
         {
             tipo = tipo.ToLower();
@@ -76,6 +128,44 @@ namespace TrickedDice.Api.Services
                     break;
                 case "numero":
                     if (valor == numero.ToString()) return (true, monto * 36);
+                    break;
+                case "pleno":
+                    if (int.TryParse(valor, out int numPleno) && numPleno == numero) return (true, monto * 36);
+                    break;
+                case "caballo":
+                    var numsCaballo = valor.Split(',').Select(int.Parse).ToArray();
+                    if (numsCaballo.Contains(numero)) return (true, monto * 18);
+                    break;
+                case "calle":
+                    var numsCalle = valor.Split(',').Select(int.Parse).ToArray();
+                    if (numsCalle.Contains(numero)) return (true, monto * 12);
+                    break;
+                case "cuadro":
+                    var numsCuadro = valor.Split(',').Select(int.Parse).ToArray();
+                    if (numsCuadro.Contains(numero)) return (true, monto * 9);
+                    break;
+                case "seisena":
+                    var numsSeisena = valor.Split(',').Select(int.Parse).ToArray();
+                    if (numsSeisena.Contains(numero)) return (true, monto * 6);
+                    break;
+                case "vecinos0":
+                    var numsVecinos = new[] { 0, 2, 3, 4, 7, 12, 15, 18, 19, 21, 22, 25, 26, 28, 29, 32, 35 };
+                    if (numsVecinos.Contains(numero)) return (true, monto * (36m / numsVecinos.Length));
+                    break;
+                case "tercio":
+                    var numsTercio = new[] { 5, 8, 10, 11, 13, 16, 23, 24, 27, 30, 33, 36 };
+                    if (numsTercio.Contains(numero)) return (true, monto * (36m / numsTercio.Length));
+                    break;
+                case "huerfanos":
+                    var numsHuerfanos = new[] { 1, 6, 9, 14, 17, 20, 31, 34 };
+                    if (numsHuerfanos.Contains(numero)) return (true, monto * (36m / numsHuerfanos.Length));
+                    break;
+                case "juego0":
+                    var numsJuego0 = new[] { 0, 3, 12, 15, 26, 32, 35 };
+                    if (numsJuego0.Contains(numero)) return (true, monto * (36m / numsJuego0.Length));
+                    break;
+                case "finales":
+                    if (valor.Length == 1 && int.TryParse(valor, out int digito) && numero % 10 == digito) return (true, monto * (36m / 4m));
                     break;
             }
             return (false, 0);
@@ -111,5 +201,12 @@ namespace TrickedDice.Api.Services
             cmd.Parameters.AddWithValue("@Tipo", tipo);
             cmd.ExecuteNonQuery();
         }
+    }
+
+    public class ApuestaDto
+    {
+        public string Tipo { get; set; } = string.Empty;
+        public string Valor { get; set; } = string.Empty;
+        public decimal Monto { get; set; }
     }
 }

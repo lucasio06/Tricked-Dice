@@ -114,29 +114,49 @@ $text-light: #f0d8a8;
   padding-bottom: 8px;
 }
 
-.numeros-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.tapete-wrapper {
+  position: relative;
 }
 
-.fila-cero {
+.tapete-real {
   display: flex;
-  width: 100%;
+  flex-direction: column;
+  gap: 0;
+}
+
+.numeros-con-columnas {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.cero-lateral {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
   .numero-casilla.cero {
-    flex: 1;
-    height: 45px;
+    width: 60px;
+    height: 100%;
+    min-height: 150px;
     background: #2ecc71;
     color: white;
     font-weight: bold;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 0 color.adjust(#2ecc71, $lightness: -15%);
+    cursor: pointer;
     &:hover { background: color.adjust(#2ecc71, $lightness: -7%); }
   }
+}
+
+.columnas-numeros {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .fila-numeros {
@@ -168,11 +188,156 @@ $text-light: #f0d8a8;
     box-shadow: 0 6px 0 rgba(0,0,0,0.3), 0 0 15px $gold;
     border-color: $gold;
   }
-  
-  &.seleccionado {
-    border: 3px solid $gold-light;
-    box-shadow: 0 0 20px $gold-light, 0 4px 0 rgba(0,0,0,0.3);
-    transform: scale(1.02);
+}
+
+.columnas-apuesta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  .columna-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a1125;
+    border: 2px solid #3a2a50;
+    border-radius: 8px;
+    color: $text-light;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 2px;
+    padding: 5px;
+    &:hover {
+      border-color: $gold;
+      box-shadow: 0 0 10px $neon-purple;
+      background: color.adjust(#1a1125, $lightness: 5%);
+    }
+  }
+}
+
+.fila-apuestas-inferiores {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cero-placeholder {
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.columnas-placeholder {
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.apuestas-inferiores-contenido {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.docenas-fila {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+}
+
+.docena-btn {
+  grid-column: span 4;
+  background: #1a1125;
+  border: 2px solid #3a2a50;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  font-weight: bold;
+  color: $text-light;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    border-color: $gold;
+    box-shadow: 0 0 10px $neon-purple;
+    background: color.adjust(#1a1125, $lightness: 5%);
+  }
+}
+
+.apuestas-simples-fila {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+}
+
+.apuesta-simple-btn {
+  grid-column: span 2;
+  background: #1a1125;
+  border: 2px solid #3a2a50;
+  border-radius: 10px;
+  padding: 10px 5px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: $text-light;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  &.rojo { background: #e74c3c; color: white; }
+  &.negro { background: #2c3e50; color: white; }
+  &:hover {
+    border-color: $gold;
+    box-shadow: 0 0 10px $neon-purple;
+  }
+}
+
+.fichas-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.ficha-visual {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, $gold-light, $gold);
+  border: 2px solid color.adjust($gold, $lightness: -10%);
+  color: #130921;
+  font-weight: bold;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px rgba($neon-purple, 0.8);
+}
+
+.total-apostado {
+  color: $gold;
+  font-weight: bold;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-limpiar {
+  background: transparent;
+  border: 1px solid $gold;
+  color: $gold;
+  padding: 4px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  &:hover {
+    background: rgba($gold, 0.2);
   }
 }
 
@@ -222,27 +387,12 @@ $text-light: #f0d8a8;
     background: color.adjust($bg-card, $lightness: 5%);
   }
   
-  &.active {
-    background: $gold;
-    color: #130921;
-    border-color: $gold-light;
-    box-shadow: 0 0 20px $gold-light, 0 4px 0 color.adjust($gold, $lightness: -20%);
-  }
-  
   &.especial {
     background: #2a1a3a;
     border-color: $neon-purple;
-    
-    &:hover { 
+    &:hover {
       border-color: $gold;
       background: color.adjust(#2a1a3a, $lightness: 8%);
-    }
-    
-    &.active {
-      background: $gold;
-      color: #130921;
-      border-color: $gold-light;
-      box-shadow: 0 0 20px $gold-light, 0 4px 0 color.adjust($gold, $lightness: -20%);
     }
   }
 }
@@ -451,7 +601,6 @@ $text-light: #f0d8a8;
   }
 }
 
-// Historial de tiradas (diseño horizontal fijo)
 .historial-container {
   margin-top: 20px;
   padding: 15px 10px;
@@ -531,18 +680,20 @@ $text-light: #f0d8a8;
   }
 }
 
-@media (max-width: 768px) {
-  .ruleta-main-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ruleta-left {
-    position: static;
-  }
-}
 @keyframes flashNumber {
   0% { background: rgba(255, 215, 0, 0.8); box-shadow: 0 0 100px rgba(255, 215, 0, 0.9), 0 0 200px rgba(167, 66, 245, 0.6); }
   100% { background: transparent; box-shadow: none; }
+}
+
+.flash-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1999;
+  pointer-events: none;
+  animation: flashNumber 0.5s ease-out forwards;
 }
 
 @media (max-width: 768px) {
@@ -634,15 +785,39 @@ $text-light: #f0d8a8;
   .modal-mensaje {
     font-size: 1.5rem;
   }
-}
-
-.flash-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 1999;
-  pointer-events: none;
-  animation: flashNumber 0.5s ease-out forwards;
+  
+  .cero-lateral .numero-casilla.cero {
+    width: 50px;
+    min-height: 120px;
+    font-size: 1.4rem;
+  }
+  
+  .columnas-apuesta .columna-btn {
+    font-size: 0.8rem;
+    padding: 3px;
+  }
+  
+  .cero-placeholder {
+    width: 50px;
+  }
+  
+  .columnas-placeholder {
+    width: 40px;
+  }
+  
+  .docenas-fila .docena-btn {
+    padding: 8px;
+    font-size: 0.8rem;
+  }
+  
+  .apuestas-simples-fila .apuesta-simple-btn {
+    padding: 8px 4px;
+    font-size: 0.75rem;
+  }
+  
+  .ficha-visual {
+    width: 28px;
+    height: 28px;
+    font-size: 0.6rem;
+  }
 }
