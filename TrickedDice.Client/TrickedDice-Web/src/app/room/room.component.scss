@@ -1,0 +1,283 @@
+@use 'sass:color';
+
+$bg-dark: #0f051d;
+$bg-card: #1a1125;
+$gold: #d4af37;
+$gold-light: #ffd700;
+$neon-purple: #a742f5;
+$text-light: #f0d8a8;
+
+.room-container {
+  min-height: 100vh;
+  padding: 120px 20px 60px;
+  background: linear-gradient(135deg, #0f051d 0%, #1a0b2e 50%, #090411 100%);
+  font-family: 'Montserrat', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.room-card {
+  max-width: 800px;
+  width: 100%;
+  background: $bg-card;
+  border: 2px solid $gold;
+  border-radius: 30px;
+  padding: 30px;
+  box-shadow: 0 0 50px rgba($gold, 0.3);
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.room-title {
+  color: $gold;
+  font-size: 2rem;
+  margin: 0;
+  text-shadow: 0 0 15px $neon-purple;
+  letter-spacing: 2px;
+}
+
+.room-badge {
+  padding: 6px 15px;
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  background: rgba(0,0,0,0.6);
+  &.public {
+    border: 1px solid #2ecc71;
+    color: #2ecc71;
+  }
+  &.private {
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+  }
+}
+
+.room-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  background: rgba(26, 17, 37, 0.6);
+  padding: 15px;
+  border-radius: 20px;
+  margin-bottom: 30px;
+  border: 1px solid rgba($gold, 0.3);
+}
+
+.info-item {
+  color: $text-light;
+  font-size: 1rem;
+  strong {
+    color: $gold;
+  }
+}
+
+.section-title {
+  color: $gold;
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba($gold, 0.5);
+  padding-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.players-section {
+  margin-bottom: 30px;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+}
+
+.player-card {
+  background: rgba(26, 17, 37, 0.8);
+  border: 1px solid rgba($gold, 0.3);
+  border-radius: 20px;
+  padding: 15px;
+  text-align: center;
+  transition: all 0.2s;
+  &:hover {
+    transform: translateY(-3px);
+    border-color: $gold;
+    box-shadow: 0 0 15px rgba($neon-purple, 0.4);
+  }
+  &.is-creator {
+    border-color: $gold;
+    background: rgba($gold, 0.1);
+  }
+}
+
+.player-avatar {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, $gold, $neon-purple);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #130921;
+  box-shadow: 0 0 15px rgba($neon-purple, 0.6);
+}
+
+.player-name {
+  font-weight: bold;
+  color: $text-light;
+  margin-bottom: 5px;
+}
+
+.player-role {
+  font-size: 0.7rem;
+  color: $gold;
+}
+
+.room-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.btn-primary, .btn-secondary, .btn-start {
+  padding: 12px 25px;
+  border-radius: 40px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(to bottom, $gold, color.adjust($gold, $lightness: -20%));
+  color: #130921;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px $neon-purple;
+  }
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid $gold;
+  color: $gold;
+  &:hover {
+    background: rgba($gold, 0.2);
+    box-shadow: 0 0 10px $neon-purple;
+  }
+}
+
+.btn-start {
+  background: linear-gradient(to bottom, #2ecc71, #27ae60);
+  color: white;
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px #2ecc71;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.room-status {
+  text-align: center;
+  margin-top: 20px;
+  padding: 10px;
+  background: rgba($neon-purple, 0.2);
+  border-radius: 40px;
+  color: $gold;
+  font-size: 0.9rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: $bg-card;
+  border: 2px solid $gold;
+  border-radius: 30px;
+  padding: 30px;
+  text-align: center;
+  min-width: 300px;
+  h3 { color: $gold; margin-bottom: 10px; }
+  p { color: $text-light; margin-bottom: 20px; }
+}
+
+.password-input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(15,5,29,0.8);
+  border: 1px solid $gold;
+  border-radius: 40px;
+  color: $text-light;
+  font-size: 1rem;
+  margin-bottom: 20px;
+  &:focus { outline: none; box-shadow: 0 0 10px $neon-purple; }
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.btn-cancel, .btn-accept {
+  padding: 8px 25px;
+  border-radius: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+}
+.btn-cancel {
+  background: #e74c3c;
+  color: white;
+}
+.btn-accept {
+  background: $gold;
+  color: #130921;
+}
+
+@media (max-width: 768px) {
+  .room-card { padding: 20px; }
+  .room-title { font-size: 1.5rem; }
+  .players-grid { grid-template-columns: 1fr; }
+  .btn-primary, .btn-secondary, .btn-start { font-size: 0.8rem; padding: 8px 16px; }
+}

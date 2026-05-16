@@ -1,4 +1,5 @@
 using Microsoft.Data.SqlClient;
+using System.Collections.Concurrent;
 
 namespace TrickedDice.Api.Services
 {
@@ -7,6 +8,7 @@ namespace TrickedDice.Api.Services
         private readonly string? _connectionString;
         private static readonly int[] NumerosRuleta = { 0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26 };
         private static readonly int[] Rojos = { 1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36 };
+        private static readonly ConcurrentDictionary<string, List<ApuestaUsuario>> MesasApuestas = new();
 
         public RuletaService(IConfiguration configuration)
         {
@@ -102,6 +104,72 @@ namespace TrickedDice.Api.Services
                 transaction.Rollback();
                 throw;
             }
+        }
+
+        public async Task AgregarApuestaMesa(string mesaId, string email, ApuestaDto apuesta)
+        {
+            if (!MesasApuestas.ContainsKey(mesaId))
+                MesasApuestas[mesaId] = new List<ApuestaUsuario>();
+            MesasApuestas[mesaId].Add(new ApuestaUsuario { Email = email, Apuesta = apuesta });
+            await Task.CompletedTask;
+        }
+
+        public async Task<Dictionary<string, object>> GirarMesa(string mesaId, string emailSolicitante)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                var rnd = new Random();
+                int numeroGanador = NumerosRuleta[rnd.Next(0, NumerosRuleta.Length)];
+                var resultados = new Dictionary<string, object>();
+                var apuestasMesa = MesasApuestas.ContainsKey(mesaId) ? MesasApuestas[mesaId] : new List<ApuestaUsuario>();
+                var agrupado = apuestasMesa.GroupBy(a => a.Email);
+                foreach (var grupo in agrupado)
+                {
+                    var email = grupo.Key;
+                    var apuestas = grupo.Select(a => a.Apuesta).ToList();
+                    var resultado = GirarRuletaMultipleInterno(email, apuestas, connection, transaction, numeroGanador);
+                    resultados[email] = resultado;
+                }
+                transaction.Commit();
+                MesasApuestas.TryRemove(mesaId, out _);
+                return new Dictionary<string, object>
+                {
+                    ["numeroGanador"] = numeroGanador,
+                    ["resultados"] = resultados
+                };
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        private object GirarRuletaMultipleInterno(string email, List<ApuestaDto> apuestas, SqlConnection connection, SqlTransaction transaction, int numeroGanador)
+        {
+            var idUsuario = ObtenerIdUsuario(connection, transaction, email);
+            var saldoActual = ObtenerSaldo(connection, transaction, idUsuario);
+            var montoTotal = apuestas.Sum(a => a.Monto);
+            if (saldoActual < montoTotal) throw new InvalidOperationException("Saldo insuficiente");
+            decimal premioTotal = 0;
+            bool algunaGanadora = false;
+            foreach (var apuesta in apuestas)
+            {
+                var (gano, premio) = CalcularPremio(apuesta.Monto, apuesta.Tipo, apuesta.Valor, numeroGanador);
+                if (gano)
+                {
+                    algunaGanadora = true;
+                    premioTotal += premio;
+                }
+            }
+            var nuevoSaldo = saldoActual - montoTotal + premioTotal;
+            ActualizarSaldo(connection, transaction, idUsuario, nuevoSaldo);
+            RegistrarTransaccion(connection, transaction, idUsuario, -montoTotal, "APUESTA");
+            if (premioTotal > 0) RegistrarTransaccion(connection, transaction, idUsuario, premioTotal, "PREMIO");
+            return new { gano = algunaGanadora, premio = premioTotal, saldoActualizado = nuevoSaldo };
         }
 
         private (bool gano, decimal premio) CalcularPremio(decimal monto, string tipo, string valor, int numero)
@@ -208,5 +276,11 @@ namespace TrickedDice.Api.Services
         public string Tipo { get; set; } = string.Empty;
         public string Valor { get; set; } = string.Empty;
         public decimal Monto { get; set; }
+    }
+
+    public class ApuestaUsuario
+    {
+        public string Email { get; set; } = string.Empty;
+        public ApuestaDto Apuesta { get; set; } = new();
     }
 }

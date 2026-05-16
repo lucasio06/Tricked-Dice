@@ -11,9 +11,9 @@ import { BlackjackComponent } from './blackjack/blackjack.component';
 import { AdminComponent } from './admin/admin.component';
 import { SobreNosotrosComponent } from './sobre-nosotros/sobre-nosotros.component';
 import { PoliticaPrivacidadComponent } from './politica-privacidad/politica-privacidad.component';
-import { RUTAS } from './utils/rutas.const';
 import { SoporteComponent } from './soporte/soporte.component';
 import { LobbyComponent } from './lobby/lobby.component';
+import { RoomComponent } from './room/room.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -29,5 +29,6 @@ export const routes: Routes = [
   { path: 'politica-privacidad', component: PoliticaPrivacidadComponent },
   { path: 'soporte', component: SoporteComponent },
   { path: 'lobby', component: LobbyComponent, canActivate: [AuthGuard] },
+  { path: 'sala/:id', component: RoomComponent, canActivate: [AuthGuard] },
   { path: '**', redirectTo: '' }
 ];

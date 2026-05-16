@@ -1,0 +1,54 @@
+<app-navbar></app-navbar>
+<div class="room-container" *ngIf="room">
+  <div class="room-card">
+    <div class="room-header">
+      <h1 class="room-title">{{ room.name }}</h1>
+      <div class="room-badge" [ngClass]="room.isPrivate ? 'private' : 'public'">
+        {{ room.isPrivate ? '🔒 PRIVADA' : '🌐 PÚBLICA' }}
+      </div>
+    </div>
+
+    <div class="room-info">
+      <div class="info-item">🎮 Juego: <strong>{{ room.gameType }}</strong></div>
+      <div class="info-item">👑 Creador: <strong>{{ room.creator }}</strong></div>
+      <div class="info-item">👥 Jugadores: <strong>{{ room.players.length }}/{{ room.maxPlayers }}</strong></div>
+    </div>
+
+    <div class="players-section">
+      <h2 class="section-title">JUGADORES EN SALA</h2>
+      <div class="players-grid">
+        <div *ngFor="let player of room.players" class="player-card" [class.is-creator]="player === room.creator">
+          <div class="player-avatar">{{ player.charAt(0).toUpperCase() }}</div>
+          <div class="player-name">{{ player }}</div>
+          <div class="player-role" *ngIf="player === room.creator">👑 Creador</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="room-actions">
+      <button class="btn-secondary" (click)="salirDeSala()">🚪 SALIR DE LA SALA</button>
+      <button class="btn-primary" *ngIf="isCreator" (click)="togglePrivacy()">
+        {{ room.isPrivate ? '🌐 Hacer Pública' : '🔒 Hacer Privada' }}
+      </button>
+      <button class="btn-start" *ngIf="isCreator" (click)="iniciarJuego()" [disabled]="room.players.length < 2">
+        🎮 INICIAR JUEGO
+      </button>
+    </div>
+
+    <div class="room-status" *ngIf="!isCreator && room.players.length < 2">
+      ⏳ Esperando a más jugadores para empezar...
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showPasswordModal">
+  <div class="modal-content">
+    <h3>🔐 Sala privada</h3>
+    <p>Introduce la contraseña para unirte</p>
+    <input type="password" [(ngModel)]="passwordInput" placeholder="Contraseña" class="password-input" />
+    <div class="modal-buttons">
+      <button class="btn-cancel" (click)="showPasswordModal = false">Cancelar</button>
+      <button class="btn-accept" (click)="joinWithPassword()">Unirse</button>
+    </div>
+  </div>
+</div>

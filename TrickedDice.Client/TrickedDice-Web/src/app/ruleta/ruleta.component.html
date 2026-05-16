@@ -182,8 +182,14 @@
             TOTAL APOSTADO: {{ montoTotalApostado }} €
             <button class="btn-limpiar" (click)="limpiarApuestas()">LIMPIAR</button>
           </div>
+          <div *ngIf="mesaId" class="botones-mesa">
+            <button class="btn-girar-mesa" (click)="girarMesa()" [disabled]="girando || apuestasActuales.length === 0">
+              🎡 GIRAR MESA
+            </button>
+            <p class="info-mesa" *ngIf="!esCreadorMesa">Esperando que el creador inicie el giro...</p>
+          </div>
           <button class="btn-apostar" (click)="apostar()" [disabled]="girando || !apuestaValida()">
-            {{ girando ? 'GIRANDO...' : '¡APOSTAR AHORA!' }}
+            {{ girando ? 'GIRANDO...' : (mesaId ? 'APOSTAR A MESA' : '¡APOSTAR AHORA!') }}
           </button>
           <button class="btn-volver" (click)="volverAlLobby()">← VOLVER AL LOBBY</button>
         </div>

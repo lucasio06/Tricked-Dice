@@ -1,44 +1,103 @@
 <app-navbar></app-navbar>
 <div class="lobby-wrapper">
   <div class="lobby-card">
-    <h1 class="lobby-title">Lobby</h1>
+    <h1 class="lobby-title">🎮 LOBBY NEON 🎮</h1>
 
     <div class="lobby-grid">
       <div class="lobby-section">
-        <h2 class="section-title">Online</h2>
+        <h2 class="section-title">🌟 EN LÍNEA</h2>
         <ul class="user-list">
           <li *ngFor="let user of onlineUsers" class="user-item">
             <span class="status-dot online"></span>
             {{ user }}
           </li>
+          <li *ngIf="onlineUsers.length === 0" class="empty-message">No hay usuarios conectados</li>
         </ul>
       </div>
 
       <div class="lobby-section">
-        <h2 class="section-title">Amigos</h2>
+        <h2 class="section-title">👥 AMIGOS</h2>
         <ul class="user-list">
           <li *ngFor="let friend of friendList" class="user-item">
             <span class="status-dot" [class.online]="isOnline(friend)"></span>
             {{ friend }}
           </li>
+          <li *ngIf="friendList.length === 0" class="empty-message">No tienes amigos aún</li>
         </ul>
       </div>
 
       <div class="lobby-section">
-        <h2 class="section-title">Solicitudes</h2>
+        <h2 class="section-title">📨 SOLICITUDES</h2>
         <ul class="user-list">
-          <li *ngFor="let req of pendingRequests" class="user-item">
+          <li *ngFor="let req of pendingRequests" class="user-item request-item">
             <span>{{ req }}</span>
-            <button class="btn-accept" (click)="acceptRequest(req)">Aceptar</button>
-            <button class="btn-reject" (click)="rejectRequest(req)">Rechazar</button>
+            <div>
+              <button class="btn-accept" (click)="acceptRequest(req)">✓</button>
+              <button class="btn-reject" (click)="rejectRequest(req)">✗</button>
+            </div>
           </li>
+          <li *ngIf="pendingRequests.length === 0" class="empty-message">Sin solicitudes pendientes</li>
         </ul>
       </div>
     </div>
 
     <div class="lobby-actions">
       <input [(ngModel)]="newFriendUsername" placeholder="Nombre de usuario" />
-      <button (click)="sendFriendRequest()">Enviar solicitud</button>
+      <button class="btn-primary" (click)="sendFriendRequest()">➕ Enviar solicitud</button>
+    </div>
+
+    <div class="create-table-section">
+      <h2 class="section-title">🎲 CREAR MESA</h2>
+      <div class="create-table-controls">
+        <input [(ngModel)]="nombreMesa" placeholder="Nombre de la mesa" class="mesa-input" />
+        <select [(ngModel)]="juegoSeleccionado" class="casino-select">
+          <option value="Ruleta">Ruleta</option>
+          <option value="Blackjack">Blackjack</option>
+          <option value="Poker">Poker</option>
+        </select>
+        <label class="private-label">
+          <input type="checkbox" [(ngModel)]="esPrivada" /> 🔒 Privada
+        </label>
+        <button class="btn-primary" (click)="crearMesa()">✨ Crear Mesa</button>
+      </div>
+    </div>
+
+    <div class="mesas-section">
+      <h2 class="section-title">♟️ MESAS DISPONIBLES</h2>
+      <div class="mesas-grid">
+        <div *ngFor="let mesa of mesasDisponibles" class="mesa-card">
+          <div class="mesa-header">
+            <span class="mesa-juego" [ngClass]="mesa.juego.toLowerCase()">{{ mesa.juego }}</span>
+            <span class="mesa-jugadores">{{ mesa.jugadores.length }}/{{ mesa.maxJugadores }}</span>
+            <span *ngIf="mesa.esPrivada" class="private-badge">🔒</span>
+          </div>
+          <div class="mesa-nombre">{{ mesa.nombre }}</div>
+          <div class="mesa-creador">Creador: {{ mesa.creador }}</div>
+          <div class="mesa-actions">
+            <button class="btn-secondary" (click)="unirseAMesa(mesa.id, mesa.juego)" [disabled]="!puedeUnirse(mesa)">
+              {{ estaEnMesa(mesa) ? 'Ya unido' : 'Unirse' }}
+            </button>
+            <button class="btn-danger" *ngIf="esCreador(mesa)" (click)="salirDeMesa(mesa)">Cerrar Mesa</button>
+            <button class="btn-warning" *ngIf="estaEnMesa(mesa) && !esCreador(mesa)" (click)="salirDeMesa(mesa)">Salir</button>
+            <div class="invitar-container" *ngIf="esCreador(mesa)">
+              <button class="btn-invitar" *ngFor="let amigo of friendList" (click)="invitarAmigo(amigo, mesa)" [disabled]="!isOnline(amigo)">Invitar a {{ amigo }}</button>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="mesasDisponibles.length === 0" class="empty-message">No hay mesas disponibles. ¡Crea una!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showPasswordModal">
+  <div class="modal-content">
+    <h3>🔐 Sala privada</h3>
+    <p>Introduce la contraseña para unirte</p>
+    <input type="password" [(ngModel)]="mesaPassword" placeholder="Contraseña" class="password-input" />
+    <div class="modal-buttons">
+      <button class="btn-cancel" (click)="cancelPasswordModal()">Cancelar</button>
+      <button class="btn-accept" (click)="joinWithPassword()">Unirse</button>
     </div>
   </div>
 </div>
