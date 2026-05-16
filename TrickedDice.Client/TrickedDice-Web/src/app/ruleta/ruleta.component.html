@@ -29,16 +29,21 @@
       </div>
 
       <div class="tapete-right">
-        <div class="tapete-section">
-          <h3 class="section-title">NÚMEROS</h3>
-          <div class="tapete-wrapper">
+        <div class="tabs">
+          <button class="tab-btn" [class.active]="modoApuesta === 'rapidas'" (click)="modoApuesta = 'rapidas'">
+            🎲 APUESTAS RÁPIDAS
+          </button>
+          <button class="tab-btn" [class.active]="modoApuesta === 'especiales'" (click)="modoApuesta = 'especiales'">
+            ✨ APUESTAS ESPECIALES
+          </button>
+        </div>
+
+        <div class="tapete-wrapper">
+          <div *ngIf="modoApuesta === 'rapidas'">
             <div class="tapete-real">
               <div class="numeros-con-columnas">
                 <div class="cero-lateral">
-                  <div class="numero-casilla cero" 
-                       (click)="agregarApuestaPleno(0)">
-                    0
-                  </div>
+                  <div class="numero-casilla cero" (click)="agregarApuestaPleno(0)">0</div>
                 </div>
                 <div class="columnas-numeros">
                   <div class="fila-numeros" *ngFor="let fila of [0,1,2]">
@@ -79,113 +84,99 @@
               </div>
             </div>
             <div class="hotspots-layer">
-              <div *ngFor="let h of obtenerHotspotsCaballo()"
-                   class="hotspot"
-                   [style.left.%]="h.posX"
-                   [style.top.%]="h.posY"
-                   (click)="agregarApuestaCaballo(h.num1, h.num2)">
-              </div>
-              <div *ngFor="let h of obtenerHotspotsCalle()"
-                   class="hotspot"
-                   [style.left.%]="h.posX"
-                   [style.top.%]="h.posY"
-                   (click)="agregarApuestaCalle(h.num1, h.num2, h.num3)">
-              </div>
-              <div *ngFor="let h of obtenerHotspotsCuadro()"
-                   class="hotspot"
-                   [style.left.%]="h.posX"
-                   [style.top.%]="h.posY"
-                   (click)="agregarApuestaCuadro(h.num1, h.num2, h.num3, h.num4)">
-              </div>
-              <div *ngFor="let h of obtenerHotspotsSeisena()"
-                   class="hotspot"
-                   [style.left.%]="h.posX"
-                   [style.top.%]="h.posY"
-                   (click)="agregarApuestaSeisena(h.num1, h.num2, h.num3, h.num4, h.num5, h.num6)">
-              </div>
-            </div>
-            <div class="fichas-layer">
-              <div *ngFor="let apuesta of apuestasActuales"
-                   class="ficha-visual"
-                   [style.left.%]="apuesta.posX"
-                   [style.top.%]="apuesta.posY">
-                {{ apuesta.monto }}€
-              </div>
+              <div *ngFor="let h of obtenerHotspotsCaballo()" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCaballo(h.num1, h.num2)"></div>
+              <div *ngFor="let h of obtenerHotspotsCalle()" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCalle(h.num1, h.num2, h.num3)"></div>
+              <div *ngFor="let h of obtenerHotspotsCuadro()" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCuadro(h.num1, h.num2, h.num3, h.num4)"></div>
+              <div *ngFor="let h of obtenerHotspotsSeisena()" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaSeisena(h.num1, h.num2, h.num3, h.num4, h.num5, h.num6)"></div>
             </div>
           </div>
-        </div>
 
-        <div class="tapete-section">
-          <h3 class="section-title">APUESTAS MÚLTIPLES</h3>
-          <div class="apuestas-grid-2col">
-            <div class="apuesta-col">
-              <label class="apuesta-label" title="Apuesta a 6 números consecutivos (5:1)">Seisena (5:1)</label>
-              <select class="casino-select" [(ngModel)]="valorApuestaSeisena">
-                <option *ngFor="let s of seisenas" [value]="s">{{ s }}</option>
-              </select>
+          <div *ngIf="modoApuesta === 'especiales'">
+            <div class="tapete-real-placeholder"></div>
+            <div class="racetrack-visual">
+              <div class="racetrack-container">
+                <div class="racetrack-numbers">
+                  <div *ngFor="let num of numerosRuleta; let i = index"
+                       class="numero-racetrack"
+                       [attr.data-numero]="num"
+                       [style.transform]="'rotate(' + (i * 9.7297) + 'deg) translateY(-160px)'"
+                       [style.position]="'absolute'"
+                       [style.top]="'50%'"
+                       [style.left]="'50%'">
+                    {{ num }}
+                  </div>
+                </div>
+                <div class="racetrack-inner">
+                  <div class="zona-especial vecinos"
+                       (mouseenter)="resaltarGrupo('vecinos0')"
+                       (mouseleave)="limpiarResaltado()">
+                    Vecinos del 0
+                  </div>
+                  <div class="zona-especial tercio"
+                       (mouseenter)="resaltarGrupo('tercio')"
+                       (mouseleave)="limpiarResaltado()">
+                    Tercio
+                  </div>
+                  <div class="zona-especial huerfanos"
+                       (mouseenter)="resaltarGrupo('huerfanos')"
+                       (mouseleave)="limpiarResaltado()">
+                    Huérfanos
+                  </div>
+                  <div class="zona-especial juego0"
+                       (mouseenter)="resaltarGrupo('juego0')"
+                       (mouseleave)="limpiarResaltado()">
+                    Juego al 0
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="apuesta-col">
-              <label class="apuesta-label" title="Apuesta a un cuadrado de 4 números (8:1)">Cuadro (8:1)</label>
-              <select class="casino-select" [(ngModel)]="valorApuestaCuadro">
-                <option *ngFor="let c of cuadros" [value]="c">{{ c }}</option>
-              </select>
+            <div class="apuestas-grid">
+              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('vecinos0')">Vecinos del 0</button>
+              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('tercio')">Tercio</button>
+              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('huerfanos')">Huérfanos</button>
+              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('juego0')">Juego al 0</button>
             </div>
-            <div class="apuesta-col">
-              <label class="apuesta-label" title="Apuesta a una fila de 3 números (11:1)">Calle (11:1)</label>
-              <select class="casino-select" [(ngModel)]="valorApuestaCalle">
-                <option *ngFor="let c of calles" [value]="c">{{ c }}</option>
+            <div class="apuesta-col" style="margin-top: 10px;">
+              <label class="apuesta-label">Finales (último dígito)</label>
+              <select class="casino-select" [(ngModel)]="valorApuestaFinal">
+                <option *ngFor="let f of finales" [value]="f">{{ f }}</option>
               </select>
-            </div>
-            <div class="apuesta-col">
-              <label class="apuesta-label" title="Apuesta a 2 números adyacentes (17:1)">Caballo (17:1)</label>
-              <select class="casino-select" [(ngModel)]="valorApuestaCaballo">
-                <option *ngFor="let c of caballos" [value]="c">{{ c }}</option>
-              </select>
+              <button class="apuesta-btn" (click)="seleccionarFinal()">Apostar a este final</button>
             </div>
           </div>
-        </div>
 
-        <div class="tapete-section">
-          <h3 class="section-title">APUESTAS ESPECIALES</h3>
-          <div class="apuestas-grid">
-            <button class="apuesta-btn especial" 
-                    (click)="seleccionarAvanzada('vecinos0')"
-                    title="Cubre el 0 y los 16 números que lo rodean: 22, 18, 29, 7, 28, 12, 35, 3, 26, 32, 15, 19, 4, 21, 2, 25 (17 números)">
-              Vecinos del 0
-            </button>
-            <button class="apuesta-btn especial" 
-                    (click)="seleccionarAvanzada('tercio')"
-                    title="Cubre 12 números opuestos a los vecinos del 0: 33, 16, 24, 5, 10, 23, 8, 30, 11, 36, 13, 27">
-              Tercio
-            </button>
-            <button class="apuesta-btn especial" 
-                    (click)="seleccionarAvanzada('huerfanos')"
-                    title="Cubre los 8 números que no pertenecen ni a Vecinos del 0 ni al Tercio: 1, 20, 14, 31, 9, 17, 34, 6">
-              Huérfanos
-            </button>
-            <button class="apuesta-btn especial" 
-                    (click)="seleccionarAvanzada('juego0')"
-                    title="Cubre el 0 y los 6 números más cercanos: 12, 35, 3, 26, 32, 15 (7 números)">
-              Juego al 0
-            </button>
-          </div>
-          <div class="apuesta-col" style="margin-top: 10px;">
-            <label class="apuesta-label" title="Apuesta a todos los números que terminan en un mismo dígito">Finales (último dígito)</label>
-            <select class="casino-select" [(ngModel)]="valorApuestaFinal">
-              <option *ngFor="let f of finales" [value]="f">{{ f }}</option>
-            </select>
+          <div class="fichas-layer">
+            <div *ngFor="let apuesta of apuestasActuales"
+                 class="ficha-visual"
+                 [class.win]="apuesta.estado === 'win'"
+                 [class.lose]="apuesta.estado === 'lose'"
+                 [style.left.%]="apuesta.posX"
+                 [style.top.%]="apuesta.posY">
+              {{ apuesta.monto }}€
+            </div>
           </div>
         </div>
 
         <div class="tapete-section monto-section">
           <div class="monto-container">
             <label>CANTIDAD POR FICHA</label>
+            <div class="fichas-rapidas">
+              <button *ngFor="let valor of cantidadesFijas" class="ficha-rapida" [class.active]="montoApuesta === valor" (click)="montoApuesta = valor">
+                {{ valor }}€
+              </button>
+            </div>
             <div class="monto-slider-container">
               <span class="monto-min">1€</span>
-              <input type="range" [(ngModel)]="montoApuesta" min="1" max="500" step="1" class="monto-slider" />
-              <span class="monto-max">500€</span>
+              <input type="range" [(ngModel)]="montoApuesta" min="1" max="1000" step="1" class="monto-slider" />
+              <span class="monto-max">1000€</span>
             </div>
             <div class="monto-valor">{{ montoApuesta }} €</div>
+          </div>
+          <div class="botones-acciones">
+            <button class="btn-accion" (click)="deshacer()" [disabled]="!hayDeshacer || girando">DESHACER</button>
+            <button class="btn-accion" (click)="rehacer()" [disabled]="!hayRehacer || girando">REHACER</button>
+            <button class="btn-accion" (click)="repetirApuesta()" [disabled]="!ultimasApuestas.length || girando">REPETIR APUESTA</button>
+            <button class="btn-accion" (click)="duplicarApuesta()" [disabled]="!apuestasActuales.length || girando">DUPLICAR APUESTA</button>
           </div>
           <div class="total-apostado" *ngIf="apuestasActuales.length > 0">
             TOTAL APOSTADO: {{ montoTotalApostado }} €
@@ -202,14 +193,9 @@
 
   <div class="modal-overlay" *ngIf="mostrarModalGanador" (click)="cerrarModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="numero-ganador" [ngClass]="colorModal">
-        {{ numeroModal }}
-      </div>
-      <p class="modal-mensaje">
-        <span *ngIf="colorModal === 'rojo'">¡ROJO!</span>
-        <span *ngIf="colorModal === 'negro'">¡NEGRO!</span>
-        <span *ngIf="colorModal === 'verde'">¡CERO!</span>
-      </p>
+      <div class="numero-ganador" [ngClass]="colorModal">{{ numeroModal }}</div>
+      <p class="modal-premio" *ngIf="premioModal > 0">🎉 GANASTE {{ premioModal | number:'1.2-2' }} € 🎉</p>
+      <p class="modal-premio" *ngIf="premioModal === 0">😞 NO HAS GANADO</p>
       <button class="btn-cerrar" (click)="cerrarModal()">CONTINUAR</button>
     </div>
   </div>
