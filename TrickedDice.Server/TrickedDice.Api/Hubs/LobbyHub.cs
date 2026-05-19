@@ -59,13 +59,11 @@ namespace TrickedDice.Api.Hubs
         {
             var sender = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
             if (string.IsNullOrEmpty(sender) || sender == targetUsername) return;
-
             if (OnlineUsers.TryGetValue(targetUsername, out var connectionId))
             {
                 FriendRequests.AddOrUpdate(targetUsername,
                     new List<string> { sender },
                     (_, list) => { if (!list.Contains(sender)) list.Add(sender); return list; });
-
                 await Clients.Client(connectionId).SendAsync("FriendRequestReceived", sender);
             }
         }
@@ -74,21 +72,17 @@ namespace TrickedDice.Api.Hubs
         {
             var receiver = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
             if (string.IsNullOrEmpty(receiver) || string.IsNullOrEmpty(senderUsername)) return;
-
             FriendRequests.AddOrUpdate(receiver, new List<string>(), (_, list) =>
             {
                 list.Remove(senderUsername);
                 return list;
             });
-
             Friends.AddOrUpdate(receiver,
                 new List<string> { senderUsername },
                 (_, list) => { if (!list.Contains(senderUsername)) list.Add(senderUsername); return list; });
-
             Friends.AddOrUpdate(senderUsername,
                 new List<string> { receiver },
                 (_, list) => { if (!list.Contains(receiver)) list.Add(receiver); return list; });
-
             if (OnlineUsers.TryGetValue(senderUsername, out var connId))
                 await Clients.Client(connId).SendAsync("FriendAdded", receiver);
             await Clients.Caller.SendAsync("FriendAdded", senderUsername);
@@ -119,7 +113,6 @@ namespace TrickedDice.Api.Hubs
         {
             var creator = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
             if (string.IsNullOrEmpty(creator)) return;
-
             var room = new RoomInfo
             {
                 Id = Guid.NewGuid().ToString(),
@@ -142,32 +135,25 @@ namespace TrickedDice.Api.Hubs
         {
             var username = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
             if (string.IsNullOrEmpty(username)) return;
-
             if (!Rooms.TryGetValue(roomId, out var room))
             {
                 await Clients.Caller.SendAsync("Error", "Room not found");
                 return;
             }
-
             if (room.IsPrivate && room.Password != password)
             {
                 await Clients.Caller.SendAsync("Error", "Invalid password");
                 return;
             }
-
             if (room.Players.Count >= room.MaxPlayers)
             {
                 await Clients.Caller.SendAsync("Error", "Room is full");
                 return;
             }
-
-            if (room.Players.Contains(username))
+            if (!room.Players.Contains(username))
             {
-                await Clients.Caller.SendAsync("Error", "Already in room");
-                return;
+                room.Players.Add(username);
             }
-
-            room.Players.Add(username);
             await Groups.AddToGroupAsync(Context.ConnectionId, $"room_{room.Id}");
             await Clients.Group($"room_{room.Id}").SendAsync("RoomUpdated", room);
             await Clients.All.SendAsync("RoomsList", Rooms.Values.ToList());
@@ -178,9 +164,7 @@ namespace TrickedDice.Api.Hubs
         {
             var username = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
             if (string.IsNullOrEmpty(username)) return;
-
             if (!Rooms.TryGetValue(roomId, out var room)) return;
-
             room.Players.Remove(username);
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"room_{room.Id}");
             if (room.Players.Count == 0)
@@ -203,10 +187,8 @@ namespace TrickedDice.Api.Hubs
         {
             var username = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
             if (string.IsNullOrEmpty(username)) return;
-
             if (!Rooms.TryGetValue(roomId, out var room)) return;
             if (room.Creator != username) return;
-
             room.IsPrivate = !room.IsPrivate;
             room.Password = room.IsPrivate ? Guid.NewGuid().ToString().Substring(0, 6) : null;
             await Clients.Group($"room_{room.Id}").SendAsync("RoomUpdated", room);
@@ -217,10 +199,8 @@ namespace TrickedDice.Api.Hubs
         {
             var username = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
             if (string.IsNullOrEmpty(username)) return;
-
             if (!Rooms.TryGetValue(roomId, out var room)) return;
             if (room.Creator != username) return;
-
             room.Status = "playing";
             await Clients.Group($"room_{room.Id}").SendAsync("GameStarted", room.GameType, roomId);
             Rooms.TryRemove(roomId, out _);
@@ -231,10 +211,8 @@ namespace TrickedDice.Api.Hubs
         {
             var inviter = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
             if (string.IsNullOrEmpty(inviter)) return;
-
             var room = Rooms.Values.FirstOrDefault(r => r.Id == roomId);
             if (room == null) return;
-
             if (OnlineUsers.TryGetValue(friendUsername, out var connectionId))
             {
                 await Clients.Client(connectionId).SendAsync("TableInvitation", inviter, roomId, gameType, room.Name);

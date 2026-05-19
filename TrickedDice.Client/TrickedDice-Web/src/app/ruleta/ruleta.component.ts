@@ -10,12 +10,13 @@ import {
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Router, ActivatedRoute } from "@angular/router";
-import { Subscription } from "rxjs";
+import { Subscription, interval } from "rxjs";
 import { AuthService } from "../auth.service";
 import { UsuarioPerfil } from "../models/api-responses";
 import { ToastService } from "../services/toast.service";
 import { NavbarComponent } from "../shared/navbar/navbar.component";
 import { SignalrService } from "../services/signalr.service";
+import { ApiService } from "../services/api.service";
 import { RUTAS } from "../utils/rutas.const";
 
 interface HistorialTirada {
@@ -31,6 +32,30 @@ interface ApuestaVisual {
   posX: number;
   posY: number;
   estado?: 'win' | 'lose';
+}
+
+interface JugadorMesa {
+  email: string;
+  nombre: string;
+  haApostado: boolean;
+  listo: boolean;
+  autoSkip: boolean;
+  montoApostado: number;
+}
+
+interface EstadoMesa {
+  mesaId: string;
+  jugadores: JugadorMesa[];
+  rondaActiva: boolean;
+  inicioRonda: string;
+  todosListos: boolean;
+  creadorEmail: string;
+}
+
+interface MensajeChat {
+  jugador: string;
+  mensaje: string;
+  hora: string;
 }
 
 @Component({
@@ -118,12 +143,25 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   private audioContext: AudioContext | null = null;
 
   mesaId: string = '';
-  private grupoRuleta: string = '';
   currentUser: string = '';
   esCreadorMesa: boolean = false;
+  creadorEmail: string = '';
+
+  estadoMesa: EstadoMesa | null = null;
+  contadorSegundos: number = 0;
+  private contadorSubscription: any = null;
+  rondaActiva: boolean = false;
+  skipActivado: boolean = false;
+  autoSkipActivado: boolean = false;
+  mensajesChat: MensajeChat[] = [];
+  nuevoMensajeChat: string = '';
+  mostrandoContador: boolean = false;
+
+  private signalRCallbacks: { event: string; callback: (...args: any[]) => void }[] = [];
 
   constructor(
     private signalrService: SignalrService,
+    private apiService: ApiService,
     private authService: AuthService,
     private toast: ToastService,
     private router: Router,
@@ -138,10 +176,11 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     this.route.queryParams.subscribe(params => {
       this.mesaId = params['mesa'] || '';
+      this.creadorEmail = params['creador'] || '';
       if (this.mesaId) {
-        this.grupoRuleta = `ruleta_${this.mesaId}`;
         this.unirseMesaRuleta();
         this.obtenerInfoMesa();
+        this.configurarSignalR();
       }
     });
 
@@ -151,60 +190,279 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     this.cargarHistorial();
 
-    const conectado = await this.signalrService.startConnection("/hubs/ruleta");
-    if (!conectado) {
-      this.toast.error("No se pudo conectar al juego.");
-      return;
+    if (!this.mesaId) {
+      await this.signalrService.stopConnection();
+    } else {
+      await this.signalrService.startConnection('/hubs/ruleta');
+      this.obtenerUsuarioActual();
+      await this.signalrService.invoke('ObtenerEstadoMesa', this.mesaId);
     }
+  }
 
-    this.signalrService.on("Error", (mensaje: string) => {
+  private configurarSignalR(): void {
+    const onError = (mensaje: string) => {
       this.girando = false;
       this.toast.error(mensaje);
-    });
+    };
+    this.signalrService.on("Error", onError);
+    this.signalRCallbacks.push({ event: "Error", callback: onError });
 
-    if (this.mesaId) {
-      this.signalrService.on("ApuestaAgregada", (apuesta: any) => {
-        this.toast.info(`Apuesta recibida: ${apuesta.monto}€`);
-      });
+    const onApuestaAgregada = (nombreJugador: string, apuesta: any) => {
+      this.toast.info(`${nombreJugador} apostó ${apuesta.monto}€`);
+    };
+    this.signalrService.on("ApuestaAgregadaMesa", onApuestaAgregada);
+    this.signalRCallbacks.push({ event: "ApuestaAgregadaMesa", callback: onApuestaAgregada });
 
-      this.signalrService.on("ResultadoMesa", (data: any) => {
-        const numeroGanador = data.numeroGanador;
-        const miResultado = data.resultados[this.currentUser];
-        if (miResultado) {
-          this.saldo = miResultado.saldoActualizado;
-          this.authService.actualizarSaldo(this.saldo);
-          this.iniciarAnimacion(numeroGanador, miResultado.gano, miResultado.premio);
-        } else {
-          this.iniciarAnimacion(numeroGanador, false, 0);
-        }
-        this.girando = false;
-      });
-    } else {
-      this.signalrService.on("ResultadoGiro", (res: any) => {
-        this.saldo = res.saldoActualizado;
-        this.authService.actualizarSaldo(res.saldoActualizado);
-        this.iniciarAnimacion(Number(res.numeroGanador), res.gano, res.premio);
-      });
+    const onResultadoMesa = (data: any) => {
+      const numeroGanador = data.numeroGanador;
+      const miResultado = data.resultados[this.currentUser];
+      if (miResultado) {
+        this.saldo = miResultado.saldoActualizado;
+        this.authService.actualizarSaldo(this.saldo);
+        this.iniciarAnimacion(numeroGanador, miResultado.gano, miResultado.premio);
+      } else {
+        this.iniciarAnimacion(numeroGanador, false, 0);
+      }
+      this.girando = false;
+      this.detenerContador();
+      this.rondaActiva = false;
+      this.skipActivado = false;
+    };
+    this.signalrService.on("ResultadoMesa", onResultadoMesa);
+    this.signalRCallbacks.push({ event: "ResultadoMesa", callback: onResultadoMesa });
+
+    const onEstadoMesa = (estado: EstadoMesa) => {
+      this.estadoMesa = estado;
+      this.actualizarInterfazPorEstado();
+    };
+    this.signalrService.on("EstadoMesaActualizado", onEstadoMesa);
+    this.signalRCallbacks.push({ event: "EstadoMesaActualizado", callback: onEstadoMesa });
+
+    const onJugadorHaApostado = (nombreJugador: string) => {
+      if (this.estadoMesa) {
+        const jugador = this.estadoMesa.jugadores.find(j => j.nombre === nombreJugador);
+        if (jugador) jugador.haApostado = true;
+      }
+    };
+    this.signalrService.on("JugadorHaApostado", onJugadorHaApostado);
+    this.signalRCallbacks.push({ event: "JugadorHaApostado", callback: onJugadorHaApostado });
+
+    const onRondaReiniciada = () => {
+      this.toast.success("¡Nueva ronda! Tienes 15 segundos para apostar");
+      this.iniciarContador();
+      this.rondaActiva = true;
+      this.skipActivado = false;
+      this.apuestasActuales = [];
+    };
+    this.signalrService.on("RondaReiniciada", onRondaReiniciada);
+    this.signalRCallbacks.push({ event: "RondaReiniciada", callback: onRondaReiniciada });
+
+    const onNuevoMensaje = (msg: MensajeChat) => {
+      this.mensajesChat.push(msg);
+      if (this.mensajesChat.length > 50) this.mensajesChat.shift();
+    };
+    this.signalrService.on("NuevoMensajeChat", onNuevoMensaje);
+    this.signalRCallbacks.push({ event: "NuevoMensajeChat", callback: onNuevoMensaje });
+  }
+
+  private actualizarInterfazPorEstado(): void {
+    if (!this.estadoMesa) return;
+    const usuarioActualObj = this.estadoMesa.jugadores.find(j => j.email === this.currentUser || j.nombre === this.currentUser);
+    this.esCreadorMesa = this.estadoMesa.creadorEmail === this.currentUser;
+    if (this.estadoMesa.rondaActiva && !this.rondaActiva && !this.girando) {
+      this.iniciarContador();
+      this.rondaActiva = true;
     }
-
-    this.obtenerUsuarioActual();
+    if (usuarioActualObj) {
+      this.skipActivado = usuarioActualObj.listo;
+      this.autoSkipActivado = usuarioActualObj.autoSkip;
+    }
   }
 
-  ngAfterViewInit(): void {
-    this.ctx = this.canvasRef.nativeElement.getContext("2d")!;
-    this.anguloActual = this.calcularAnguloParaSector(0);
-    this.dibujarRuleta(this.anguloActual);
-    this.numerosRuedaConAngulo = this.numerosRuleta.map((num, i) => ({
-      numero: num,
-      angulo: this.calcularAnguloParaSector(i) + this.anguloPorSector / 2
-    }));
+  private async unirseMesaRuleta(): Promise<void> {
+    if (!this.mesaId) return;
+    await this.signalrService.invoke('UnirseMesaRuleta', this.mesaId);
   }
 
-  ngOnDestroy(): void {
-    this.usuarioSub?.unsubscribe();
-    if (this.animFrame) cancelAnimationFrame(this.animFrame);
-    if (this.tiempoLimpiarApuestas) clearTimeout(this.tiempoLimpiarApuestas);
-    this.signalrService.stopConnection();
+  private async obtenerInfoMesa(): Promise<void> {
+    const mesas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
+    const mesa = mesas.find((m: any) => m.id === this.mesaId);
+    if (mesa) {
+      this.esCreadorMesa = mesa.creador === this.currentUser;
+      this.creadorEmail = mesa.creador;
+    }
+  }
+
+  async iniciarContador(): Promise<void> {
+    this.detenerContador();
+    this.contadorSegundos = 15;
+    this.mostrandoContador = true;
+    this.contadorSubscription = interval(1000).subscribe(async () => {
+      this.contadorSegundos--;
+      if (this.contadorSegundos <= 0) {
+        this.detenerContador();
+        if (this.rondaActiva && !this.girando) {
+          await this.girarMesaAutomatico();
+        }
+      }
+    });
+  }
+
+  detenerContador(): void {
+    if (this.contadorSubscription) {
+      this.contadorSubscription.unsubscribe();
+      this.contadorSubscription = null;
+    }
+    this.mostrandoContador = false;
+  }
+
+  async toggleSkip(): Promise<void> {
+    if (!this.mesaId || this.girando) return;
+    this.skipActivado = !this.skipActivado;
+    await this.signalrService.invoke('JugadorListo', this.mesaId, this.skipActivado);
+  }
+
+  async toggleAutoSkip(): Promise<void> {
+    if (!this.mesaId) return;
+    this.autoSkipActivado = !this.autoSkipActivado;
+    await this.signalrService.invoke('JugadorAutoSkip', this.mesaId, this.autoSkipActivado);
+    if (this.autoSkipActivado && this.apuestasActuales.length > 0) {
+      this.skipActivado = true;
+      await this.signalrService.invoke('JugadorListo', this.mesaId, true);
+    }
+  }
+
+  async girarMesaAutomatico(): Promise<void> {
+    if (!this.mesaId || this.girando) return;
+    this.girando = true;
+    await this.signalrService.invoke('GirarMesa', this.mesaId);
+  }
+
+  async reiniciarRonda(): Promise<void> {
+    if (!this.mesaId || !this.esCreadorMesa) {
+      this.toast.warning("Solo el creador puede reiniciar la ronda");
+      return;
+    }
+    await this.signalrService.invoke('ReiniciarRonda', this.mesaId);
+  }
+
+  async enviarMensaje(): Promise<void> {
+    if (!this.nuevoMensajeChat.trim() || !this.mesaId) return;
+    await this.signalrService.invoke('EnviarMensajeChat', this.mesaId, this.nuevoMensajeChat.trim());
+    this.nuevoMensajeChat = '';
+  }
+
+  async apostar(): Promise<void> {
+    if (!this.apuestaValida()) {
+      this.toast.warning("Apuesta inválida o saldo insuficiente.");
+      return;
+    }
+    if (this.mesaId) {
+      for (const ap of this.apuestasActuales) {
+        let valor: string;
+        switch (ap.tipo) {
+          case 'docena':
+            const docenaNum = Math.floor((ap.numeros[0] - 1) / 12) + 1;
+            valor = docenaNum.toString();
+            break;
+          case 'columna':
+            const columnaNum = ((ap.numeros[0] - 1) % 3) + 1;
+            valor = columnaNum.toString();
+            break;
+          case 'finales':
+            valor = (ap.numeros[0] % 10).toString();
+            break;
+          case 'color':
+            valor = ap.numeros[0] === 1 ? 'rojo' : 'negro';
+            break;
+          case 'paridad':
+            valor = ap.numeros[0] === 2 ? 'par' : 'impar';
+            break;
+          case 'mitad':
+            valor = ap.numeros[0] === 1 ? '1-18' : '19-36';
+            break;
+          case 'vecinos0':
+          case 'tercio':
+          case 'huerfanos':
+          case 'juego0':
+            valor = ap.tipo;
+            break;
+          default:
+            valor = ap.numeros.join(',');
+            break;
+        }
+        await this.signalrService.invoke('AgregarApuestaMesa', this.mesaId, {
+          tipo: ap.tipo,
+          valor: valor,
+          monto: ap.monto
+        });
+      }
+      this.toast.success("Apuestas enviadas a la mesa");
+      this.limpiarApuestas();
+      if (this.autoSkipActivado && !this.skipActivado) {
+        this.skipActivado = true;
+        await this.signalrService.invoke('JugadorListo', this.mesaId, true);
+      }
+    } else {
+      this.girando = true;
+      this.sonidoGiro();
+      this.numeroGanador = null;
+      for (let ap of this.apuestasActuales) {
+        delete ap.estado;
+      }
+      const apuestasParaBackend = this.apuestasActuales.map(a => {
+        let valor: string;
+        switch (a.tipo) {
+          case 'docena':
+            const docenaNum = Math.floor((a.numeros[0] - 1) / 12) + 1;
+            valor = docenaNum.toString();
+            break;
+          case 'columna':
+            const columnaNum = ((a.numeros[0] - 1) % 3) + 1;
+            valor = columnaNum.toString();
+            break;
+          case 'finales':
+            valor = (a.numeros[0] % 10).toString();
+            break;
+          case 'color':
+            valor = a.numeros[0] === 1 ? 'rojo' : 'negro';
+            break;
+          case 'paridad':
+            valor = a.numeros[0] === 2 ? 'par' : 'impar';
+            break;
+          case 'mitad':
+            valor = a.numeros[0] === 1 ? '1-18' : '19-36';
+            break;
+          case 'vecinos0':
+          case 'tercio':
+          case 'huerfanos':
+          case 'juego0':
+            valor = a.tipo;
+            break;
+          case 'pleno':
+            valor = a.numeros[0].toString();
+            break;
+          default:
+            valor = a.numeros.join(',');
+            break;
+        }
+        return {
+          tipo: a.tipo,
+          valor: valor,
+          monto: a.monto,
+        };
+      });
+      this.guardarEstadoHistorial();
+      try {
+        const resultado: any = await this.apiService.post('/ruleta/girar-multiple', apuestasParaBackend).toPromise();
+        this.saldo = resultado.saldoActualizado;
+        this.authService.actualizarSaldo(resultado.saldoActualizado);
+        this.iniciarAnimacion(resultado.numeroGanador, resultado.gano, resultado.premio);
+      } catch (error: any) {
+        this.girando = false;
+        this.toast.error(error.error?.mensaje || "Error al procesar la apuesta");
+      }
+    }
   }
 
   private inicializarColores(): void {
@@ -690,107 +948,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.apuestasActuales.length > 0 && this.montoTotalApostado <= this.saldo;
   }
 
-  async apostar(): Promise<void> {
-    if (!this.apuestaValida()) {
-      this.toast.warning("Apuesta inválida o saldo insuficiente.");
-      return;
-    }
-
-    if (this.mesaId) {
-      for (const ap of this.apuestasActuales) {
-        let valor: string;
-        switch (ap.tipo) {
-          case 'docena':
-            const docenaNum = Math.floor((ap.numeros[0] - 1) / 12) + 1;
-            valor = docenaNum.toString();
-            break;
-          case 'columna':
-            const columnaNum = ((ap.numeros[0] - 1) % 3) + 1;
-            valor = columnaNum.toString();
-            break;
-          case 'finales':
-            valor = (ap.numeros[0] % 10).toString();
-            break;
-          default:
-            valor = ap.numeros.join(',');
-            break;
-        }
-        await this.signalrService.invoke('AgregarApuestaMesa', this.mesaId, {
-          tipo: ap.tipo,
-          valor: valor,
-          monto: ap.monto
-        });
-      }
-      this.toast.success("Apuestas enviadas a la mesa");
-      this.limpiarApuestas();
-    } else {
-      this.girando = true;
-      this.sonidoGiro();
-      this.numeroGanador = null;
-
-      for (let ap of this.apuestasActuales) {
-        delete ap.estado;
-      }
-
-      const apuestasParaBackend = this.apuestasActuales.map(a => {
-        let valor: string;
-        switch (a.tipo) {
-          case 'docena':
-            const docenaNum = Math.floor((a.numeros[0] - 1) / 12) + 1;
-            valor = docenaNum.toString();
-            break;
-          case 'columna':
-            const columnaNum = ((a.numeros[0] - 1) % 3) + 1;
-            valor = columnaNum.toString();
-            break;
-          case 'finales':
-            valor = (a.numeros[0] % 10).toString();
-            break;
-          default:
-            valor = a.numeros.join(',');
-            break;
-        }
-        return {
-          tipo: a.tipo,
-          valor: valor,
-          monto: a.monto,
-        };
-      });
-
-      this.guardarEstadoHistorial();
-
-      await this.signalrService.invoke(
-        "GirarMultiple",
-        "mesa-principal",
-        apuestasParaBackend,
-      );
-    }
-  }
-
-  async girarMesa(): Promise<void> {
-    if (!this.mesaId) return;
-    if (this.girando) return;
-    if (!this.esCreadorMesa) {
-      this.toast.warning("Solo el creador de la mesa puede iniciar el giro.");
-      return;
-    }
-    this.girando = true;
-    await this.signalrService.invoke('GirarMesa', this.mesaId);
-  }
-
-  private async unirseMesaRuleta(): Promise<void> {
-    if (!this.mesaId) return;
-    await this.signalrService.invoke('UnirseMesaRuleta', this.mesaId);
-  }
-
-  private async obtenerInfoMesa(): Promise<void> {
-    const mesas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
-    const mesa = mesas.find((m: any) => m.id === this.mesaId);
-    if (mesa) {
-      this.esCreadorMesa = mesa.creador === this.currentUser;
-    }
-  }
-
   getFilaVisual(fila: number): number[] {
     if (fila === 0) return [3,6,9,12,15,18,21,24,27,30,33,36];
     if (fila === 1) return [2,5,8,11,14,17,20,23,26,29,32,35];
@@ -1061,7 +1218,8 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.currentUser = usuario?.nombreUsuario || usuario?.nombre || 'Usuario';
   }
 
-  volverAlLobby(): void {
+  async volverAlLobby(): Promise<void> {
+    await this.signalrService.startConnection('/hubs/lobby');
     this.router.navigate([RUTAS.lobby]);
   }
 
@@ -1130,5 +1288,34 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       o.start(ctx.currentTime + i * (d / 30));
       o.stop(ctx.currentTime + i * (d / 30) + 0.06);
     }
+  }
+
+  get jugadoresLista(): JugadorMesa[] {
+    return this.estadoMesa?.jugadores || [];
+  }
+
+  get contadorVisible(): boolean {
+    return this.mostrandoContador && this.rondaActiva && !this.girando;
+  }
+
+  ngAfterViewInit(): void {
+    this.ctx = this.canvasRef.nativeElement.getContext("2d")!;
+    this.anguloActual = this.calcularAnguloParaSector(0);
+    this.dibujarRuleta(this.anguloActual);
+    this.numerosRuedaConAngulo = this.numerosRuleta.map((num, i) => ({
+      numero: num,
+      angulo: this.calcularAnguloParaSector(i) + this.anguloPorSector / 2
+    }));
+  }
+
+  ngOnDestroy(): void {
+    this.usuarioSub?.unsubscribe();
+    if (this.animFrame) cancelAnimationFrame(this.animFrame);
+    if (this.tiempoLimpiarApuestas) clearTimeout(this.tiempoLimpiarApuestas);
+    this.detenerContador();
+    this.signalRCallbacks.forEach(cb => {
+      this.signalrService.off(cb.event, cb.callback);
+    });
+    this.signalRCallbacks = [];
   }
 }

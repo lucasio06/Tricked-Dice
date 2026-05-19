@@ -50,7 +50,6 @@ namespace TrickedDice.Api
 
                 try
                 {
-                    // 1. Obtener ID_USUARIO y saldo actual
                     int idUsuario;
                     decimal saldoActual;
                     string sqlSaldo = "SELECT ID_USUARIO, SALDO FROM USUARIO WHERE EMAIL = @Email";
@@ -69,7 +68,6 @@ namespace TrickedDice.Api
                     if (saldoActual < apuesta.Monto)
                         return BadRequest(new { mensaje = "Saldo insuficiente." });
 
-                    // 2. Determinar resultado de la apuesta
                     Random rnd = new Random();
                     int numeroGanador = rnd.Next(0, 37);
                     decimal premio = 0;
@@ -78,7 +76,6 @@ namespace TrickedDice.Api
                     string tipo = apuesta.TipoApuesta?.ToLower() ?? "";
                     string valor = apuesta.ValorApuesta ?? "";
 
-                    // (La lógica de cálculo de premio es la misma que tenías)
                     switch (tipo)
                     {
                         case "color":
@@ -228,7 +225,6 @@ namespace TrickedDice.Api
 
                     decimal nuevoSaldo = gano ? saldoActual - apuesta.Monto + premio : saldoActual - apuesta.Monto;
 
-                    // 3. Actualizar saldo
                     string sqlUpdate = "UPDATE USUARIO SET SALDO = @Saldo WHERE ID_USUARIO = @IdUsuario";
                     using (var cmd = new SqlCommand(sqlUpdate, connection, transaction))
                     {
@@ -237,7 +233,6 @@ namespace TrickedDice.Api
                         cmd.ExecuteNonQuery();
                     }
 
-                    // 4. Registrar transacción de apuesta (siempre negativa)
                     string sqlTransApuesta = @"INSERT INTO TRANSACCION (ID_USUARIO, CANTIDAD, TIPO_TRANSACCION) 
                                               VALUES (@idUsuario, @cantidad, 'APUESTA')";
                     using (var cmd = new SqlCommand(sqlTransApuesta, connection, transaction))
@@ -247,7 +242,6 @@ namespace TrickedDice.Api
                         cmd.ExecuteNonQuery();
                     }
 
-                    // 5. Registrar transacción de premio (si ganó)
                     if (gano)
                     {
                         string sqlTransPremio = @"INSERT INTO TRANSACCION (ID_USUARIO, CANTIDAD, TIPO_TRANSACCION) 
@@ -278,6 +272,200 @@ namespace TrickedDice.Api
                     return StatusCode(500, new { mensaje = "Error interno del servidor." });
                 }
             }
+        }
+
+        public class ApuestaMultipleModel
+        {
+            public string Tipo { get; set; } = string.Empty;
+            public string Valor { get; set; } = string.Empty;
+            public decimal Monto { get; set; }
+        }
+
+        [HttpPost("girar-multiple")]
+        public IActionResult GirarMultiple([FromBody] List<ApuestaMultipleModel> apuestas)
+        {
+            if (apuestas == null || apuestas.Count == 0)
+                return BadRequest(new { mensaje = "Debe proporcionar al menos una apuesta." });
+
+            var email = User.FindFirst(ClaimTypes.Email)?.Value
+                        ?? User.FindFirst("email")?.Value
+                        ?? User.FindFirst(ClaimTypes.Name)?.Value
+                        ?? User.FindFirst("unique_name")?.Value;
+
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized(new { mensaje = "No se pudo determinar el email del usuario." });
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                SqlTransaction transaction = connection.BeginTransaction();
+
+                try
+                {
+                    int idUsuario;
+                    decimal saldoActual;
+                    string sqlSaldo = "SELECT ID_USUARIO, SALDO FROM USUARIO WHERE EMAIL = @Email";
+                    using (var cmd = new SqlCommand(sqlSaldo, connection, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@Email", email);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (!reader.Read())
+                                return NotFound(new { mensaje = "Usuario no encontrado." });
+                            idUsuario = reader.GetInt32(0);
+                            saldoActual = reader.GetDecimal(1);
+                        }
+                    }
+
+                    decimal montoTotal = apuestas.Sum(a => a.Monto);
+                    if (saldoActual < montoTotal)
+                        return BadRequest(new { mensaje = "Saldo insuficiente." });
+
+                    Random rnd = new Random();
+                    int numeroGanador = rnd.Next(0, 37);
+                    decimal premioTotal = 0;
+                    bool algunaGanadora = false;
+
+                    foreach (var ap in apuestas)
+                    {
+                        var (gano, premio) = CalcularPremioInterno(ap.Monto, ap.Tipo, ap.Valor, numeroGanador);
+                        if (gano)
+                        {
+                            algunaGanadora = true;
+                            premioTotal += premio;
+                        }
+                    }
+
+                    decimal nuevoSaldo = saldoActual - montoTotal + premioTotal;
+
+                    string sqlUpdate = "UPDATE USUARIO SET SALDO = @Saldo WHERE ID_USUARIO = @IdUsuario";
+                    using (var cmd = new SqlCommand(sqlUpdate, connection, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@Saldo", nuevoSaldo);
+                        cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    string sqlTransApuesta = @"INSERT INTO TRANSACCION (ID_USUARIO, CANTIDAD, TIPO_TRANSACCION) 
+                                               VALUES (@idUsuario, @cantidad, 'APUESTA')";
+                    using (var cmd = new SqlCommand(sqlTransApuesta, connection, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+                        cmd.Parameters.AddWithValue("@cantidad", -montoTotal);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    if (premioTotal > 0)
+                    {
+                        string sqlTransPremio = @"INSERT INTO TRANSACCION (ID_USUARIO, CANTIDAD, TIPO_TRANSACCION) 
+                                                  VALUES (@idUsuario, @cantidad, 'PREMIO')";
+                        using (var cmd = new SqlCommand(sqlTransPremio, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+                            cmd.Parameters.AddWithValue("@cantidad", premioTotal);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    transaction.Commit();
+
+                    return Ok(new
+                    {
+                        numeroGanador,
+                        gano = algunaGanadora,
+                        premio = premioTotal,
+                        saldoActualizado = nuevoSaldo
+                    });
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    _logger.LogError(ex, "Error al procesar apuestas múltiples.");
+                    return StatusCode(500, new { mensaje = "Error interno del servidor." });
+                }
+            }
+        }
+
+        private (bool gano, decimal premio) CalcularPremioInterno(decimal monto, string tipo, string valor, int numeroGanador)
+        {
+            tipo = tipo.ToLower();
+            switch (tipo)
+            {
+                case "color":
+                    string colorApostado = valor.ToLower();
+                    string colorGanador = ObtenerColor(numeroGanador);
+                    if (colorApostado == colorGanador && numeroGanador != 0)
+                        return (true, monto * 2);
+                    break;
+                case "paridad":
+                    if (numeroGanador != 0 && valor.ToLower() == (numeroGanador % 2 == 0 ? "par" : "impar"))
+                        return (true, monto * 2);
+                    break;
+                case "mitad":
+                    if (numeroGanador != 0 && ((valor == "1-18" && numeroGanador <= 18) || (valor == "19-36" && numeroGanador > 18)))
+                        return (true, monto * 2);
+                    break;
+                case "docena":
+                    if (int.TryParse(valor, out int docena) && numeroGanador != 0)
+                    {
+                        int docenaGanadora = (numeroGanador - 1) / 12 + 1;
+                        if (docena == docenaGanadora)
+                            return (true, monto * 3);
+                    }
+                    break;
+                case "columna":
+                    if (int.TryParse(valor, out int columna) && numeroGanador != 0)
+                    {
+                        if (numeroGanador % 3 == columna % 3)
+                            return (true, monto * 3);
+                    }
+                    break;
+                case "pleno":
+                    if (int.TryParse(valor, out int numPleno) && numPleno == numeroGanador)
+                        return (true, monto * 36);
+                    break;
+                case "caballo":
+                    var numsCaballo = valor.Split(',').Select(int.Parse).ToArray();
+                    if (numsCaballo.Contains(numeroGanador))
+                        return (true, monto * 18);
+                    break;
+                case "calle":
+                    var numsCalle = valor.Split(',').Select(int.Parse).ToArray();
+                    if (numsCalle.Contains(numeroGanador))
+                        return (true, monto * 12);
+                    break;
+                case "cuadro":
+                    var numsCuadro = valor.Split(',').Select(int.Parse).ToArray();
+                    if (numsCuadro.Contains(numeroGanador))
+                        return (true, monto * 9);
+                    break;
+                case "seisena":
+                    var numsSeisena = valor.Split(',').Select(int.Parse).ToArray();
+                    if (numsSeisena.Contains(numeroGanador))
+                        return (true, monto * 6);
+                    break;
+                case "vecinos0":
+                    if (EsVecinoDeCero(numeroGanador))
+                        return (true, monto * 2);
+                    break;
+                case "tercio":
+                    if (EsTercioDelCilindro(numeroGanador))
+                        return (true, monto * 2);
+                    break;
+                case "huerfanos":
+                    if (EsHuerfano(numeroGanador))
+                        return (true, monto * 3);
+                    break;
+                case "juego0":
+                    if (EsJuegoAlCero(numeroGanador))
+                        return (true, monto * 3);
+                    break;
+                case "finales":
+                    if (int.TryParse(valor, out int final) && numeroGanador % 10 == final)
+                        return (true, monto * 2);
+                    break;
+            }
+            return (false, 0);
         }
 
         private bool EsVecinoDeCero(int num) => new[] { 0, 2, 3, 4, 7, 12, 15, 18, 19, 21, 22, 25, 26, 28, 29, 32, 35 }.Contains(num);

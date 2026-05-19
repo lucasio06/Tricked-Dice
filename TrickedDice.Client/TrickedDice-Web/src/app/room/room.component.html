@@ -1,6 +1,6 @@
 <app-navbar></app-navbar>
-<div class="room-container" *ngIf="room">
-  <div class="room-card">
+<div class="room-container">
+  <div class="room-card" *ngIf="!loading && !error && room">
     <div class="room-header">
       <h1 class="room-title">{{ room.name }}</h1>
       <div class="room-badge" [ngClass]="room.isPrivate ? 'private' : 'public'">
@@ -38,6 +38,17 @@
     <div class="room-status" *ngIf="!isCreator && room.players.length < 2">
       ⏳ Esperando a más jugadores para empezar...
     </div>
+  </div>
+
+  <div class="loading-container" *ngIf="loading && !error">
+    <div class="loading-spinner"></div>
+    <p>Conectando con la sala...</p>
+  </div>
+
+  <div class="error-container" *ngIf="error">
+    <div class="error-icon">⚠️</div>
+    <p class="error-message">{{ error }}</p>
+    <button class="btn-primary" (click)="router.navigate([rutas.lobby])">Volver al Lobby</button>
   </div>
 </div>
 

@@ -178,7 +178,6 @@ namespace TrickedDice.Api.Controllers
 
                 try
                 {
-                    // 1. Obtener ID_USUARIO y saldo actual
                     int idUsuario;
                     decimal saldoActual;
                     string sqlGet = "SELECT ID_USUARIO, SALDO FROM USUARIO WHERE EMAIL = @Email";
@@ -194,7 +193,6 @@ namespace TrickedDice.Api.Controllers
                         }
                     }
 
-                    // 2. Actualizar saldo
                     string sqlUpdate = "UPDATE USUARIO SET SALDO = SALDO + @cantidad WHERE ID_USUARIO = @idUsuario";
                     using (var cmdUpdate = new SqlCommand(sqlUpdate, c, transaction))
                     {
@@ -205,7 +203,6 @@ namespace TrickedDice.Api.Controllers
 
                     decimal nuevoSaldo = saldoActual + model.Cantidad;
 
-                    // 3. Registrar transacción
                     string sqlTrans = @"INSERT INTO TRANSACCION (ID_USUARIO, CANTIDAD, TIPO_TRANSACCION) 
                                        VALUES (@idUsuario, @cantidad, 'RECARGA')";
                     using (var cmdTrans = new SqlCommand(sqlTrans, c, transaction))
@@ -292,7 +289,7 @@ namespace TrickedDice.Api.Controllers
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
             var claims = new[] { new Claim(ClaimTypes.Name, nombre), new Claim(ClaimTypes.Email, email) };
             var token = new JwtSecurityToken(_config["Jwt:Issuer"], _config["Jwt:Audience"], claims,
-              expires: DateTime.Now.AddMinutes(120), signingCredentials: credentials);
+              expires: DateTime.Now.AddHours(24), signingCredentials: credentials);
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }

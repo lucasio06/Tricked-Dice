@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -25,18 +25,16 @@ interface MesaActiva {
   templateUrl: './lobby.component.html',
   styleUrls: ['./lobby.component.scss']
 })
-export class LobbyComponent implements OnInit, OnDestroy {
+export class LobbyComponent implements OnInit {
   onlineUsers: string[] = [];
   friendList: string[] = [];
   pendingRequests: string[] = [];
   newFriendUsername: string = '';
-
   mesasDisponibles: MesaActiva[] = [];
   juegoSeleccionado: string = 'Ruleta';
   nombreMesa: string = '';
   esPrivada: boolean = false;
   currentUser: string = '';
-
   showPasswordModal: boolean = false;
   selectedMesaId: string = '';
   mesaPassword: string = '';
@@ -49,30 +47,24 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     await this.signalrService.startConnection('/hubs/lobby');
-
     this.signalrService.on('OnlineUsers', (users: string[]) => {
       this.onlineUsers = users;
     });
-
     this.signalrService.on('FriendList', (friends: string[]) => {
       this.friendList = friends;
     });
-
     this.signalrService.on('PendingRequests', (requests: string[]) => {
       this.pendingRequests = requests;
     });
-
     this.signalrService.on('FriendRequestReceived', (sender: string) => {
       this.toast.info(`${sender} te ha enviado una solicitud de amistad`);
       this.signalrService.invoke('GetPendingRequests');
     });
-
     this.signalrService.on('FriendAdded', (friend: string) => {
       this.toast.success(`${friend} ahora es tu amigo`);
       this.signalrService.invoke('GetFriendList');
       this.signalrService.invoke('GetOnlineUsers');
     });
-
     this.signalrService.on('RoomsList', (rooms: any[]) => {
       this.mesasDisponibles = rooms.map(r => ({
         id: r.id,
@@ -85,33 +77,25 @@ export class LobbyComponent implements OnInit, OnDestroy {
         contrasena: r.password
       }));
     });
-
     this.signalrService.on('RoomCreated', (room: any) => {
       this.toast.success(`Sala ${room.name} creada`);
-      this.router.navigate([`/sala/${room.id}`]);
+      this.router.navigate([`/sala/${room.id}`], { queryParams: { creator: room.creator } });
     });
-
     this.signalrService.on('RoomJoined', (room: any) => {
       this.toast.success(`Te has unido a ${room.name}`);
       this.router.navigate([`/sala/${room.id}`]);
     });
-
     this.signalrService.on('Error', (msg: string) => {
+      if (msg.toLowerCase().includes('already in room')) return;
       this.toast.error(msg);
       if (msg.toLowerCase().includes('password')) {
         this.showPasswordModal = true;
       }
     });
-
     await this.signalrService.invoke('GetOnlineUsers');
     await this.signalrService.invoke('GetFriendList');
     await this.signalrService.invoke('GetPendingRequests');
-
     this.obtenerUsuarioActual();
-  }
-
-  ngOnDestroy(): void {
-    this.signalrService.stopConnection();
   }
 
   obtenerUsuarioActual(): void {
@@ -124,9 +108,14 @@ export class LobbyComponent implements OnInit, OnDestroy {
       this.toast.warning('Debes poner un nombre a la mesa');
       return;
     }
-    await this.signalrService.invoke('CreateRoom', this.nombreMesa, this.juegoSeleccionado, this.esPrivada, null);
-    this.nombreMesa = '';
-    this.esPrivada = false;
+    try {
+      await this.signalrService.invoke('CreateRoom', this.nombreMesa, this.juegoSeleccionado, this.esPrivada, null);
+      this.nombreMesa = '';
+      this.esPrivada = false;
+    } catch (err) {
+      console.error('Error al crear la sala:', err);
+      this.toast.error('No se pudo crear la sala: ' + (err as any).message);
+    }
   }
 
   async unirseAMesa(mesaId: string, juego: string): Promise<void> {

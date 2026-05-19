@@ -157,6 +157,58 @@
           </div>
         </div>
 
+        <div class="multijugador-panel" *ngIf="mesaId">
+          <div class="contador-container" *ngIf="contadorVisible">
+            <div class="contador-neon">{{ contadorSegundos }}</div>
+            <div class="contador-label">TIEMPO PARA APOSTAR</div>
+          </div>
+          
+          <div class="jugadores-panel">
+            <h3 class="panel-title">👥 JUGADORES EN MESA</h3>
+            <div class="jugadores-lista">
+              <div *ngFor="let jugador of jugadoresLista" class="jugador-item" [class.es-creador]="jugador.email === estadoMesa?.creadorEmail">
+                <div class="jugador-nombre">
+                  {{ jugador.nombre }}
+                  <span *ngIf="jugador.email === estadoMesa?.creadorEmail" class="creador-badge">👑</span>
+                </div>
+                <div class="jugador-estados">
+                  <span *ngIf="jugador.haApostado" class="estado-apostado" title="Ha apostado">💰</span>
+                  <span *ngIf="jugador.listo" class="estado-listo" title="Listo">✅</span>
+                  <span *ngIf="jugador.autoSkip" class="estado-auto" title="Auto-skip activado">⚡</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="acciones-jugador">
+            <button class="btn-skip" (click)="toggleSkip()" [disabled]="girando" [class.active]="skipActivado">
+              {{ skipActivado ? '✓ LISTO' : 'SKIP (LISTO)' }}
+            </button>
+            <label class="auto-skip-label">
+              <input type="checkbox" [(ngModel)]="autoSkipActivado" (change)="toggleAutoSkip()" [disabled]="girando" />
+              AUTO-SKIP
+            </label>
+          </div>
+          
+          <div class="chat-panel" *ngIf="mesaId">
+            <div class="chat-mensajes">
+              <div *ngFor="let msg of mensajesChat" class="chat-mensaje">
+                <span class="chat-hora">{{ msg.hora }}</span>
+                <span class="chat-jugador">{{ msg.jugador }}:</span>
+                <span class="chat-texto">{{ msg.mensaje }}</span>
+              </div>
+            </div>
+            <div class="chat-input">
+              <input type="text" [(ngModel)]="nuevoMensajeChat" placeholder="Escribe un mensaje..." (keyup.enter)="enviarMensaje()" />
+              <button (click)="enviarMensaje()">📨</button>
+            </div>
+          </div>
+          
+          <div class="boton-reiniciar" *ngIf="esCreadorMesa">
+            <button class="btn-reiniciar" (click)="reiniciarRonda()" [disabled]="girando">🔄 REINICIAR RONDA</button>
+          </div>
+        </div>
+
         <div class="tapete-section monto-section">
           <div class="monto-container">
             <label>CANTIDAD POR FICHA</label>
@@ -183,13 +235,10 @@
             <button class="btn-limpiar" (click)="limpiarApuestas()">LIMPIAR</button>
           </div>
           <div *ngIf="mesaId" class="botones-mesa">
-            <button class="btn-girar-mesa" (click)="girarMesa()" [disabled]="girando || apuestasActuales.length === 0">
-              🎡 GIRAR MESA
-            </button>
             <p class="info-mesa" *ngIf="!esCreadorMesa">Esperando que el creador inicie el giro...</p>
           </div>
-          <button class="btn-apostar" (click)="apostar()" [disabled]="girando || !apuestaValida()">
-            {{ girando ? 'GIRANDO...' : (mesaId ? 'APOSTAR A MESA' : '¡APOSTAR AHORA!') }}
+          <button class="btn-apostar" (click)="apostar()" [disabled]="girando || !apuestaValida() || (mesaId && (!rondaActiva || contadorSegundos <= 0))">
+            {{ girando ? 'GIRANDO...' : (mesaId ? 'APOSTAR' : '¡APOSTAR AHORA!') }}
           </button>
           <button class="btn-volver" (click)="volverAlLobby()">← VOLVER AL LOBBY</button>
         </div>

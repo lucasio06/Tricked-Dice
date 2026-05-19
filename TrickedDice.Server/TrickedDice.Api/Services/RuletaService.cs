@@ -9,6 +9,7 @@ namespace TrickedDice.Api.Services
         private static readonly int[] NumerosRuleta = { 0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26 };
         private static readonly int[] Rojos = { 1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36 };
         private static readonly ConcurrentDictionary<string, List<ApuestaUsuario>> MesasApuestas = new();
+        private static readonly ConcurrentDictionary<string, EstadoMesa> _estadosMesa = new();
 
         public RuletaService(IConfiguration configuration)
         {
@@ -111,6 +112,24 @@ namespace TrickedDice.Api.Services
             if (!MesasApuestas.ContainsKey(mesaId))
                 MesasApuestas[mesaId] = new List<ApuestaUsuario>();
             MesasApuestas[mesaId].Add(new ApuestaUsuario { Email = email, Apuesta = apuesta });
+
+            if (_estadosMesa.TryGetValue(mesaId, out var estado))
+            {
+                lock (estado.Jugadores)
+                {
+                    var jugador = estado.Jugadores.FirstOrDefault(j => j.Email == email);
+                    if (jugador != null)
+                    {
+                        jugador.HaApostado = true;
+                        jugador.MontoApostado += apuesta.Monto;
+                        if (jugador.AutoSkip)
+                        {
+                            jugador.Listo = true;
+                        }
+                    }
+                }
+            }
+
             await Task.CompletedTask;
         }
 
@@ -269,6 +288,116 @@ namespace TrickedDice.Api.Services
             cmd.Parameters.AddWithValue("@Tipo", tipo);
             cmd.ExecuteNonQuery();
         }
+
+        public EstadoMesa? UnirseMesa(string mesaId, string email, string nombre)
+        {
+            var estado = _estadosMesa.GetOrAdd(mesaId, new EstadoMesa
+            {
+                MesaId = mesaId,
+                RondaActiva = false,
+                Jugadores = new List<JugadorMesa>()
+            });
+
+            lock (estado.Jugadores)
+            {
+                if (!estado.Jugadores.Any(j => j.Email == email))
+                {
+                    estado.Jugadores.Add(new JugadorMesa
+                    {
+                        Email = email,
+                        Nombre = nombre,
+                        HaApostado = false,
+                        Listo = false,
+                        AutoSkip = false,
+                        MontoApostado = 0
+                    });
+                    if (estado.Jugadores.Count == 1) estado.CreadorEmail = email;
+                }
+            }
+
+            return estado;
+        }
+
+        public EstadoMesa? MarcarJugadorListo(string mesaId, string email, bool listo)
+        {
+            if (!_estadosMesa.TryGetValue(mesaId, out var estado)) return null;
+
+            lock (estado.Jugadores)
+            {
+                var jugador = estado.Jugadores.FirstOrDefault(j => j.Email == email);
+                if (jugador != null)
+                {
+                    jugador.Listo = listo;
+                }
+            }
+
+            return estado;
+        }
+
+        public EstadoMesa? MarcarAutoSkip(string mesaId, string email, bool autoSkip)
+        {
+            if (!_estadosMesa.TryGetValue(mesaId, out var estado)) return null;
+
+            lock (estado.Jugadores)
+            {
+                var jugador = estado.Jugadores.FirstOrDefault(j => j.Email == email);
+                if (jugador != null)
+                {
+                    jugador.AutoSkip = autoSkip;
+                    if (autoSkip && jugador.HaApostado)
+                    {
+                        jugador.Listo = true;
+                    }
+                }
+            }
+
+            return estado;
+        }
+
+        public EstadoMesa? ObtenerEstadoMesa(string mesaId)
+        {
+            _estadosMesa.TryGetValue(mesaId, out var estado);
+            return estado;
+        }
+
+        public void LimpiarEstadoMesa(string mesaId)
+        {
+            if (_estadosMesa.TryGetValue(mesaId, out var estado))
+            {
+                lock (estado.Jugadores)
+                {
+                    foreach (var j in estado.Jugadores)
+                    {
+                        j.HaApostado = false;
+                        j.Listo = false;
+                        j.MontoApostado = 0;
+                    }
+                    estado.RondaActiva = false;
+                }
+            }
+        }
+
+        public EstadoMesa? ReiniciarRonda(string mesaId, string emailSolicitante)
+        {
+            if (!_estadosMesa.TryGetValue(mesaId, out var estado)) return null;
+            if (estado.CreadorEmail != emailSolicitante) return null;
+
+            lock (estado.Jugadores)
+            {
+                foreach (var j in estado.Jugadores)
+                {
+                    j.HaApostado = false;
+                    j.Listo = false;
+                    j.MontoApostado = 0;
+                }
+                estado.RondaActiva = true;
+                estado.InicioRonda = DateTime.UtcNow;
+            }
+
+            MesasApuestas.TryRemove(mesaId, out _);
+
+            return estado;
+        }
     }
 
     public class ApuestaDto
@@ -282,5 +411,25 @@ namespace TrickedDice.Api.Services
     {
         public string Email { get; set; } = string.Empty;
         public ApuestaDto Apuesta { get; set; } = new();
+    }
+
+    public class JugadorMesa
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public bool HaApostado { get; set; }
+        public bool Listo { get; set; }
+        public bool AutoSkip { get; set; }
+        public decimal MontoApostado { get; set; }
+    }
+
+    public class EstadoMesa
+    {
+        public string MesaId { get; set; } = string.Empty;
+        public List<JugadorMesa> Jugadores { get; set; } = new();
+        public bool RondaActiva { get; set; }
+        public DateTime InicioRonda { get; set; }
+        public bool TodosListos => Jugadores.Count > 0 && Jugadores.All(j => j.Listo || j.AutoSkip);
+        public string CreadorEmail { get; set; } = string.Empty;
     }
 }

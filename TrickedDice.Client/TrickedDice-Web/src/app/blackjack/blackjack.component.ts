@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth.service';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
-import { SignalrService } from '../services/signalr.service';
+import { ApiService } from '../services/api.service';
 
 @Component({
   selector: 'app-blackjack',
@@ -29,82 +29,20 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   private audioContext: AudioContext | null = null;
 
   constructor(
-    private signalrService: SignalrService,
+    private apiService: ApiService,
     private authService: AuthService,
     private toast: ToastService
   ) {}
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
     this.authService.usuario$.subscribe(usuario => {
       if (usuario) {
         this.saldo = usuario.saldo;
       }
     });
-
-    const conectado = await this.signalrService.startConnection('/hubs/blackjack');
-    if (!conectado) {
-      this.toast.error('No se pudo conectar al juego.');
-      return;
-    }
-
-    this.signalrService.on('Error', (mensaje: string) => {
-      this.cargando = false;
-      this.toast.error(mensaje);
-    });
-
-    this.signalrService.on('CartasRepartidas', (data: any) => {
-      this.manoJugador = data.manoJugador;
-      this.manoCrupier = data.manoCrupier;
-      this.idPartida = data.idPartida;
-      this.saldo = data.saldoActualizado;
-      this.authService.actualizarSaldo(data.saldoActualizado);
-      this.juegoIniciado = true;
-      this.cargando = false;
-      this.animarEntrada();
-      this.sonidoRepartir();
-    });
-
-    this.signalrService.on('CartaPedida', (data: any) => {
-      this.manoJugador = data.manoJugador;
-      this.cargando = false;
-      this.animarEntrada();
-
-      if (data.carta === null) {
-        this.juegoTerminado = true;
-        this.juegoIniciado = false;
-        this.resultado = 'derrota';
-        this.mensaje = '¡Te has pasado de 21!';
-        this.sonidoPerder();
-      }
-    });
-
-    this.signalrService.on('ResultadoBlackjack', (data: any) => {
-      this.manoCrupier = data.manoCrupierCompleta;
-      this.saldo = data.saldoActualizado;
-      this.authService.actualizarSaldo(data.saldoActualizado);
-      this.juegoTerminado = true;
-      this.juegoIniciado = false;
-      this.cargando = false;
-      this.animarEntrada();
-
-      if (data.resultado === 'jugador') {
-        this.resultado = 'victoria';
-        this.mensaje = '¡Has ganado!';
-        this.sonidoGanar();
-      } else if (data.resultado === 'empate') {
-        this.resultado = 'empate';
-        this.mensaje = 'Empate. Recuperas tu apuesta.';
-      } else {
-        this.resultado = 'derrota';
-        this.mensaje = 'El crupier gana.';
-        this.sonidoPerder();
-      }
-    });
   }
 
-  ngOnDestroy(): void {
-    this.signalrService.stopConnection();
-  }
+  ngOnDestroy(): void {}
 
   async repartir(): Promise<void> {
     if (this.montoApuesta <= 0 || this.montoApuesta > this.saldo) {
@@ -119,21 +57,83 @@ export class BlackjackComponent implements OnInit, OnDestroy {
     this.manoCrupier = [];
     this.manoJugador = [];
 
-    await this.signalrService.invoke('Repartir', 'mesa-principal', this.montoApuesta);
+    try {
+      const response: any = await this.apiService.post('/blackjack/repartir', { monto: this.montoApuesta }).toPromise();
+      this.idPartida = response.idPartida;
+      this.manoJugador = response.manoJugador;
+      this.manoCrupier = response.manoCrupier;
+      this.saldo = response.saldoActualizado;
+      this.authService.actualizarSaldo(response.saldoActualizado);
+      this.juegoIniciado = true;
+      this.cargando = false;
+      this.animarEntrada();
+      this.sonidoRepartir();
+    } catch (error: any) {
+      this.cargando = false;
+      this.toast.error(error.error?.mensaje || 'Error al repartir');
+    }
   }
 
   async pedir(): Promise<void> {
     if (!this.juegoIniciado || this.juegoTerminado || this.cargando) return;
     this.cargando = true;
     this.sonidoSeleccion();
-    await this.signalrService.invoke('PedirCarta', this.idPartida);
+
+    try {
+      const response: any = await this.apiService.post('/blackjack/pedir', { idPartida: this.idPartida }).toPromise();
+      if (response.carta) {
+        this.manoJugador = response.manoJugador;
+        this.animarEntrada();
+      }
+      if (response.terminada) {
+        this.juegoTerminado = true;
+        this.juegoIniciado = false;
+        this.resultado = 'derrota';
+        this.mensaje = '¡Te has pasado de 21!';
+        this.sonidoPerder();
+        if (response.saldoActualizado) {
+          this.saldo = response.saldoActualizado;
+          this.authService.actualizarSaldo(response.saldoActualizado);
+        }
+      }
+      this.cargando = false;
+    } catch (error: any) {
+      this.cargando = false;
+      this.toast.error(error.error?.mensaje || 'Error al pedir carta');
+    }
   }
 
   async plantarse(): Promise<void> {
     if (!this.juegoIniciado || this.juegoTerminado || this.cargando) return;
     this.cargando = true;
     this.sonidoSeleccion();
-    await this.signalrService.invoke('Plantarse', this.idPartida);
+
+    try {
+      const response: any = await this.apiService.post('/blackjack/plantarse', { idPartida: this.idPartida }).toPromise();
+      this.manoCrupier = response.manoCrupier;
+      this.saldo = response.saldoActualizado;
+      this.authService.actualizarSaldo(response.saldoActualizado);
+      this.juegoTerminado = true;
+      this.juegoIniciado = false;
+      this.cargando = false;
+      this.animarEntrada();
+
+      if (response.resultado === 'jugador') {
+        this.resultado = 'victoria';
+        this.mensaje = '¡Has ganado!';
+        this.sonidoGanar();
+      } else if (response.resultado === 'empate') {
+        this.resultado = 'empate';
+        this.mensaje = 'Empate. Recuperas tu apuesta.';
+      } else {
+        this.resultado = 'derrota';
+        this.mensaje = 'El crupier gana.';
+        this.sonidoPerder();
+      }
+    } catch (error: any) {
+      this.cargando = false;
+      this.toast.error(error.error?.mensaje || 'Error al plantarse');
+    }
   }
 
   nuevaPartida(): void {

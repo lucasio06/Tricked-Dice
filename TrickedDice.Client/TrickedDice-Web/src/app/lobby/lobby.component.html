@@ -42,21 +42,21 @@
     </div>
 
     <div class="lobby-actions">
-      <input [(ngModel)]="newFriendUsername" placeholder="Nombre de usuario" />
+      <input id="newFriendInput" [(ngModel)]="newFriendUsername" placeholder="Nombre de usuario" />
       <button class="btn-primary" (click)="sendFriendRequest()">➕ Enviar solicitud</button>
     </div>
 
     <div class="create-table-section">
       <h2 class="section-title">🎲 CREAR MESA</h2>
       <div class="create-table-controls">
-        <input [(ngModel)]="nombreMesa" placeholder="Nombre de la mesa" class="mesa-input" />
-        <select [(ngModel)]="juegoSeleccionado" class="casino-select">
+        <input id="mesaNombreInput" [(ngModel)]="nombreMesa" placeholder="Nombre de la mesa" class="mesa-input" />
+        <select id="juegoSelect" [(ngModel)]="juegoSeleccionado" class="casino-select">
           <option value="Ruleta">Ruleta</option>
           <option value="Blackjack">Blackjack</option>
           <option value="Poker">Poker</option>
         </select>
         <label class="private-label">
-          <input type="checkbox" [(ngModel)]="esPrivada" /> 🔒 Privada
+          <input id="privadaCheckbox" type="checkbox" [(ngModel)]="esPrivada" /> 🔒 Privada
         </label>
         <button class="btn-primary" (click)="crearMesa()">✨ Crear Mesa</button>
       </div>
@@ -94,7 +94,7 @@
   <div class="modal-content">
     <h3>🔐 Sala privada</h3>
     <p>Introduce la contraseña para unirte</p>
-    <input type="password" [(ngModel)]="mesaPassword" placeholder="Contraseña" class="password-input" />
+    <input id="passwordInput" type="password" [(ngModel)]="mesaPassword" placeholder="Contraseña" class="password-input" />
     <div class="modal-buttons">
       <button class="btn-cancel" (click)="cancelPasswordModal()">Cancelar</button>
       <button class="btn-accept" (click)="joinWithPassword()">Unirse</button>
