@@ -9,102 +9,114 @@ namespace TrickedDice.Api.Services
         private static readonly int[] NumerosRuleta = { 0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26 };
         private static readonly int[] Rojos = { 1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36 };
         private static readonly ConcurrentDictionary<string, List<ApuestaUsuario>> MesasApuestas = new();
-        private static readonly ConcurrentDictionary<string, EstadoMesa> _estadosMesa = new();
+        private static readonly ConcurrentDictionary<string, EstadoMesa> EstadosMesa = new();
 
         public RuletaService(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public object GirarRuleta(string email, decimal monto, string tipoApuesta, string valorApuesta)
+        public EstadoMesa UnirseMesa(string mesaId, string email, string nombre)
         {
-            using var connection = new SqlConnection(_connectionString);
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
-            try
+            var estado = EstadosMesa.GetOrAdd(mesaId, _ => new EstadoMesa
             {
-                var idUsuario = ObtenerIdUsuario(connection, transaction, email);
-                var saldoActual = ObtenerSaldo(connection, transaction, idUsuario);
+                MesaId = mesaId,
+                Jugadores = new List<JugadorEstado>(),
+                RondaActiva = false,
+                InicioRonda = null,
+                CreadorEmail = email
+            });
 
-                if (saldoActual < monto) throw new InvalidOperationException("Saldo insuficiente");
-
-                var rnd = new Random();
-                int numeroGanador = NumerosRuleta[rnd.Next(0, NumerosRuleta.Length)];
-                var (gano, premio) = CalcularPremio(monto, tipoApuesta, valorApuesta, numeroGanador);
-
-                var nuevoSaldo = gano ? saldoActual - monto + premio : saldoActual - monto;
-
-                ActualizarSaldo(connection, transaction, idUsuario, nuevoSaldo);
-                RegistrarTransaccion(connection, transaction, idUsuario, -monto, "APUESTA");
-                if (gano) RegistrarTransaccion(connection, transaction, idUsuario, premio, "PREMIO");
-
-                transaction.Commit();
-
-                return new
+            lock (estado)
+            {
+                if (!estado.Jugadores.Any(j => j.Email == email))
                 {
-                    numeroGanador,
-                    gano,
-                    premio,
-                    saldoActualizado = nuevoSaldo
-                };
+                    estado.Jugadores.Add(new JugadorEstado
+                    {
+                        Email = email,
+                        Nombre = nombre,
+                        HaApostado = false,
+                        Listo = false,
+                        AutoSkip = false,
+                        MontoApostado = 0
+                    });
+                }
+                if (estado.CreadorEmail == null)
+                    estado.CreadorEmail = email;
             }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
+            return estado;
         }
 
-        public object GirarRuletaMultiple(string email, List<ApuestaDto> apuestas)
+        public EstadoMesa? MarcarJugadorListo(string mesaId, string email, bool listo)
         {
-            using var connection = new SqlConnection(_connectionString);
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
-            try
+            if (!EstadosMesa.TryGetValue(mesaId, out var estado))
+                return null;
+            lock (estado)
             {
-                var idUsuario = ObtenerIdUsuario(connection, transaction, email);
-                var saldoActual = ObtenerSaldo(connection, transaction, idUsuario);
+                var jugador = estado.Jugadores.FirstOrDefault(j => j.Email == email);
+                if (jugador == null) return null;
+                jugador.Listo = listo;
+                estado.TodosListos = estado.Jugadores.All(j => j.Listo || j.AutoSkip);
+            }
+            return estado;
+        }
 
-                var montoTotal = apuestas.Sum(a => a.Monto);
-                if (saldoActual < montoTotal) throw new InvalidOperationException("Saldo insuficiente");
-
-                var rnd = new Random();
-                int numeroGanador = NumerosRuleta[rnd.Next(0, NumerosRuleta.Length)];
-
-                decimal premioTotal = 0;
-                bool algunaGanadora = false;
-
-                foreach (var apuesta in apuestas)
+        public EstadoMesa? MarcarAutoSkip(string mesaId, string email, bool autoSkip)
+        {
+            if (!EstadosMesa.TryGetValue(mesaId, out var estado))
+                return null;
+            lock (estado)
+            {
+                var jugador = estado.Jugadores.FirstOrDefault(j => j.Email == email);
+                if (jugador == null) return null;
+                jugador.AutoSkip = autoSkip;
+                if (autoSkip && !jugador.Listo)
                 {
-                    var (gano, premio) = CalcularPremio(apuesta.Monto, apuesta.Tipo, apuesta.Valor, numeroGanador);
-                    if (gano)
-                    {
-                        algunaGanadora = true;
-                        premioTotal += premio;
-                    }
+                    jugador.Listo = true;
+                    estado.TodosListos = estado.Jugadores.All(j => j.Listo || j.AutoSkip);
                 }
-
-                var nuevoSaldo = saldoActual - montoTotal + premioTotal;
-
-                ActualizarSaldo(connection, transaction, idUsuario, nuevoSaldo);
-                RegistrarTransaccion(connection, transaction, idUsuario, -montoTotal, "APUESTA");
-                if (premioTotal > 0) RegistrarTransaccion(connection, transaction, idUsuario, premioTotal, "PREMIO");
-
-                transaction.Commit();
-
-                return new
-                {
-                    numeroGanador,
-                    gano = algunaGanadora,
-                    premio = premioTotal,
-                    saldoActualizado = nuevoSaldo
-                };
             }
-            catch
+            return estado;
+        }
+
+        public EstadoMesa? ReiniciarRonda(string mesaId, string email)
+        {
+            if (!EstadosMesa.TryGetValue(mesaId, out var estado))
+                return null;
+            if (estado.CreadorEmail != email)
+                return null;
+            lock (estado)
             {
-                transaction.Rollback();
-                throw;
+                foreach (var j in estado.Jugadores)
+                {
+                    j.HaApostado = false;
+                    j.Listo = false;
+                    j.MontoApostado = 0;
+                }
+                estado.RondaActiva = true;
+                estado.InicioRonda = DateTime.UtcNow.ToString("o");
+                estado.TodosListos = false;
             }
+            return estado;
+        }
+
+        public EstadoMesa? ObtenerEstadoMesa(string mesaId)
+        {
+            EstadosMesa.TryGetValue(mesaId, out var estado);
+            return estado;
+        }
+
+        public void LimpiarEstadoMesa(string mesaId)
+        {
+            if (EstadosMesa.TryGetValue(mesaId, out var estado))
+            {
+                lock (estado)
+                {
+                    estado.RondaActiva = false;
+                    estado.TodosListos = false;
+                }
+            }
+            MesasApuestas.TryRemove(mesaId, out _);
         }
 
         public async Task AgregarApuestaMesa(string mesaId, string email, ApuestaDto apuesta)
@@ -112,24 +124,19 @@ namespace TrickedDice.Api.Services
             if (!MesasApuestas.ContainsKey(mesaId))
                 MesasApuestas[mesaId] = new List<ApuestaUsuario>();
             MesasApuestas[mesaId].Add(new ApuestaUsuario { Email = email, Apuesta = apuesta });
-
-            if (_estadosMesa.TryGetValue(mesaId, out var estado))
+            
+            if (EstadosMesa.TryGetValue(mesaId, out var estado))
             {
-                lock (estado.Jugadores)
+                lock (estado)
                 {
                     var jugador = estado.Jugadores.FirstOrDefault(j => j.Email == email);
                     if (jugador != null)
                     {
                         jugador.HaApostado = true;
                         jugador.MontoApostado += apuesta.Monto;
-                        if (jugador.AutoSkip)
-                        {
-                            jugador.Listo = true;
-                        }
                     }
                 }
             }
-
             await Task.CompletedTask;
         }
 
@@ -191,6 +198,83 @@ namespace TrickedDice.Api.Services
             return new { gano = algunaGanadora, premio = premioTotal, saldoActualizado = nuevoSaldo };
         }
 
+        public object GirarRuletaMultiple(string email, List<ApuestaDto> apuestas)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                var idUsuario = ObtenerIdUsuario(connection, transaction, email);
+                var saldoActual = ObtenerSaldo(connection, transaction, idUsuario);
+                var montoTotal = apuestas.Sum(a => a.Monto);
+                if (saldoActual < montoTotal) throw new InvalidOperationException("Saldo insuficiente");
+                var rnd = new Random();
+                int numeroGanador = NumerosRuleta[rnd.Next(0, NumerosRuleta.Length)];
+                decimal premioTotal = 0;
+                bool algunaGanadora = false;
+                foreach (var apuesta in apuestas)
+                {
+                    var (gano, premio) = CalcularPremio(apuesta.Monto, apuesta.Tipo, apuesta.Valor, numeroGanador);
+                    if (gano)
+                    {
+                        algunaGanadora = true;
+                        premioTotal += premio;
+                    }
+                }
+                var nuevoSaldo = saldoActual - montoTotal + premioTotal;
+                ActualizarSaldo(connection, transaction, idUsuario, nuevoSaldo);
+                RegistrarTransaccion(connection, transaction, idUsuario, -montoTotal, "APUESTA");
+                if (premioTotal > 0) RegistrarTransaccion(connection, transaction, idUsuario, premioTotal, "PREMIO");
+                transaction.Commit();
+                return new
+                {
+                    numeroGanador,
+                    gano = algunaGanadora,
+                    premio = premioTotal,
+                    saldoActualizado = nuevoSaldo
+                };
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public object GirarRuleta(string email, decimal monto, string tipoApuesta, string valorApuesta)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                var idUsuario = ObtenerIdUsuario(connection, transaction, email);
+                var saldoActual = ObtenerSaldo(connection, transaction, idUsuario);
+                if (saldoActual < monto) throw new InvalidOperationException("Saldo insuficiente");
+                var rnd = new Random();
+                int numeroGanador = NumerosRuleta[rnd.Next(0, NumerosRuleta.Length)];
+                var (gano, premio) = CalcularPremio(monto, tipoApuesta, valorApuesta, numeroGanador);
+                var nuevoSaldo = gano ? saldoActual - monto + premio : saldoActual - monto;
+                ActualizarSaldo(connection, transaction, idUsuario, nuevoSaldo);
+                RegistrarTransaccion(connection, transaction, idUsuario, -monto, "APUESTA");
+                if (gano) RegistrarTransaccion(connection, transaction, idUsuario, premio, "PREMIO");
+                transaction.Commit();
+                return new
+                {
+                    numeroGanador,
+                    gano,
+                    premio,
+                    saldoActualizado = nuevoSaldo
+                };
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
         private (bool gano, decimal premio) CalcularPremio(decimal monto, string tipo, string valor, int numero)
         {
             tipo = tipo.ToLower();
@@ -212,9 +296,6 @@ namespace TrickedDice.Api.Services
                     break;
                 case "columna":
                     if (numero != 0 && int.TryParse(valor, out int columna) && (numero % 3 == columna % 3)) return (true, monto * 3);
-                    break;
-                case "numero":
-                    if (valor == numero.ToString()) return (true, monto * 36);
                     break;
                 case "pleno":
                     if (int.TryParse(valor, out int numPleno) && numPleno == numero) return (true, monto * 36);
@@ -288,116 +369,6 @@ namespace TrickedDice.Api.Services
             cmd.Parameters.AddWithValue("@Tipo", tipo);
             cmd.ExecuteNonQuery();
         }
-
-        public EstadoMesa? UnirseMesa(string mesaId, string email, string nombre)
-        {
-            var estado = _estadosMesa.GetOrAdd(mesaId, new EstadoMesa
-            {
-                MesaId = mesaId,
-                RondaActiva = false,
-                Jugadores = new List<JugadorMesa>()
-            });
-
-            lock (estado.Jugadores)
-            {
-                if (!estado.Jugadores.Any(j => j.Email == email))
-                {
-                    estado.Jugadores.Add(new JugadorMesa
-                    {
-                        Email = email,
-                        Nombre = nombre,
-                        HaApostado = false,
-                        Listo = false,
-                        AutoSkip = false,
-                        MontoApostado = 0
-                    });
-                    if (estado.Jugadores.Count == 1) estado.CreadorEmail = email;
-                }
-            }
-
-            return estado;
-        }
-
-        public EstadoMesa? MarcarJugadorListo(string mesaId, string email, bool listo)
-        {
-            if (!_estadosMesa.TryGetValue(mesaId, out var estado)) return null;
-
-            lock (estado.Jugadores)
-            {
-                var jugador = estado.Jugadores.FirstOrDefault(j => j.Email == email);
-                if (jugador != null)
-                {
-                    jugador.Listo = listo;
-                }
-            }
-
-            return estado;
-        }
-
-        public EstadoMesa? MarcarAutoSkip(string mesaId, string email, bool autoSkip)
-        {
-            if (!_estadosMesa.TryGetValue(mesaId, out var estado)) return null;
-
-            lock (estado.Jugadores)
-            {
-                var jugador = estado.Jugadores.FirstOrDefault(j => j.Email == email);
-                if (jugador != null)
-                {
-                    jugador.AutoSkip = autoSkip;
-                    if (autoSkip && jugador.HaApostado)
-                    {
-                        jugador.Listo = true;
-                    }
-                }
-            }
-
-            return estado;
-        }
-
-        public EstadoMesa? ObtenerEstadoMesa(string mesaId)
-        {
-            _estadosMesa.TryGetValue(mesaId, out var estado);
-            return estado;
-        }
-
-        public void LimpiarEstadoMesa(string mesaId)
-        {
-            if (_estadosMesa.TryGetValue(mesaId, out var estado))
-            {
-                lock (estado.Jugadores)
-                {
-                    foreach (var j in estado.Jugadores)
-                    {
-                        j.HaApostado = false;
-                        j.Listo = false;
-                        j.MontoApostado = 0;
-                    }
-                    estado.RondaActiva = false;
-                }
-            }
-        }
-
-        public EstadoMesa? ReiniciarRonda(string mesaId, string emailSolicitante)
-        {
-            if (!_estadosMesa.TryGetValue(mesaId, out var estado)) return null;
-            if (estado.CreadorEmail != emailSolicitante) return null;
-
-            lock (estado.Jugadores)
-            {
-                foreach (var j in estado.Jugadores)
-                {
-                    j.HaApostado = false;
-                    j.Listo = false;
-                    j.MontoApostado = 0;
-                }
-                estado.RondaActiva = true;
-                estado.InicioRonda = DateTime.UtcNow;
-            }
-
-            MesasApuestas.TryRemove(mesaId, out _);
-
-            return estado;
-        }
     }
 
     public class ApuestaDto
@@ -413,7 +384,17 @@ namespace TrickedDice.Api.Services
         public ApuestaDto Apuesta { get; set; } = new();
     }
 
-    public class JugadorMesa
+    public class EstadoMesa
+    {
+        public string MesaId { get; set; } = string.Empty;
+        public List<JugadorEstado> Jugadores { get; set; } = new();
+        public bool RondaActiva { get; set; }
+        public string? InicioRonda { get; set; }
+        public bool TodosListos { get; set; }
+        public string? CreadorEmail { get; set; }
+    }
+
+    public class JugadorEstado
     {
         public string Email { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
@@ -421,15 +402,5 @@ namespace TrickedDice.Api.Services
         public bool Listo { get; set; }
         public bool AutoSkip { get; set; }
         public decimal MontoApostado { get; set; }
-    }
-
-    public class EstadoMesa
-    {
-        public string MesaId { get; set; } = string.Empty;
-        public List<JugadorMesa> Jugadores { get; set; } = new();
-        public bool RondaActiva { get; set; }
-        public DateTime InicioRonda { get; set; }
-        public bool TodosListos => Jugadores.Count > 0 && Jugadores.All(j => j.Listo || j.AutoSkip);
-        public string CreadorEmail { get; set; } = string.Empty;
     }
 }

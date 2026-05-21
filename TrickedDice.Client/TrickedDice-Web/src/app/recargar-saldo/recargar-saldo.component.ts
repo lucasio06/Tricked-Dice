@@ -24,7 +24,7 @@ export class RecargarSaldoComponent implements OnInit {
   recargando = false;
   private returnUrl: string = RUTAS.home;
   private stripe: Stripe | null = null;
-  private publishableKey = 'pk_test_51TZC0q4AJRUh3EiOl8RVeGIvOMvsJzC7jcjV0IVc39dpjtRnumRCOIFg0cFYerCbsErK6R2ciIQDluDVgpvjeZfp003HLOXR6O';
+  private publishableKey = 'pk_test_51TZUCNDY2gI1lh3UUkOQkVdpiZirL6c98GVct9MlwkgzJDxjrJKHDYSvYpnd7iZxiDPy49GU7p0SemRX2pljcaAR00QWhxSy0v';
   private currentUser: any = null;
   private cardElement: any = null;
 

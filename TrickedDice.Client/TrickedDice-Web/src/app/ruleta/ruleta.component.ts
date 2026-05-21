@@ -6,6 +6,7 @@ import {
   AfterViewInit,
   OnDestroy,
   NgZone,
+  ChangeDetectorRef
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
@@ -167,6 +168,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {
     this.inicializarColores();
     this.generarApuestasMultiples();
@@ -201,68 +203,101 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private configurarSignalR(): void {
     const onError = (mensaje: string) => {
-      this.girando = false;
-      this.toast.error(mensaje);
+      this.ngZone.run(() => {
+        this.girando = false;
+        this.toast.error(mensaje);
+        this.cdr.detectChanges();
+      });
     };
     this.signalrService.on("Error", onError);
     this.signalRCallbacks.push({ event: "Error", callback: onError });
 
     const onApuestaAgregada = (nombreJugador: string, apuesta: any) => {
-      this.toast.info(`${nombreJugador} apostó ${apuesta.monto}€`);
+      this.ngZone.run(() => {
+        this.toast.info(`${nombreJugador} apostó ${apuesta.monto}€`);
+      });
     };
     this.signalrService.on("ApuestaAgregadaMesa", onApuestaAgregada);
     this.signalRCallbacks.push({ event: "ApuestaAgregadaMesa", callback: onApuestaAgregada });
 
     const onResultadoMesa = (data: any) => {
-      const numeroGanador = data.numeroGanador;
-      const miResultado = data.resultados[this.currentUser];
-      if (miResultado) {
-        this.saldo = miResultado.saldoActualizado;
-        this.authService.actualizarSaldo(this.saldo);
-        this.iniciarAnimacion(numeroGanador, miResultado.gano, miResultado.premio);
-      } else {
-        this.iniciarAnimacion(numeroGanador, false, 0);
-      }
-      this.girando = false;
-      this.detenerContador();
-      this.rondaActiva = false;
-      this.skipActivado = false;
+      this.ngZone.run(() => {
+        const numeroGanador = data.numeroGanador;
+        const miResultado = data.resultados[this.currentUser];
+        if (miResultado) {
+          this.saldo = miResultado.saldoActualizado;
+          this.authService.actualizarSaldo(this.saldo);
+          this.iniciarAnimacion(numeroGanador, miResultado.gano, miResultado.premio);
+        } else {
+          this.iniciarAnimacion(numeroGanador, false, 0);
+        }
+        this.girando = false;
+        this.detenerContador();
+        this.rondaActiva = false;
+        this.skipActivado = false;
+        this.cdr.detectChanges();
+      });
     };
     this.signalrService.on("ResultadoMesa", onResultadoMesa);
     this.signalRCallbacks.push({ event: "ResultadoMesa", callback: onResultadoMesa });
 
     const onEstadoMesa = (estado: EstadoMesa) => {
-      this.estadoMesa = estado;
-      this.actualizarInterfazPorEstado();
+      this.ngZone.run(() => {
+        this.estadoMesa = estado;
+        this.actualizarInterfazPorEstado();
+        this.cdr.detectChanges();
+      });
     };
     this.signalrService.on("EstadoMesaActualizado", onEstadoMesa);
     this.signalRCallbacks.push({ event: "EstadoMesaActualizado", callback: onEstadoMesa });
 
     const onJugadorHaApostado = (nombreJugador: string) => {
-      if (this.estadoMesa) {
-        const jugador = this.estadoMesa.jugadores.find(j => j.nombre === nombreJugador);
-        if (jugador) jugador.haApostado = true;
-      }
+      this.ngZone.run(() => {
+        if (this.estadoMesa) {
+          const jugador = this.estadoMesa.jugadores.find(j => j.nombre === nombreJugador);
+          if (jugador) jugador.haApostado = true;
+          this.cdr.detectChanges();
+        }
+      });
     };
     this.signalrService.on("JugadorHaApostado", onJugadorHaApostado);
     this.signalRCallbacks.push({ event: "JugadorHaApostado", callback: onJugadorHaApostado });
 
     const onRondaReiniciada = () => {
-      this.toast.success("¡Nueva ronda! Tienes 15 segundos para apostar");
-      this.iniciarContador();
-      this.rondaActiva = true;
-      this.skipActivado = false;
-      this.apuestasActuales = [];
+      this.ngZone.run(() => {
+        this.toast.success("¡Nueva ronda! Tienes 15 segundos para apostar");
+        this.rondaActiva = true;
+        this.skipActivado = false;
+        this.apuestasActuales = [];
+        this.iniciarContador();
+        this.cdr.detectChanges();
+      });
     };
     this.signalrService.on("RondaReiniciada", onRondaReiniciada);
     this.signalRCallbacks.push({ event: "RondaReiniciada", callback: onRondaReiniciada });
 
     const onNuevoMensaje = (msg: MensajeChat) => {
-      this.mensajesChat.push(msg);
-      if (this.mensajesChat.length > 50) this.mensajesChat.shift();
+      this.ngZone.run(() => {
+        this.mensajesChat.push(msg);
+        if (this.mensajesChat.length > 50) this.mensajesChat.shift();
+        this.cdr.detectChanges();
+        this.scrollToBottom();
+      });
     };
     this.signalrService.on("NuevoMensajeChat", onNuevoMensaje);
     this.signalRCallbacks.push({ event: "NuevoMensajeChat", callback: onNuevoMensaje });
+
+    const onTimerSynced = (timeLeft: number) => {
+      this.ngZone.run(() => {
+        if (!this.esCreadorMesa) {
+          this.contadorSegundos = timeLeft;
+          this.mostrandoContador = true;
+          this.cdr.detectChanges();
+        }
+      });
+    };
+    this.signalrService.on("TimerSynced", onTimerSynced);
+    this.signalRCallbacks.push({ event: "TimerSynced", callback: onTimerSynced });
   }
 
   private actualizarInterfazPorEstado(): void {
@@ -270,8 +305,8 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     const usuarioActualObj = this.estadoMesa.jugadores.find(j => j.email === this.currentUser || j.nombre === this.currentUser);
     this.esCreadorMesa = this.estadoMesa.creadorEmail === this.currentUser;
     if (this.estadoMesa.rondaActiva && !this.rondaActiva && !this.girando) {
-      this.iniciarContador();
       this.rondaActiva = true;
+      this.iniciarContador();
     }
     if (usuarioActualObj) {
       this.skipActivado = usuarioActualObj.listo;
@@ -295,17 +330,25 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async iniciarContador(): Promise<void> {
     this.detenerContador();
-    this.contadorSegundos = 15;
     this.mostrandoContador = true;
-    this.contadorSubscription = interval(1000).subscribe(async () => {
-      this.contadorSegundos--;
-      if (this.contadorSegundos <= 0) {
-        this.detenerContador();
-        if (this.rondaActiva && !this.girando) {
-          await this.girarMesaAutomatico();
-        }
-      }
-    });
+
+    if (this.esCreadorMesa) {
+      this.contadorSegundos = 15;
+      this.contadorSubscription = interval(1000).subscribe(async () => {
+        this.ngZone.run(() => {
+          this.contadorSegundos--;
+          this.signalrService.invoke('SyncTimer', this.mesaId, this.contadorSegundos).catch(()=>{});
+          this.cdr.detectChanges();
+
+          if (this.contadorSegundos <= 0) {
+            this.detenerContador();
+            if (this.rondaActiva && !this.girando) {
+              this.girarMesaAutomatico();
+            }
+          }
+        });
+      });
+    }
   }
 
   detenerContador(): void {
@@ -350,6 +393,13 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.nuevoMensajeChat.trim() || !this.mesaId) return;
     await this.signalrService.invoke('EnviarMensajeChat', this.mesaId, this.nuevoMensajeChat.trim());
     this.nuevoMensajeChat = '';
+  }
+
+  scrollToBottom(): void {
+    setTimeout(() => {
+      const chatBox = document.querySelector('.chat-mensajes');
+      if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+    }, 100);
   }
 
   async apostar(): Promise<void> {
@@ -519,65 +569,13 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     ];
     for (let i = 1; i <= 34; i += 3) this.calles.push(`${i},${i + 1},${i + 2}`);
     this.caballos = [
-      "0,1",
-      "0,2",
-      "0,3",
-      "1,2",
-      "2,3",
-      "4,5",
-      "5,6",
-      "7,8",
-      "8,9",
-      "10,11",
-      "11,12",
-      "13,14",
-      "14,15",
-      "16,17",
-      "17,18",
-      "19,20",
-      "20,21",
-      "22,23",
-      "23,24",
-      "25,26",
-      "26,27",
-      "28,29",
-      "29,30",
-      "31,32",
-      "32,33",
-      "34,35",
-      "35,36",
-      "1,4",
-      "2,5",
-      "3,6",
-      "4,7",
-      "5,8",
-      "6,9",
-      "7,10",
-      "8,11",
-      "9,12",
-      "10,13",
-      "11,14",
-      "12,15",
-      "13,16",
-      "14,17",
-      "15,18",
-      "16,19",
-      "17,20",
-      "18,21",
-      "19,22",
-      "20,23",
-      "21,24",
-      "22,25",
-      "23,26",
-      "24,27",
-      "25,28",
-      "26,29",
-      "27,30",
-      "28,31",
-      "29,32",
-      "30,33",
-      "31,34",
-      "32,35",
+      "0,1", "0,2", "0,3", "1,2", "2,3", "4,5", "5,6", "7,8", "8,9", "10,11",
+      "11,12", "13,14", "14,15", "16,17", "17,18", "19,20", "20,21", "22,23",
+      "23,24", "25,26", "26,27", "28,29", "29,30", "31,32", "32,33", "34,35",
+      "35,36", "1,4", "2,5", "3,6", "4,7", "5,8", "6,9", "7,10", "8,11",
+      "9,12", "10,13", "11,14", "12,15", "13,16", "14,17", "15,18", "16,19",
+      "17,20", "18,21", "19,22", "20,23", "21,24", "22,25", "23,26", "24,27",
+      "25,28", "26,29", "27,30", "28,31", "29,32", "30,33", "31,34", "32,35",
       "33,36",
     ];
   }
@@ -1188,6 +1186,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
             this.apuestasActuales = [];
             this.tiempoLimpiarApuestas = null;
           }, 2000);
+          this.cdr.detectChanges();
         });
       }
     };

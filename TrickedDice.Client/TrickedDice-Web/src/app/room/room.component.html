@@ -1,43 +1,66 @@
 <app-navbar></app-navbar>
 <div class="room-container">
-  <div class="room-card" *ngIf="!loading && !error && room">
-    <div class="room-header">
-      <h1 class="room-title">{{ room.name }}</h1>
-      <div class="room-badge" [ngClass]="room.isPrivate ? 'private' : 'public'">
-        {{ room.isPrivate ? '🔒 PRIVADA' : '🌐 PÚBLICA' }}
-      </div>
-    </div>
+  <div class="room-layout" *ngIf="!loading && !error && room">
+    
+    <div class="room-main">
+      <div class="room-card">
+        <div class="room-header">
+          <h1 class="room-title">{{ room.name }}</h1>
+          <div class="room-badge" [ngClass]="room.isPrivate ? 'private' : 'public'">
+            {{ room.isPrivate ? '🔒 PRIVADA' : '🌐 PÚBLICA' }}
+          </div>
+        </div>
 
-    <div class="room-info">
-      <div class="info-item">🎮 Juego: <strong>{{ room.gameType }}</strong></div>
-      <div class="info-item">👑 Creador: <strong>{{ room.creator }}</strong></div>
-      <div class="info-item">👥 Jugadores: <strong>{{ room.players.length }}/{{ room.maxPlayers }}</strong></div>
-    </div>
+        <div class="room-info">
+          <div class="info-item">🎮 Juego: <strong>{{ room.gameType }}</strong></div>
+          <div class="info-item">👥 Jugadores: <strong>{{ room.players.length }}/{{ room.maxPlayers }}</strong></div>
+        </div>
 
-    <div class="players-section">
-      <h2 class="section-title">JUGADORES EN SALA</h2>
-      <div class="players-grid">
-        <div *ngFor="let player of room.players" class="player-card" [class.is-creator]="player === room.creator">
-          <div class="player-avatar">{{ player.charAt(0).toUpperCase() }}</div>
-          <div class="player-name">{{ player }}</div>
-          <div class="player-role" *ngIf="player === room.creator">👑 Creador</div>
+        <div class="players-section">
+          <h2 class="section-title">JUGADORES EN SALA ESPERANDO</h2>
+          <div class="players-grid">
+            <div *ngFor="let player of room.players" class="player-card" [class.is-creator]="player === room.creator">
+              <div class="player-avatar">{{ player.charAt(0).toUpperCase() }}</div>
+              <div class="player-name">{{ player }}</div>
+              <div class="player-role" *ngIf="player === room.creator">👑 Creador</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="room-actions">
+          <button class="btn-secondary" (click)="salirDeSala()">🚪 SALIR DE LA SALA</button>
+          <button class="btn-primary" *ngIf="isCreator" (click)="togglePrivacy()">
+            {{ room.isPrivate ? '🌐 Hacer Pública' : '🔒 Hacer Privada' }}
+          </button>
+          <button class="btn-start" *ngIf="isCreator" (click)="iniciarJuego()">
+            🎮 IR AL JUEGO
+          </button>
         </div>
       </div>
     </div>
 
-    <div class="room-actions">
-      <button class="btn-secondary" (click)="salirDeSala()">🚪 SALIR DE LA SALA</button>
-      <button class="btn-primary" *ngIf="isCreator" (click)="togglePrivacy()">
-        {{ room.isPrivate ? '🌐 Hacer Pública' : '🔒 Hacer Privada' }}
-      </button>
-      <button class="btn-start" *ngIf="isCreator" (click)="iniciarJuego()" [disabled]="room.players.length < 2">
-        🎮 INICIAR JUEGO
-      </button>
+    <div class="room-chat">
+      <div class="chat-card">
+        <h3>💬 Chat de Sala</h3>
+        <div class="chat-messages" id="chatMessagesBox">
+          <div *ngFor="let msg of chatMessages" class="chat-message" [class.mine]="msg.user === currentUser">
+            <div class="chat-meta">
+              <span class="chat-user">{{ msg.user }}</span>
+              <span class="chat-time">{{ msg.time | date:'HH:mm' }}</span>
+            </div>
+            <div class="chat-text">{{ msg.text }}</div>
+          </div>
+          <div class="empty-chat" *ngIf="chatMessages.length === 0">
+            Aún no hay mensajes. ¡Di hola!
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input type="text" [(ngModel)]="newMessage" (keyup.enter)="sendMessage()" placeholder="Escribe un mensaje..." />
+          <button (click)="sendMessage()">Enviar</button>
+        </div>
+      </div>
     </div>
 
-    <div class="room-status" *ngIf="!isCreator && room.players.length < 2">
-      ⏳ Esperando a más jugadores para empezar...
-    </div>
   </div>
 
   <div class="loading-container" *ngIf="loading && !error">
@@ -56,7 +79,7 @@
   <div class="modal-content">
     <h3>🔐 Sala privada</h3>
     <p>Introduce la contraseña para unirte</p>
-    <input type="password" [(ngModel)]="passwordInput" placeholder="Contraseña" class="password-input" />
+    <input type="password" [(ngModel)]="passwordInput" placeholder="Contraseña..." class="password-input" />
     <div class="modal-buttons">
       <button class="btn-cancel" (click)="showPasswordModal = false">Cancelar</button>
       <button class="btn-accept" (click)="joinWithPassword()">Unirse</button>

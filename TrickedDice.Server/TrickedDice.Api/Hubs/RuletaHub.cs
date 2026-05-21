@@ -91,10 +91,13 @@ namespace TrickedDice.Api.Hubs
             var nombre = ObtenerNombre();
             if (string.IsNullOrEmpty(email)) return;
             _logger.LogInformation("JugadorListo: {Nombre} listo={Listo} en mesa {MesaId}", nombre, listo, mesaId);
+            
             var estado = _service.MarcarJugadorListo(mesaId, email, listo);
             if (estado == null) return;
+            
             await Clients.Group($"ruleta_{mesaId}").SendAsync("EstadoMesaActualizado", estado);
-            if (estado.TodosListos && estado.Jugadores.Count > 1)
+            
+            if (estado.TodosListos && estado.Jugadores.Count > 0)
             {
                 _logger.LogInformation("Todos listos en mesa {MesaId}, girando automáticamente", mesaId);
                 var resultados = await _service.GirarMesa(mesaId, email);
@@ -122,7 +125,7 @@ namespace TrickedDice.Api.Hubs
             {
                 jugador = nombre,
                 mensaje = mensaje,
-                hora = DateTime.Now.ToString("HH:mm:ss")
+                hora = DateTime.Now.ToString("HH:mm")
             });
         }
 
@@ -145,6 +148,11 @@ namespace TrickedDice.Api.Hubs
                 await Clients.Caller.SendAsync("EstadoMesaActualizado", estado);
             else
                 await Clients.Caller.SendAsync("Error", "Mesa no encontrada");
+        }
+
+        public async Task SyncTimer(string mesaId, int timeLeft)
+        {
+            await Clients.Group($"ruleta_{mesaId}").SendAsync("TimerSynced", timeLeft);
         }
     }
 }

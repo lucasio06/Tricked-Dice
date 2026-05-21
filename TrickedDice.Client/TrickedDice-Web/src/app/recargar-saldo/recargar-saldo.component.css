@@ -1,6 +1,6 @@
 .recargar-container {
   min-height: 100vh;
-  padding: 120px 20px 60px;
+  padding: 40px 20px 60px;  /* antes 120px, ahora 40px */
   background: linear-gradient(135deg, #0f051d 0%, #1a0b2e 50%, #090411 100%);
   display: flex;
   justify-content: center;
@@ -161,4 +161,8 @@
 .stripe-card-element:focus-within {
   border-color: #ffd700;
   box-shadow: 0 0 10px #a742f5;
+}
+
+body {
+  overflow-x: hidden;
 }
