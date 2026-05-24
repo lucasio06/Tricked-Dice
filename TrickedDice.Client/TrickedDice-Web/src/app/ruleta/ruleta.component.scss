@@ -1250,3 +1250,30 @@ $text-light: #f0d8a8;
   text-shadow: 0 0 5px $neon-purple;
   text-align: center;
 }
+.btn-girar-mesa {
+  background: linear-gradient(135deg, #d4af37, #b8860b);
+  border: none;
+  color: #130921;
+  font-weight: bold;
+  font-size: 1.2rem;
+  padding: 12px 24px;
+  border-radius: 40px;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 0 #7a4c0c, 0 0 15px rgba(167, 66, 245, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 9px 0 #7a4c0c, 0 0 25px #a742f5;
+    background: linear-gradient(135deg, #e6c34a, #c98f1a);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
