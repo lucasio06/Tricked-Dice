@@ -2,25 +2,25 @@
 <div class="room-container" *ngIf="room">
   <div class="room-card">
     <div class="room-header">
-      <h1 class="room-title">{{ room.name }}</h1>
-      <div class="room-badge" [ngClass]="room.isPrivate ? 'private' : 'public'">
-        {{ room.isPrivate ? '🔒 PRIVADA' : '🌐 PÚBLICA' }}
+      <h1 class="room-title">{{ room.nombre }}</h1>
+      <div class="room-badge" [ngClass]="room.esPrivada ? 'private' : 'public'">
+        {{ room.esPrivada ? '🔒 PRIVADA' : '🌐 PÚBLICA' }}
       </div>
     </div>
 
     <div class="room-info">
-      <div class="info-item">🎮 Juego: <strong>{{ room.gameType }}</strong></div>
-      <div class="info-item">👑 Creador: <strong>{{ room.creator }}</strong></div>
-      <div class="info-item">👥 Jugadores: <strong>{{ room.players.length }}/{{ room.maxPlayers }}</strong></div>
+      <div class="info-item">🎮 Juego: <strong>{{ room.juego }}</strong></div>
+      <div class="info-item">👑 Creador: <strong>{{ room.creador }}</strong></div>
+      <div class="info-item">👥 Jugadores: <strong>{{ (room.jugadores || []).length }}/{{ room.maxJugadores }}</strong></div>
     </div>
 
     <div class="players-section">
       <h2 class="section-title">JUGADORES EN SALA</h2>
       <div class="players-grid">
-        <div *ngFor="let player of room.players" class="player-card" [class.is-creator]="player === room.creator">
-          <div class="player-avatar">{{ player.charAt(0).toUpperCase() }}</div>
-          <div class="player-name">{{ player }}</div>
-          <div class="player-role" *ngIf="player === room.creator">👑 Creador</div>
+        <div *ngFor="let jugador of room.jugadores" class="player-card" [class.is-creator]="jugador === room.creador">
+          <div class="player-avatar">{{ jugador.charAt(0).toUpperCase() }}</div>
+          <div class="player-name">{{ jugador }}</div>
+          <div class="player-role" *ngIf="jugador === room.creador">👑 Creador</div>
         </div>
       </div>
     </div>
@@ -28,14 +28,14 @@
     <div class="room-actions">
       <button class="btn-secondary" (click)="salirDeSala()">🚪 SALIR DE LA SALA</button>
       <button class="btn-primary" *ngIf="isCreator" (click)="togglePrivacy()">
-        {{ room.isPrivate ? '🌐 Hacer Pública' : '🔒 Hacer Privada' }}
+        {{ room.esPrivada ? '🌐 Hacer Pública' : '🔒 Hacer Privada' }}
       </button>
-      <button class="btn-start" *ngIf="isCreator" (click)="iniciarJuego()" [disabled]="room.players.length < 2">
+      <button class="btn-start" *ngIf="isCreator && (room.jugadores || []).length >= 2" (click)="iniciarJuego()">
         🎮 INICIAR JUEGO
       </button>
     </div>
 
-    <div class="room-status" *ngIf="!isCreator && room.players.length < 2">
+    <div class="room-status" *ngIf="!isCreator && (room.jugadores || []).length < 2">
       ⏳ Esperando a más jugadores para empezar...
     </div>
   </div>

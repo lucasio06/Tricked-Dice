@@ -20,49 +20,17 @@ namespace TrickedDice.Api.Hubs
             return Context.User?.FindFirst(ClaimTypes.Email)?.Value;
         }
 
-        public async Task Girar(string mesaId, decimal monto, string tipoApuesta, string valorApuesta)
-        {
-            var email = ObtenerEmail();
-            if (string.IsNullOrEmpty(email))
-            {
-                await Clients.Caller.SendAsync("Error", "No autorizado.");
-                return;
-            }
-
-            try
-            {
-                var resultado = _service.GirarRuleta(email, monto, tipoApuesta, valorApuesta);
-                await Clients.Caller.SendAsync("ResultadoGiro", resultado);
-            }
-            catch (Exception ex)
-            {
-                await Clients.Caller.SendAsync("Error", ex.Message);
-            }
-        }
-
-        public async Task GirarMultiple(string mesaId, List<ApuestaDto> apuestas)
-        {
-            var email = ObtenerEmail();
-            if (string.IsNullOrEmpty(email))
-            {
-                await Clients.Caller.SendAsync("Error", "No autorizado.");
-                return;
-            }
-
-            try
-            {
-                var resultado = _service.GirarRuletaMultiple(email, apuestas);
-                await Clients.Caller.SendAsync("ResultadoGiro", resultado);
-            }
-            catch (Exception ex)
-            {
-                await Clients.Caller.SendAsync("Error", ex.Message);
-            }
-        }
-
         public async Task UnirseMesaRuleta(string mesaId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"ruleta_{mesaId}");
+        }
+
+        public async Task NotificarInicioGiro(string mesaId)
+        {
+            var email = ObtenerEmail();
+            if (string.IsNullOrEmpty(email)) return;
+            
+            await Clients.Group($"ruleta_{mesaId}").SendAsync("GiroIniciado");
         }
 
         public async Task AgregarApuestaMesa(string mesaId, ApuestaDto apuesta)
@@ -73,8 +41,11 @@ namespace TrickedDice.Api.Hubs
                 await Clients.Caller.SendAsync("Error", "No autorizado.");
                 return;
             }
-            await _service.AgregarApuestaMesa(mesaId, email, apuesta);
-            await Clients.Group($"ruleta_{mesaId}").SendAsync("ApuestaAgregadaMesa", email, apuesta);
+            
+            var nombre = Context.User?.Identity?.Name ?? email;
+            
+            await _service.AgregarApuestaMesa(mesaId, email, nombre, apuesta);
+            await Clients.Group($"ruleta_{mesaId}").SendAsync("ApuestaAgregadaMesa", nombre, apuesta);
         }
 
         public async Task GirarMesa(string mesaId)
@@ -87,7 +58,7 @@ namespace TrickedDice.Api.Hubs
             }
             try
             {
-                var resultados = await _service.GirarMesa(mesaId, email);
+                var resultados = await _service.GirarMesa(mesaId);
                 await Clients.Group($"ruleta_{mesaId}").SendAsync("ResultadoMesa", resultados);
             }
             catch (Exception ex)

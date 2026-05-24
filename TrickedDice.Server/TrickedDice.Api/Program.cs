@@ -18,7 +18,10 @@ builder.Services.AddCors(options =>
                         .AllowCredentials());
 });
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -49,12 +52,21 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAngular");
+app.UseRouting();
+app.Use(async (context, next) =>
+{
+    var token = context.Request.Query["access_token"].FirstOrDefault();
+    if (!string.IsNullOrEmpty(token))
+    {
+        context.Request.Headers["Authorization"] = $"Bearer {token}";
+    }
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.MapHub<LobbyHub>("/hubs/lobby");
 app.MapHub<BlackjackHub>("/hubs/blackjack");
 app.MapHub<RuletaHub>("/hubs/ruleta");

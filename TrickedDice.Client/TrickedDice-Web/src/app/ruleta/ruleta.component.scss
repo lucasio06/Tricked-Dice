@@ -1242,3 +1242,11 @@ $text-light: #f0d8a8;
     padding: 4px 0;
   }
 }
+.contador {
+  margin-top: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: $gold;
+  text-shadow: 0 0 5px $neon-purple;
+  text-align: center;
+}

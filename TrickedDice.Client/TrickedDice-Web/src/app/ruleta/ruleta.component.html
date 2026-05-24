@@ -26,14 +26,33 @@
                  class="historial-item empty"></div>
           </div>
         </div>
+
+        <div class="historial-container" style="margin-top: 20px; max-height: 250px; overflow-y: auto;">
+          <h4 class="historial-title">HISTORIAL DE APUESTAS</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px; padding: 0 10px 10px 10px;">
+            <div *ngFor="let res of historialResultados" 
+                 style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 6px; background: rgba(0,0,0,0.4); border-left: 4px solid"
+                 [style.border-left-color]="res.gano ? '#2ecc71' : '#e74c3c'">
+              <strong style="color: #fff; min-width: 25px;">{{ res.numero }}</strong>
+              <span style="color: #ccc; flex: 1; margin: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ res.usuario }}</span>
+              <span [style.color]="res.gano ? '#2ecc71' : '#e74c3c'" style="font-weight: bold;">
+                {{ res.gano ? '+' + res.premio + '€' : 'PERDIDO' }}
+              </span>
+            </div>
+            <div *ngIf="historialResultados.length === 0" style="text-align: center; color: #888; padding: 10px; font-size: 0.9em;">
+              Aún no hay apuestas registradas
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div class="tapete-right">
         <div class="tabs">
-          <button class="tab-btn" [class.active]="modoApuesta === 'rapidas'" (click)="modoApuesta = 'rapidas'">
+          <button class="tab-btn" [class.active]="modoApuesta === 'rapidas'" (click)="cambiarModo('rapidas')">
             🎲 APUESTAS RÁPIDAS
           </button>
-          <button class="tab-btn" [class.active]="modoApuesta === 'especiales'" (click)="modoApuesta = 'especiales'">
+          <button class="tab-btn" [class.active]="modoApuesta === 'especiales'" (click)="cambiarModo('especiales')">
             ✨ APUESTAS ESPECIALES
           </button>
         </div>
@@ -84,10 +103,10 @@
               </div>
             </div>
             <div class="hotspots-layer">
-              <div *ngFor="let h of obtenerHotspotsCaballo()" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCaballo(h.num1, h.num2)"></div>
-              <div *ngFor="let h of obtenerHotspotsCalle()" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCalle(h.num1, h.num2, h.num3)"></div>
-              <div *ngFor="let h of obtenerHotspotsCuadro()" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCuadro(h.num1, h.num2, h.num3, h.num4)"></div>
-              <div *ngFor="let h of obtenerHotspotsSeisena()" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaSeisena(h.num1, h.num2, h.num3, h.num4, h.num5, h.num6)"></div>
+              <div *ngFor="let h of hotspotsCaballo" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCaballo(h.num1, h.num2)"></div>
+              <div *ngFor="let h of hotspotsCalle" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCalle(h.num1, h.num2, h.num3)"></div>
+              <div *ngFor="let h of hotspotsCuadro" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCuadro(h.num1, h.num2, h.num3, h.num4)"></div>
+              <div *ngFor="let h of hotspotsSeisena" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaSeisena(h.num1, h.num2, h.num3, h.num4, h.num5, h.num6)"></div>
             </div>
           </div>
 
@@ -154,6 +173,14 @@
                  [style.top.%]="apuesta.posY">
               {{ apuesta.monto }}€
             </div>
+            <div *ngFor="let apuesta of apuestasConfirmadas"
+                 class="ficha-visual"
+                 [class.win]="apuesta.estado === 'win'"
+                 [class.lose]="apuesta.estado === 'lose'"
+                 [style.left.%]="apuesta.posX"
+                 [style.top.%]="apuesta.posY">
+              {{ apuesta.monto }}€
+            </div>
           </div>
         </div>
 
@@ -183,10 +210,13 @@
             <button class="btn-limpiar" (click)="limpiarApuestas()">LIMPIAR</button>
           </div>
           <div *ngIf="mesaId" class="botones-mesa">
-            <button class="btn-girar-mesa" (click)="girarMesa()" [disabled]="girando || apuestasActuales.length === 0">
+            <button *ngIf="esCreadorMesa" class="btn-girar-mesa" (click)="girarMesa()" [disabled]="girando">
               🎡 GIRAR MESA
             </button>
-            <p class="info-mesa" *ngIf="!esCreadorMesa">Esperando que el creador inicie el giro...</p>
+            <div *ngIf="tiempoRestante > 0" class="contador">
+              ⏱️ Giro en {{ tiempoRestante }} segundos
+            </div>
+            <p class="info-mesa" *ngIf="!esCreadorMesa && tiempoRestante === 0">Esperando que el creador inicie el giro...</p>
           </div>
           <button class="btn-apostar" (click)="apostar()" [disabled]="girando || !apuestaValida()">
             {{ girando ? 'GIRANDO...' : (mesaId ? 'APOSTAR A MESA' : '¡APOSTAR AHORA!') }}

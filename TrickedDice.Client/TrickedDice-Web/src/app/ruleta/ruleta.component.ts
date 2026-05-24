@@ -18,11 +18,7 @@ import { NavbarComponent } from "../shared/navbar/navbar.component";
 import { SignalrService } from "../services/signalr.service";
 import { RUTAS } from "../utils/rutas.const";
 
-interface HistorialTirada {
-  numero: number;
-  color: string;
-}
-
+interface HistorialTirada { numero: number; color: string; }
 interface ApuestaVisual {
   id: number;
   tipo: 'pleno' | 'caballo' | 'calle' | 'cuadro' | 'seisena' | 'color' | 'paridad' | 'mitad' | 'docena' | 'columna' | 'vecinos0' | 'tercio' | 'huerfanos' | 'juego0' | 'finales';
@@ -56,9 +52,11 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   premioModal: number = 0;
 
   historialTiradas: HistorialTirada[] = [];
+  historialResultados: { numero: number, usuario: string, gano: boolean, premio: number }[] = [];
   usuarioActivo: UsuarioPerfil | null = null;
 
   apuestasActuales: ApuestaVisual[] = [];
+  apuestasConfirmadas: ApuestaVisual[] = [];
   ultimasApuestas: ApuestaVisual[] = [];
   private nextIdApuesta: number = 1;
   private tiempoLimpiarApuestas: any = null;
@@ -70,6 +68,11 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   hayRehacer: boolean = false;
 
   modoApuesta: 'rapidas' | 'especiales' = 'rapidas';
+
+  hotspotsCaballo: { posX: number; posY: number; num1: number; num2: number }[] = [];
+  hotspotsCalle: { posX: number; posY: number; num1: number; num2: number; num3: number }[] = [];
+  hotspotsCuadro: { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number }[] = [];
+  hotspotsSeisena: { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number; num5: number; num6: number }[] = [];
 
   cantidadesFijas: number[] = [1, 5, 10, 30, 50, 100, 250, 500, 1000];
 
@@ -120,7 +123,11 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   mesaId: string = '';
   private grupoRuleta: string = '';
   currentUser: string = '';
+  currentUserEmail: string = '';
   esCreadorMesa: boolean = false;
+
+  tiempoRestante: number = 0;
+  private intervaloContador: any = null;
 
   constructor(
     private signalrService: SignalrService,
@@ -136,6 +143,14 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async ngOnInit(): Promise<void> {
+    this.obtenerUsuarioActual();
+
+    const conectado = await this.signalrService.startConnection("/hubs/ruleta");
+    if (!conectado) {
+      this.toast.error("No se pudo conectar al juego.");
+      return;
+    }
+
     this.route.queryParams.subscribe(params => {
       this.mesaId = params['mesa'] || '';
       if (this.mesaId) {
@@ -151,43 +166,49 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     this.cargarHistorial();
 
-    const conectado = await this.signalrService.startConnection("/hubs/ruleta");
-    if (!conectado) {
-      this.toast.error("No se pudo conectar al juego.");
-      return;
-    }
-
     this.signalrService.on("Error", (mensaje: string) => {
       this.girando = false;
       this.toast.error(mensaje);
     });
 
     if (this.mesaId) {
-      this.signalrService.on("ApuestaAgregada", (apuesta: any) => {
-        this.toast.info(`Apuesta recibida: ${apuesta.monto}€`);
+      this.signalrService.on("GiroIniciado", () => {
+        this.iniciarCuentaAtras();
+      });
+
+      this.signalrService.on("ApuestaAgregadaMesa", (nombre: string, apuesta: any) => {
+        this.toast.info(`${nombre} apostó ${apuesta.monto}€`);
       });
 
       this.signalrService.on("ResultadoMesa", (data: any) => {
         const numeroGanador = data.numeroGanador;
-        const miResultado = data.resultados[this.currentUser];
-        if (miResultado) {
-          this.saldo = miResultado.saldoActualizado;
-          this.authService.actualizarSaldo(this.saldo);
-          this.iniciarAnimacion(numeroGanador, miResultado.gano, miResultado.premio);
-        } else {
-          this.iniciarAnimacion(numeroGanador, false, 0);
+        let miResultado = null;
+        if (data.resultados) {
+          const emailBuscado = this.currentUserEmail.toLowerCase();
+          const keyEncontrada = Object.keys(data.resultados).find(k => k.toLowerCase() === emailBuscado);
+          if (keyEncontrada) {
+            miResultado = data.resultados[keyEncontrada];
+          }
         }
+        
+        if (miResultado) {
+          this.iniciarAnimacion(numeroGanador, miResultado.gano, miResultado.premio, miResultado.saldoActualizado, data.historialGlobal);
+        } else {
+          this.iniciarAnimacion(numeroGanador, false, 0, this.saldo, data.historialGlobal);
+        }
+        
         this.girando = false;
+        if (this.intervaloContador) {
+          clearInterval(this.intervaloContador);
+          this.intervaloContador = null;
+          this.tiempoRestante = 0;
+        }
       });
     } else {
       this.signalrService.on("ResultadoGiro", (res: any) => {
-        this.saldo = res.saldoActualizado;
-        this.authService.actualizarSaldo(res.saldoActualizado);
-        this.iniciarAnimacion(Number(res.numeroGanador), res.gano, res.premio);
+        this.iniciarAnimacion(Number(res.numeroGanador), res.gano, res.premio, res.saldoActualizado);
       });
     }
-
-    this.obtenerUsuarioActual();
   }
 
   ngAfterViewInit(): void {
@@ -198,13 +219,34 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       numero: num,
       angulo: this.calcularAnguloParaSector(i) + this.anguloPorSector / 2
     }));
+    this.calcularHotspots();
   }
 
   ngOnDestroy(): void {
     this.usuarioSub?.unsubscribe();
     if (this.animFrame) cancelAnimationFrame(this.animFrame);
     if (this.tiempoLimpiarApuestas) clearTimeout(this.tiempoLimpiarApuestas);
+    if (this.intervaloContador) clearInterval(this.intervaloContador);
     this.signalrService.stopConnection();
+  }
+
+  cambiarModo(modo: 'rapidas' | 'especiales'): void {
+    this.modoApuesta = modo;
+    if (modo === 'rapidas') {
+      this.calcularHotspots();
+    }
+  }
+
+  calcularHotspots(): void {
+    setTimeout(() => {
+      const tapete = document.querySelector('.tapete-real');
+      if (tapete) {
+        this.hotspotsCaballo = this.obtenerHotspotsCaballo();
+        this.hotspotsCalle = this.obtenerHotspotsCalle();
+        this.hotspotsCuadro = this.obtenerHotspotsCuadro();
+        this.hotspotsSeisena = this.obtenerHotspotsSeisena();
+      }
+    }, 50);
   }
 
   private inicializarColores(): void {
@@ -235,92 +277,21 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   private generarApuestasMultiples(): void {
     for (let i = 1; i <= 31; i += 3) this.seisenas.push(`${i}-${i + 5}`);
     this.cuadros = [
-      "0,1,2,3",
-      "1,2,4,5",
-      "2,3,5,6",
-      "4,5,7,8",
-      "5,6,8,9",
-      "7,8,10,11",
-      "8,9,11,12",
-      "10,11,13,14",
-      "11,12,14,15",
-      "13,14,16,17",
-      "14,15,17,18",
-      "16,17,19,20",
-      "17,18,20,21",
-      "19,20,22,23",
-      "20,21,23,24",
-      "22,23,25,26",
-      "23,24,26,27",
-      "25,26,28,29",
-      "26,27,29,30",
-      "28,29,31,32",
-      "29,30,32,33",
-      "31,32,34,35",
-      "32,33,35,36",
+      "0,1,2,3", "1,2,4,5", "2,3,5,6", "4,5,7,8", "5,6,8,9", "7,8,10,11",
+      "8,9,11,12", "10,11,13,14", "11,12,14,15", "13,14,16,17", "14,15,17,18",
+      "16,17,19,20", "17,18,20,21", "19,20,22,23", "20,21,23,24", "22,23,25,26",
+      "23,24,26,27", "25,26,28,29", "26,27,29,30", "28,29,31,32", "29,30,32,33",
+      "31,32,34,35", "32,33,35,36",
     ];
     for (let i = 1; i <= 34; i += 3) this.calles.push(`${i},${i + 1},${i + 2}`);
     this.caballos = [
-      "0,1",
-      "0,2",
-      "0,3",
-      "1,2",
-      "2,3",
-      "4,5",
-      "5,6",
-      "7,8",
-      "8,9",
-      "10,11",
-      "11,12",
-      "13,14",
-      "14,15",
-      "16,17",
-      "17,18",
-      "19,20",
-      "20,21",
-      "22,23",
-      "23,24",
-      "25,26",
-      "26,27",
-      "28,29",
-      "29,30",
-      "31,32",
-      "32,33",
-      "34,35",
-      "35,36",
-      "1,4",
-      "2,5",
-      "3,6",
-      "4,7",
-      "5,8",
-      "6,9",
-      "7,10",
-      "8,11",
-      "9,12",
-      "10,13",
-      "11,14",
-      "12,15",
-      "13,16",
-      "14,17",
-      "15,18",
-      "16,19",
-      "17,20",
-      "18,21",
-      "19,22",
-      "20,23",
-      "21,24",
-      "22,25",
-      "23,26",
-      "24,27",
-      "25,28",
-      "26,29",
-      "27,30",
-      "28,31",
-      "29,32",
-      "30,33",
-      "31,34",
-      "32,35",
-      "33,36",
+      "0,1", "0,2", "0,3", "1,2", "2,3", "4,5", "5,6", "7,8", "8,9", "10,11",
+      "11,12", "13,14", "14,15", "16,17", "17,18", "19,20", "20,21", "22,23",
+      "23,24", "25,26", "26,27", "28,29", "29,30", "31,32", "32,33", "34,35",
+      "35,36", "1,4", "2,5", "3,6", "4,7", "5,8", "6,9", "7,10", "8,11", "9,12",
+      "10,13", "11,14", "12,15", "13,16", "14,17", "15,18", "16,19", "17,20",
+      "18,21", "19,22", "20,23", "21,24", "22,25", "23,26", "24,27", "25,28",
+      "26,29", "27,30", "28,31", "29,32", "30,33", "31,34", "32,35", "33,36",
     ];
   }
 
@@ -522,44 +493,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.agregarApuestaAcumulada('seisena', [num1, num2, num3, num4, num5, num6], pos.x, pos.y);
   }
 
-  agregarApuestaSeisenaDesdeSelect(): void {
-    const partes = this.valorApuestaSeisena.split('-');
-    if (partes.length === 2) {
-      const inicio = parseInt(partes[0]);
-      const fin = parseInt(partes[1]);
-      const numeros: number[] = [];
-      for (let i = inicio; i <= fin; i++) numeros.push(i);
-      if (numeros.length === 6) {
-        const pos = this.getPosicionEntreNumeros(numeros[0], numeros[5]);
-        this.agregarApuestaAcumulada('seisena', numeros, pos.x, pos.y);
-      }
-    }
-  }
-
-  agregarApuestaCuadroDesdeSelect(): void {
-    const numeros = this.valorApuestaCuadro.split(',').map(n => parseInt(n));
-    if (numeros.length === 4) {
-      const pos = this.getPosicionEntreNumeros(numeros[0], numeros[3]);
-      this.agregarApuestaAcumulada('cuadro', numeros, pos.x, pos.y);
-    }
-  }
-
-  agregarApuestaCalleDesdeSelect(): void {
-    const numeros = this.valorApuestaCalle.split(',').map(n => parseInt(n));
-    if (numeros.length === 3) {
-      const pos = this.getPosicionEntreNumeros(numeros[0], numeros[2]);
-      this.agregarApuestaAcumulada('calle', numeros, pos.x, pos.y);
-    }
-  }
-
-  agregarApuestaCaballoDesdeSelect(): void {
-    const numeros = this.valorApuestaCaballo.split(',').map(n => parseInt(n));
-    if (numeros.length === 2) {
-      const pos = this.getPosicionEntreNumeros(numeros[0], numeros[1]);
-      this.agregarApuestaAcumulada('caballo', numeros, pos.x, pos.y);
-    }
-  }
-
   agregarApuestaExterna(tipo: ApuestaVisual['tipo'], numeros: number[], evento: MouseEvent): void {
     const pos = this.getPosicionExterna(evento);
     this.agregarApuestaAcumulada(tipo, numeros, pos.x, pos.y);
@@ -690,39 +623,41 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.apuestasActuales.length > 0 && this.montoTotalApostado <= this.saldo;
   }
 
+  private mapearValorApuesta(a: ApuestaVisual): string {
+    switch (a.tipo) {
+      case 'docena': return (Math.floor((a.numeros[0] - 1) / 12) + 1).toString();
+      case 'columna': return (((a.numeros[0] - 1) % 3) + 1).toString();
+      case 'finales': return (a.numeros[0] % 10).toString();
+      case 'color': return a.numeros[0] === 1 ? 'rojo' : 'negro';
+      case 'paridad': return a.numeros[0] === 2 ? 'par' : 'impar';
+      case 'mitad': return a.numeros[0] === 1 ? '1-18' : '19-36';
+      default: return a.numeros.join(',');
+    }
+  }
+
   async apostar(): Promise<void> {
     if (!this.apuestaValida()) {
       this.toast.warning("Apuesta inválida o saldo insuficiente.");
       return;
     }
 
+    this.saldo -= this.montoTotalApostado;
+
     if (this.mesaId) {
       for (const ap of this.apuestasActuales) {
-        let valor: string;
-        switch (ap.tipo) {
-          case 'docena':
-            const docenaNum = Math.floor((ap.numeros[0] - 1) / 12) + 1;
-            valor = docenaNum.toString();
-            break;
-          case 'columna':
-            const columnaNum = ((ap.numeros[0] - 1) % 3) + 1;
-            valor = columnaNum.toString();
-            break;
-          case 'finales':
-            valor = (ap.numeros[0] % 10).toString();
-            break;
-          default:
-            valor = ap.numeros.join(',');
-            break;
-        }
         await this.signalrService.invoke('AgregarApuestaMesa', this.mesaId, {
           tipo: ap.tipo,
-          valor: valor,
+          valor: this.mapearValorApuesta(ap),
           monto: ap.monto
         });
       }
-      this.toast.success("Apuestas enviadas a la mesa");
-      this.limpiarApuestas();
+      this.apuestasConfirmadas.push(...this.apuestasActuales);
+      this.apuestasActuales = [];
+      this.guardarEstadoHistorial();
+      if (this.tiempoLimpiarApuestas) {
+        clearTimeout(this.tiempoLimpiarApuestas);
+        this.tiempoLimpiarApuestas = null;
+      }
     } else {
       this.girando = true;
       this.sonidoGiro();
@@ -732,30 +667,11 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
         delete ap.estado;
       }
 
-      const apuestasParaBackend = this.apuestasActuales.map(a => {
-        let valor: string;
-        switch (a.tipo) {
-          case 'docena':
-            const docenaNum = Math.floor((a.numeros[0] - 1) / 12) + 1;
-            valor = docenaNum.toString();
-            break;
-          case 'columna':
-            const columnaNum = ((a.numeros[0] - 1) % 3) + 1;
-            valor = columnaNum.toString();
-            break;
-          case 'finales':
-            valor = (a.numeros[0] % 10).toString();
-            break;
-          default:
-            valor = a.numeros.join(',');
-            break;
-        }
-        return {
-          tipo: a.tipo,
-          valor: valor,
-          monto: a.monto,
-        };
-      });
+      const apuestasParaBackend = this.apuestasActuales.map(a => ({
+        tipo: a.tipo,
+        valor: this.mapearValorApuesta(a),
+        monto: a.monto,
+      }));
 
       this.guardarEstadoHistorial();
 
@@ -767,15 +683,34 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private iniciarCuentaAtras(): void {
+    if (this.intervaloContador) clearInterval(this.intervaloContador);
+    this.tiempoRestante = 5;
+    this.intervaloContador = setInterval(() => {
+      if (this.tiempoRestante <= 1) {
+        clearInterval(this.intervaloContador);
+        this.intervaloContador = null;
+        this.girando = true;
+        if (this.esCreadorMesa) {
+          this.ejecutarGiroMesa();
+        }
+      } else {
+        this.tiempoRestante--;
+      }
+    }, 1000);
+  }
+
+  private async ejecutarGiroMesa(): Promise<void> {
+    if (!this.mesaId) return;
+    await this.signalrService.invoke('GirarMesa', this.mesaId);
+  }
+
   async girarMesa(): Promise<void> {
     if (!this.mesaId) return;
     if (this.girando) return;
-    if (!this.esCreadorMesa) {
-      this.toast.warning("Solo el creador de la mesa puede iniciar el giro.");
-      return;
-    }
-    this.girando = true;
-    await this.signalrService.invoke('GirarMesa', this.mesaId);
+    if (!this.esCreadorMesa) return;
+
+    await this.signalrService.invoke('NotificarInicioGiro', this.mesaId);
   }
 
   private async unirseMesaRuleta(): Promise<void> {
@@ -783,11 +718,20 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     await this.signalrService.invoke('UnirseMesaRuleta', this.mesaId);
   }
 
+  private normalizarString(str: string): string {
+    if (!str) return '';
+    return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
   private async obtenerInfoMesa(): Promise<void> {
     const mesas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
     const mesa = mesas.find((m: any) => m.id === this.mesaId);
-    if (mesa) {
-      this.esCreadorMesa = mesa.creador === this.currentUser;
+    const creadorMesa = mesa ? (mesa.creador || mesa.creator) : null;
+    
+    if (creadorMesa && this.currentUser) {
+      this.esCreadorMesa = this.normalizarString(creadorMesa) === this.normalizarString(this.currentUser);
+    } else {
+      this.esCreadorMesa = false;
     }
   }
 
@@ -802,9 +746,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     for (let fila = 0; fila < 3; fila++) {
       const numerosFila = this.getFilaVisual(fila);
       for (let col = 0; col < 11; col++) {
-        hotspots.push({
-          posX: 0, posY: 0, num1: numerosFila[col], num2: numerosFila[col + 1]
-        });
+        hotspots.push({ posX: 0, posY: 0, num1: numerosFila[col], num2: numerosFila[col + 1] });
       }
     }
     for (let fila = 0; fila < 3; fila++) {
@@ -834,10 +776,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     for (let fila = 0; fila < 3; fila++) {
       const numerosFila = this.getFilaVisual(fila);
       for (let col = 0; col < 10; col++) {
-        hotspots.push({
-          posX: 0, posY: 0,
-          num1: numerosFila[col], num2: numerosFila[col + 1], num3: numerosFila[col + 2]
-        });
+        hotspots.push({ posX: 0, posY: 0, num1: numerosFila[col], num2: numerosFila[col + 1], num3: numerosFila[col + 2] });
       }
     }
     hotspots.push({ posX: 0, posY: 0, num1: 0, num2: 1, num3: 2 });
@@ -856,11 +795,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       const filaActual = this.getFilaVisual(fila);
       const filaSiguiente = this.getFilaVisual(fila + 1);
       for (let col = 0; col < 11; col++) {
-        hotspots.push({
-          posX: 0, posY: 0,
-          num1: filaActual[col], num2: filaActual[col + 1],
-          num3: filaSiguiente[col], num4: filaSiguiente[col + 1]
-        });
+        hotspots.push({ posX: 0, posY: 0, num1: filaActual[col], num2: filaActual[col + 1], num3: filaSiguiente[col], num4: filaSiguiente[col + 1] });
       }
     }
     const primeraFila = this.getFilaVisual(0);
@@ -880,11 +815,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       const filaActual = this.getFilaVisual(fila);
       const filaSiguiente = this.getFilaVisual(fila + 1);
       for (let col = 0; col < 10; col++) {
-        hotspots.push({
-          posX: 0, posY: 0,
-          num1: filaActual[col], num2: filaActual[col + 1], num3: filaActual[col + 2],
-          num4: filaSiguiente[col], num5: filaSiguiente[col + 1], num6: filaSiguiente[col + 2]
-        });
+        hotspots.push({ posX: 0, posY: 0, num1: filaActual[col], num2: filaActual[col + 1], num3: filaActual[col + 2], num4: filaSiguiente[col], num5: filaSiguiente[col + 1], num6: filaSiguiente[col + 2] });
       }
     }
     hotspots.forEach(h => {
@@ -913,7 +844,8 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private evaluarResultadoApuestas(numeroGanador: number): void {
-    for (let apuesta of this.apuestasActuales) {
+    const todasLasApuestas = [...this.apuestasActuales, ...this.apuestasConfirmadas];
+    for (let apuesta of todasLasApuestas) {
       const gano = this.calcularPremioLocal(apuesta.tipo, apuesta.numeros, numeroGanador) > 0;
       apuesta.estado = gano ? 'win' : 'lose';
     }
@@ -985,9 +917,11 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     numeroFinal: number,
     gano: boolean,
     premio: number,
+    saldoFinal?: number,
+    historialGlobal?: any[]
   ): void {
     if (!this.ctx) {
-      setTimeout(() => this.iniciarAnimacion(numeroFinal, gano, premio), 50);
+      setTimeout(() => this.iniciarAnimacion(numeroFinal, gano, premio, saldoFinal, historialGlobal), 50);
       return;
     }
     const indice = this.numerosRuleta.indexOf(numeroFinal);
@@ -996,7 +930,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.ultimasApuestas = JSON.parse(JSON.stringify(this.apuestasActuales));
+    this.ultimasApuestas = JSON.parse(JSON.stringify(this.apuestasActuales.length ? this.apuestasActuales : this.apuestasConfirmadas));
 
     const anguloBase = this.calcularAnguloParaSector(indice);
     const vueltas = (5 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
@@ -1022,6 +956,31 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
           this.numeroModal = numeroFinal;
           this.colorModal = this.obtenerColor(numeroFinal);
           this.premioModal = premio;
+
+          if (saldoFinal !== undefined) {
+            this.saldo = saldoFinal;
+            this.authService.actualizarSaldo(this.saldo);
+          }
+
+          if (historialGlobal) {
+            historialGlobal.forEach(h => {
+              this.historialResultados.unshift({
+                numero: numeroFinal,
+                usuario: h.usuario,
+                gano: h.gano,
+                premio: h.premio
+              });
+            });
+          } else {
+            this.historialResultados.unshift({
+              numero: numeroFinal,
+              usuario: this.currentUser,
+              gano: gano,
+              premio: premio
+            });
+          }
+          if (this.historialResultados.length > 20) this.historialResultados = this.historialResultados.slice(0, 20);
+
           this.agregarAlHistorial(numeroFinal);
           this.evaluarResultadoApuestas(numeroFinal);
           this.mostrarModalGanador = true;
@@ -1029,6 +988,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
           if (this.tiempoLimpiarApuestas) clearTimeout(this.tiempoLimpiarApuestas);
           this.tiempoLimpiarApuestas = setTimeout(() => {
             this.apuestasActuales = [];
+            this.apuestasConfirmadas = [];
             this.tiempoLimpiarApuestas = null;
           }, 2000);
         });
@@ -1057,11 +1017,27 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private obtenerUsuarioActual(): void {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        this.currentUser = payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || payload.unique_name || 'Usuario';
+        this.currentUserEmail = payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || payload.email || '';
+      } catch (e) {
+        this.currentUser = 'Usuario';
+      }
+    }
     const usuario = localStorage.getItem('usuario') ? JSON.parse(localStorage.getItem('usuario')!) : null;
-    this.currentUser = usuario?.nombreUsuario || usuario?.nombre || 'Usuario';
+    if (usuario && usuario.nombreUsuario) this.currentUser = usuario.nombreUsuario;
+    if (usuario && usuario.email) this.currentUserEmail = usuario.email;
   }
 
   volverAlLobby(): void {
+    if (this.mesaId) {
+      const mesas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
+      const actualizadas = mesas.filter((m: any) => m.id !== this.mesaId);
+      localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
+    }
     this.router.navigate([RUTAS.lobby]);
   }
 

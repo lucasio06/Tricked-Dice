@@ -6,58 +6,68 @@ import { environment } from '../../environments/environment';
 @Injectable({ providedIn: 'root' })
 export class SignalrService {
   private authService = inject(AuthService);
-  private hubConnection!: signalR.HubConnection;
+  private hubConnection: signalR.HubConnection | null = null;
   private signalRBase = environment.apiUrl.replace('/api', '');
-  private pendingListeners: { event: string; callback: (...args: any[]) => void }[] = [];
+  private currentHubUrl: string = '';
 
-  public async startConnection(hubUrl: string) {
-    const token = this.authService.getToken();
-    if (!token) return false;
-
-    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
-      await this.hubConnection.stop();
+  public async startConnection(hubUrl: string): Promise<boolean> {
+    if (this.hubConnection?.state === signalR.HubConnectionState.Connected && this.currentHubUrl === hubUrl) {
+      return true;
     }
 
+    if (this.hubConnection) {
+      await this.stopConnection();
+    }
+
+    this.currentHubUrl = hubUrl;
+    const url = `${this.signalRBase}${hubUrl}`;
+
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${this.signalRBase}${hubUrl}`, { accessTokenFactory: () => token })
+      .withUrl(url, { accessTokenFactory: () => this.authService.getToken() || '' })
       .withAutomaticReconnect()
       .build();
 
     try {
       await this.hubConnection.start();
-      console.log(`Conectado a ${hubUrl}`);
-
-      this.pendingListeners.forEach(({ event, callback }) => {
-        this.hubConnection.on(event, callback);
-      });
-      this.pendingListeners = [];
-
+      console.log(`Conectado a: ${hubUrl}`);
       return true;
     } catch (err) {
-      console.error(`Error al conectar a ${hubUrl}:`, err);
+      console.error(`Error conectando a ${hubUrl}:`, err);
       return false;
     }
   }
 
+  public isConnected(): boolean {
+    return this.hubConnection?.state === signalR.HubConnectionState.Connected;
+  }
+
   public on(event: string, callback: (...args: any[]) => void) {
-    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
+    if (this.hubConnection) {
       this.hubConnection.on(event, callback);
-    } else {
-      this.pendingListeners.push({ event, callback });
     }
   }
 
   public async invoke(method: string, ...args: any[]) {
-    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
-      return this.hubConnection.invoke(method, ...args);
+    if (this.isConnected()) {
+      try {
+        return await this.hubConnection!.invoke(method, ...args);
+      } catch (err) {
+        console.error(`Error en invoke ${method}:`, err);
+        throw err;
+      }
+    } else {
+      console.error(`Intento de invocar ${method} sin conexión`);
     }
-    return null;
   }
 
   public async stopConnection() {
-    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
-      await this.hubConnection.stop();
+    try {
+      if (this.hubConnection) {
+        await this.hubConnection.stop();
+        this.hubConnection = null;
+      }
+    } catch (err) {
+      console.error("Error al cerrar conexión:", err);
     }
-    this.pendingListeners = [];
   }
 }

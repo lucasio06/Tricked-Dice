@@ -67,14 +67,14 @@
       <div class="mesas-grid">
         <div *ngFor="let mesa of mesasDisponibles" class="mesa-card">
           <div class="mesa-header">
-            <span class="mesa-juego" [ngClass]="mesa.juego.toLowerCase()">{{ mesa.juego }}</span>
-            <span class="mesa-jugadores">{{ mesa.jugadores.length }}/{{ mesa.maxJugadores }}</span>
+            <span class="mesa-juego" [ngClass]="mesa.gameType?.toLowerCase()">{{ mesa.gameType }}</span>
+            <span class="mesa-jugadores">{{ mesa.jugadores?.length || 0 }}/{{ mesa.maxJugadores }}</span>
             <span *ngIf="mesa.esPrivada" class="private-badge">🔒</span>
           </div>
           <div class="mesa-nombre">{{ mesa.nombre }}</div>
           <div class="mesa-creador">Creador: {{ mesa.creador }}</div>
           <div class="mesa-actions">
-            <button class="btn-secondary" (click)="unirseAMesa(mesa.id, mesa.juego)" [disabled]="!puedeUnirse(mesa)">
+            <button class="btn-secondary" (click)="unirseAMesa(mesa)" [disabled]="!puedeUnirse(mesa)">
               {{ estaEnMesa(mesa) ? 'Ya unido' : 'Unirse' }}
             </button>
             <button class="btn-danger" *ngIf="esCreador(mesa)" (click)="salirDeMesa(mesa)">Cerrar Mesa</button>
