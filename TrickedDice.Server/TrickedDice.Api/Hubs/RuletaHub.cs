@@ -27,10 +27,11 @@ namespace TrickedDice.Api.Hubs
 
         public async Task NotificarInicioGiro(string mesaId)
         {
-            var email = ObtenerEmail();
-            if (string.IsNullOrEmpty(email)) return;
-            
-            await Clients.Group($"ruleta_{mesaId}").SendAsync("GiroIniciado");
+        var email = ObtenerEmail();
+        if (string.IsNullOrEmpty(email)) return;
+
+        var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        await Clients.Group($"ruleta_{mesaId}").SendAsync("GiroIniciado", startTime);
         }
 
         public async Task AgregarApuestaMesa(string mesaId, ApuestaDto apuesta)

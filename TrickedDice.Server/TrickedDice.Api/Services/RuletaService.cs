@@ -91,14 +91,40 @@ namespace TrickedDice.Api.Services
             tipo = tipo.ToLower();
             switch (tipo)
             {
-                case "color": return (Rojos.Contains(numero) ? "rojo" : numero == 0 ? "verde" : "negro") == valor.ToLower() && numero != 0 ? (true, monto * 2) : (false, 0);
-                case "pleno": return valor == numero.ToString() ? (true, monto * 36) : (false, 0);
-                case "caballo": return valor.Split(',').Select(int.Parse).Contains(numero) ? (true, monto * 18) : (false, 0);
-                case "calle": return valor.Split(',').Select(int.Parse).Contains(numero) ? (true, monto * 12) : (false, 0);
-                case "cuadro": return valor.Split(',').Select(int.Parse).Contains(numero) ? (true, monto * 9) : (false, 0);
-                case "seisena": return valor.Split(',').Select(int.Parse).Contains(numero) ? (true, monto * 6) : (false, 0);
-                default: return (false, 0);
+                case "color":
+                    var colorApostado = valor.ToLower();
+                    var colorGanador = Rojos.Contains(numero) ? "rojo" : numero == 0 ? "verde" : "negro";
+                    return (colorApostado == colorGanador && numero != 0) ? (true, monto * 2) : (false, 0);
+                case "pleno":
+                    return valor == numero.ToString() ? (true, monto * 36) : (false, 0);
+                case "caballo":
+                    return valor.Split(',').Select(int.Parse).Contains(numero) ? (true, monto * 18) : (false, 0);
+                case "calle":
+                    return valor.Split(',').Select(int.Parse).Contains(numero) ? (true, monto * 12) : (false, 0);
+                case "cuadro":
+                    return valor.Split(',').Select(int.Parse).Contains(numero) ? (true, monto * 9) : (false, 0);
+                case "seisena":
+                    return valor.Split(',').Select(int.Parse).Contains(numero) ? (true, monto * 6) : (false, 0);
+                case "vecinos0":
+                    var vecinos = new[] { 0, 2, 3, 4, 7, 12, 15, 18, 19, 21, 22, 25, 26, 28, 29, 32, 35 };
+                    return vecinos.Contains(numero) ? (true, monto * (36m / vecinos.Length)) : (false, 0);
+                case "tercio":
+                    var tercio = new[] { 5, 8, 10, 11, 13, 16, 23, 24, 27, 30, 33, 36 };
+                    return tercio.Contains(numero) ? (true, monto * (36m / tercio.Length)) : (false, 0);
+                case "huerfanos":
+                    var huerfanos = new[] { 1, 6, 9, 14, 17, 20, 31, 34 };
+                    return huerfanos.Contains(numero) ? (true, monto * (36m / huerfanos.Length)) : (false, 0);
+                case "juego0":
+                    var juego0 = new[] { 0, 3, 12, 15, 26, 32, 35 };
+                    return juego0.Contains(numero) ? (true, monto * (36m / juego0.Length)) : (false, 0);
+                case "finales":
+                    if (int.TryParse(valor, out int digito) && numero % 10 == digito)
+                        return (true, monto * (36m / 4m));
+                    break;
+                default:
+                    return (false, 0);
             }
+            return (false, 0);
         }
 
         private int ObtenerIdUsuario(SqlConnection c, SqlTransaction t, string email)

@@ -129,6 +129,9 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   tiempoRestante: number = 0;
   private intervaloContador: any = null;
 
+  private apuestasPendientesPorUsuario: Map<string, number> = new Map();
+  private timeoutApuestas: any = null;
+
   constructor(
     private signalrService: SignalrService,
     private authService: AuthService,
@@ -172,12 +175,21 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     if (this.mesaId) {
-      this.signalrService.on("GiroIniciado", () => {
-        this.iniciarCuentaAtras();
+      this.signalrService.on("GiroIniciado", (startTime: number) => {
+        this.ngZone.run(() => this.iniciarCuentaAtras(startTime));
       });
 
       this.signalrService.on("ApuestaAgregadaMesa", (nombre: string, apuesta: any) => {
-        this.toast.info(`${nombre} apostó ${apuesta.monto}€`);
+        const current = this.apuestasPendientesPorUsuario.get(nombre) || 0;
+        this.apuestasPendientesPorUsuario.set(nombre, current + apuesta.monto);
+        if (this.timeoutApuestas) clearTimeout(this.timeoutApuestas);
+        this.timeoutApuestas = setTimeout(() => {
+          this.apuestasPendientesPorUsuario.forEach((total, usuario) => {
+            this.toast.info(`${usuario} ha apostado un total de ${total}€`);
+          });
+          this.apuestasPendientesPorUsuario.clear();
+          this.timeoutApuestas = null;
+        }, 500);
       });
 
       this.signalrService.on("ResultadoMesa", (data: any) => {
@@ -227,6 +239,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.animFrame) cancelAnimationFrame(this.animFrame);
     if (this.tiempoLimpiarApuestas) clearTimeout(this.tiempoLimpiarApuestas);
     if (this.intervaloContador) clearInterval(this.intervaloContador);
+    if (this.timeoutApuestas) clearTimeout(this.timeoutApuestas);
     this.signalrService.stopConnection();
   }
 
@@ -683,21 +696,26 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private iniciarCuentaAtras(): void {
+  private iniciarCuentaAtras(startTimeMs: number): void {
     if (this.intervaloContador) clearInterval(this.intervaloContador);
-    this.tiempoRestante = 5;
-    this.intervaloContador = setInterval(() => {
-      if (this.tiempoRestante <= 1) {
+    const startTime = new Date(startTimeMs);
+    const duracion = 5;
+
+    const actualizar = () => {
+      const elapsed = (Date.now() - startTime.getTime()) / 1000;
+      const remaining = Math.max(0, duracion - elapsed);
+      this.tiempoRestante = Math.ceil(remaining);
+      if (remaining <= 0) {
         clearInterval(this.intervaloContador);
         this.intervaloContador = null;
-        this.girando = true;
         if (this.esCreadorMesa) {
+          this.girando = true;
           this.ejecutarGiroMesa();
         }
-      } else {
-        this.tiempoRestante--;
       }
-    }, 1000);
+    };
+    actualizar();
+    this.intervaloContador = setInterval(() => this.ngZone.run(actualizar), 1000);
   }
 
   private async ejecutarGiroMesa(): Promise<void> {
