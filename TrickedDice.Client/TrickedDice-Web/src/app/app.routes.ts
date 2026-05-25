@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { AuthGuard } from './auth.guard';
 import { HomeComponent } from './home/home.component';
 import { RecargarSaldoComponent } from './recargar-saldo/recargar-saldo.component';
+import { RecargarExitoComponent } from './recargar-saldo/recargar-exito.component';
 import { RuletaComponent } from './ruleta/ruleta.component';
 import { LoginComponent } from './login/login.component';
 import { RegistroComponent } from './registro/registro.component';
@@ -18,6 +19,7 @@ import { RoomComponent } from './room/room.component';
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'recargar', component: RecargarSaldoComponent, canActivate: [AuthGuard] },
+  { path: 'recargar-saldo/exito', component: RecargarExitoComponent, canActivate: [AuthGuard] },
   { path: 'ruleta', component: RuletaComponent, canActivate: [AuthGuard] },
   { path: 'video-poker', component: VideoPokerComponent, canActivate: [AuthGuard] },
   { path: 'blackjack', component: BlackjackComponent, canActivate: [AuthGuard] },

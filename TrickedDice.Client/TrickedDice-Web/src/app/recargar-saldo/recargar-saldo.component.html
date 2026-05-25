@@ -17,11 +17,10 @@
           {{ monto }}€
         </button>
       </div>
-    <div class="cantidad-botones">
-      <input type="number" [(ngModel)]="cantidadSeleccionada" min="1" max="10000" step="1" class="cantidad-input" />
+      <div class="cantidad-botones">
+        <input type="number" [(ngModel)]="cantidadSeleccionada" min="1" max="10000" step="1" class="cantidad-input" />
+      </div>
     </div>
-
-    <div id="card-element" class="stripe-card-element"></div>
 
     <button class="btn-recargar" (click)="recargar()" [disabled]="recargando">
       {{ recargando ? 'PROCESANDO...' : 'RECARGAR' }}

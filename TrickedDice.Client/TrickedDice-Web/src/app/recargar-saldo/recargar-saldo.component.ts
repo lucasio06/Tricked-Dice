@@ -8,7 +8,6 @@ import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { PaymentService } from '../services/payment.service';
 import { RUTAS } from '../utils/rutas.const';
-import { loadStripe, Stripe } from '@stripe/stripe-js';
 
 @Component({
   selector: 'app-recargar-saldo',
@@ -23,10 +22,6 @@ export class RecargarSaldoComponent implements OnInit {
   saldoActual: number = 0;
   recargando = false;
   private returnUrl: string = RUTAS.home;
-  private stripe: Stripe | null = null;
-  private publishableKey = 'pk_test_51TZC0q4AJRUh3EiOl8RVeGIvOMvsJzC7jcjV0IVc39dpjtRnumRCOIFg0cFYerCbsErK6R2ciIQDluDVgpvjeZfp003HLOXR6O';
-  private currentUser: any = null;
-  private cardElement: any = null;
 
   constructor(
     public router: Router,
@@ -41,31 +36,8 @@ export class RecargarSaldoComponent implements OnInit {
     this.authService.usuario$.subscribe(usuario => {
       if (usuario) {
         this.saldoActual = usuario.saldo;
-        this.currentUser = usuario;
       }
     });
-    this.stripe = await loadStripe(this.publishableKey);
-    
-    if (this.stripe) {
-      const elements = this.stripe.elements();
-      const style = {
-        base: {
-          color: '#f0d8a8',
-          fontFamily: 'Montserrat, sans-serif',
-          fontSmoothing: 'antialiased',
-          fontSize: '16px',
-          '::placeholder': {
-            color: '#6c5b7b'
-          }
-        },
-        invalid: {
-          color: '#e74c3c',
-          iconColor: '#e74c3c'
-        }
-      };
-      this.cardElement = elements.create('card', { style: style });
-      this.cardElement.mount('#card-element');
-    }
   }
 
   async recargar() {
@@ -79,42 +51,17 @@ export class RecargarSaldoComponent implements OnInit {
     this.recargando = true;
 
     try {
-      const response = await firstValueFrom(this.paymentService.createPaymentIntent(cantidad));
-      const clientSecret = response.clientSecret;
-
-      if (!this.stripe || !clientSecret || !this.cardElement) {
-        throw new Error('No se pudo inicializar Stripe');
-      }
-
-      const result = await this.stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: this.cardElement,
-          billing_details: {
-            name: this.currentUser?.nombre || 'Usuario Stripe',
-            email: this.currentUser?.email || 'cliente@ejemplo.com'
-          }
-        }
-      });
-
-      if (result.error) {
-        console.error('Stripe error:', result.error);
-        this.toast.error(result.error.message || 'Error en el pago');
-        this.recargando = false;
-        return;
-      }
-
-      if (result.paymentIntent.status === 'succeeded') {
-        const confirmResult = await firstValueFrom(this.paymentService.confirmPayment(result.paymentIntent.id));
-        if (confirmResult) {
-          this.authService.actualizarSaldo(confirmResult.saldoActualizado);
-          this.toast.success(`¡Recarga exitosa! Nuevo saldo: ${confirmResult.saldoActualizado.toFixed(2)} €`);
-          this.router.navigateByUrl(this.returnUrl);
-        }
-      }
+      const successUrl = `${window.location.origin}/recargar-saldo/exito?session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${window.location.origin}/recargar-saldo`;
+      console.log('Success URL configurada:', successUrl);
+      const response = await firstValueFrom(
+        this.paymentService.createCheckoutSession(cantidad, successUrl, cancelUrl)
+      );
+      
+      window.location.href = response.url;
     } catch (error: any) {
-      console.error('Error en recarga:', error);
-      this.toast.error(error.message || 'Error al procesar el pago');
-    } finally {
+      console.error('Error:', error);
+      this.toast.error(error.message || 'Error al iniciar el pago');
       this.recargando = false;
     }
   }
