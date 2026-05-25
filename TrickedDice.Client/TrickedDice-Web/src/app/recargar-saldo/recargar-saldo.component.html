@@ -1,39 +1,31 @@
 <app-navbar></app-navbar>
-
 <div class="recargar-container">
   <div class="recargar-card">
     <h1 class="recargar-title">RECARGAR SALDO</h1>
-    
     <div class="saldo-actual">
       <span>SALDO ACTUAL</span>
       <strong>{{ saldoActual | number:'1.2-2' }} €</strong>
     </div>
 
-    <div class="cantidades-grid">
-      <div *ngFor="let cant of cantidades" 
-           class="cantidad-card"
-           [class.selected]="cantidadSeleccionada === cant"
-           (click)="cantidadSeleccionada = cant">
-        <span class="cantidad-valor">{{ cant }} €</span>
+    <div class="cantidad-container">
+      <label>Cantidad a recargar (€)</label>
+      <div class="cantidad-botones">
+        <button *ngFor="let monto of cantidades" 
+              class="cantidad-btn" 
+              [class.active]="cantidadSeleccionada === monto" 
+              (click)="cantidadSeleccionada = monto">
+          {{ monto }}€
+        </button>
       </div>
+    <div class="cantidad-botones">
+      <input type="number" [(ngModel)]="cantidadSeleccionada" min="1" max="10000" step="1" class="cantidad-input" />
     </div>
 
-    <div class="cantidad-personalizada">
-      <label>Otra cantidad:</label>
-      <input type="number" 
-             [(ngModel)]="cantidadSeleccionada" 
-             min="1" 
-             step="0.50"
-             placeholder="Introduce una cantidad">
-    </div>
+    <div id="card-element" class="stripe-card-element"></div>
 
-    <div class="botones">
-      <button class="btn-recargar" (click)="recargar()">
-        RECARGAR AHORA
-      </button>
-      <button class="btn-volver" (click)="volver()">
-        ← VOLVER AL CASINO
-      </button>
-    </div>
+    <button class="btn-recargar" (click)="recargar()" [disabled]="recargando">
+      {{ recargando ? 'PROCESANDO...' : 'RECARGAR' }}
+    </button>
+    <button class="btn-volver" (click)="volver()">← VOLVER AL INICIO</button>
   </div>
 </div>
