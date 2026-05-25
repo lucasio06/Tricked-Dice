@@ -58,6 +58,7 @@
         <label class="private-label">
           <input type="checkbox" [(ngModel)]="esPrivada" /> 🔒 Privada
         </label>
+        <input *ngIf="esPrivada" type="password" [(ngModel)]="passwordCreacion" placeholder="Contraseña de la sala..." class="mesa-input" />
         <button class="btn-primary" (click)="crearMesa()">✨ Crear Mesa</button>
       </div>
     </div>

@@ -10,7 +10,7 @@ namespace TrickedDice.Api.Hubs
     {
         private static readonly ConcurrentDictionary<string, Room> Rooms = new();
         private static readonly ConcurrentDictionary<string, string> UserRooms = new();
-        private static readonly ConcurrentDictionary<string, string> OnlineUsers = new(); // key = ConnectionId, value = nombre
+        private static readonly ConcurrentDictionary<string, string> OnlineUsers = new();
         private static readonly ConcurrentDictionary<string, HashSet<string>> UserFriends = new();
         private static readonly ConcurrentDictionary<string, HashSet<string>> PendingRequests = new();
         private readonly ILogger<LobbyHub> _logger;
@@ -25,7 +25,6 @@ namespace TrickedDice.Api.Hubs
             get
             {
                 if (Context.User == null) return null;
-                // Priorizar el nombre de usuario
                 var name = Context.User.FindFirst(ClaimTypes.Name)?.Value;
                 if (!string.IsNullOrEmpty(name)) return name;
                 name = Context.User.FindFirst("unique_name")?.Value;
@@ -40,7 +39,6 @@ namespace TrickedDice.Api.Hubs
         public async Task GetOnlineUsers()
         {
             var users = OnlineUsers.Values.ToList();
-            _logger.LogInformation($"GetOnlineUsers: {string.Join(", ", users)}");
             await Clients.Caller.SendAsync("OnlineUsers", users);
         }
 
@@ -161,14 +159,25 @@ namespace TrickedDice.Api.Hubs
         public async Task LeaveRoom(string roomId)
         {
             if (!Rooms.TryGetValue(roomId, out var room)) return;
-            if (!string.IsNullOrEmpty(UserName)) room.jugadores.Remove(UserName);
+            var userName = UserName ?? "Anónimo";
+
+            if (room.jugadores.Contains(userName))
+            {
+                room.jugadores.Remove(userName);
+                await Clients.Group($"room_{roomId}").SendAsync("PlayerLeft", userName);
+            }
+
             UserRooms.TryRemove(Context.ConnectionId, out _);
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"room_{roomId}");
 
-            if (room.jugadores.Count == 0) Rooms.TryRemove(roomId, out _);
-            else if (room.creador == UserName && room.jugadores.Any())
+            if (room.jugadores.Count == 0)
+            {
+                Rooms.TryRemove(roomId, out _);
+            }
+            else if (room.creador == userName && room.jugadores.Any())
             {
                 room.creador = room.jugadores.First();
+                await Clients.Group($"room_{roomId}").SendAsync("RoomUpdated", room);
             }
 
             await BroadcastRooms();
@@ -190,6 +199,12 @@ namespace TrickedDice.Api.Hubs
             await Clients.Group($"room_{roomId}").SendAsync("GameStarted", room.juego, roomId);
         }
 
+        public async Task SendMessage(string roomId, string message)
+        {
+            var userName = UserName ?? "Anónimo";
+            await Clients.Group($"room_{roomId}").SendAsync("ReceiveMessage", userName, message);
+        }
+
         private async Task BroadcastRooms()
         {
             var roomsList = Rooms.Values.Select(r => new
@@ -208,12 +223,8 @@ namespace TrickedDice.Api.Hubs
         public override async Task OnConnectedAsync()
         {
             var userName = UserName ?? Context.ConnectionId;
-            _logger.LogInformation($"Conectado: {Context.ConnectionId}, UserName: {userName}");
-            
-            // Usar ConnectionId como clave del diccionario
             OnlineUsers[Context.ConnectionId] = userName;
             var usersList = OnlineUsers.Values.ToList();
-            _logger.LogInformation($"OnlineUsers actual: {string.Join(", ", usersList)}");
             await Clients.All.SendAsync("OnlineUsers", usersList);
 
             await base.OnConnectedAsync();
@@ -221,11 +232,8 @@ namespace TrickedDice.Api.Hubs
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            _logger.LogInformation($"Desconectado: {Context.ConnectionId}");
-            
             OnlineUsers.TryRemove(Context.ConnectionId, out _);
             var usersList = OnlineUsers.Values.ToList();
-            _logger.LogInformation($"OnlineUsers después: {string.Join(", ", usersList)}");
             await Clients.All.SendAsync("OnlineUsers", usersList);
 
             if (UserRooms.TryGetValue(Context.ConnectionId, out var roomId))

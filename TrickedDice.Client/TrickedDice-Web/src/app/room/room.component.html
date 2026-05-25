@@ -1,4 +1,5 @@
 <app-navbar></app-navbar>
+
 <div class="room-container" *ngIf="room">
   <div class="room-card">
     <div class="room-header">
@@ -37,6 +38,19 @@
 
     <div class="room-status" *ngIf="!isCreator && (room.jugadores || []).length < 2">
       ⏳ Esperando a más jugadores para empezar...
+    </div>
+
+    <div class="chat-section" style="margin-top: 20px;">
+      <h2 class="section-title">💬 CHAT DE SALA</h2>
+      <div class="chat-box" style="height: 200px; overflow-y: auto; background: #1a1a2e; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+        <div *ngFor="let msg of mensajes" style="margin-bottom: 5px;">
+          <strong style="color: #4ade80;">{{ msg.usuario }}:</strong> {{ msg.texto }}
+        </div>
+      </div>
+      <div class="chat-input" style="display: flex; gap: 10px;">
+        <input type="text" name="chatInput" [(ngModel)]="nuevoMensaje" (keyup.enter)="enviarMensaje()" placeholder="Escribe un mensaje..." class="mesa-input" style="flex: 1;" autocomplete="off" />
+        <button class="btn-primary" (click)="enviarMensaje()">Enviar</button>
+      </div>
     </div>
   </div>
 </div>

@@ -1,80 +1,53 @@
 <app-navbar></app-navbar>
 
-<div class="blackjack-container">
-  <div class="blackjack-card">
-    <h2>
-      <div class="carta-3d left">
-        <div class="carta-3d-inner">
-          <span class="palo-rojo">♥</span>
-          <span class="valor-negro">A</span>
-        </div>
-      </div>
-      BLACKJACK
-      <div class="carta-3d right">
-        <div class="carta-3d-inner">
-          <span class="palo-negro">♠</span>
-          <span class="valor-negro">J</span>
-        </div>
-      </div>
-    </h2>
+<div class="casino-table-container">
+  <div class="casino-header">
+    <div class="stats-panel">
+      <div class="stat-item">💰 SALDO: <span>{{ saldoActual | currency:'EUR' }}</span></div>
+    </div>
+    <button class="btn-exit" routerLink="/lobby">🏃 SALIR AL LOBBY</button>
+  </div>
 
-    <div class="saldo">Saldo: {{ saldo | number:'1.2-2' }} €</div>
-
-    <div class="apuesta" *ngIf="!juegoIniciado && !juegoTerminado">
-      <label>Apuesta:</label>
-      <input type="number" [(ngModel)]="montoApuesta" min="1" max="500" [disabled]="cargando" />
+  <div class="table-felt">
+    
+    <div class="dealer-section" *ngIf="mesa && mesa.manoCrupier.length > 0">
+      <div class="section-badge">🎩 CRUPIER ({{ getValorMano(mesa.manoCrupier) }})</div>
+      <div class="cards-display">
+        <img *ngFor="let carta of mesa.manoCrupier" [src]="obtenerRutaCarta(carta)" class="playing-card" />
+      </div>
     </div>
 
-    <div class="mesa">
-      <div class="zona-crupier">
-        <h3>Crupier <span *ngIf="manoCrupier.length > 0">({{ puntuacionMano(manoCrupier) }})</span></h3>
-        <div class="mano">
-          <div *ngFor="let carta of manoCrupier; let i = index" 
-               class="carta"
-               [class.roja]="esRojo(carta.charAt(carta.length - 1))"
-               [class.negra]="!esRojo(carta.charAt(carta.length - 1))"
-               [class.animando-entrada]="animandoEntrada"
-               [style.animation-delay]="(i * 0.1) + 's'">
-            <div class="valor">{{ obtenerValor(carta) }}</div>
-            <div class="palo">{{ obtenerPalo(carta) }}</div>
-          </div>
-          <div class="carta reverso" *ngIf="juegoIniciado && !juegoTerminado && manoCrupier.length > 1"></div>
+    <div class="multiplayer-section">
+      <div class="player-hand-container" *ngFor="let kvp of getJugadores()" [class.is-me]="kvp[0] === miPartidaId">
+        <div class="player-badge">
+          {{ kvp[1].nombreUsuario }} <span class="bet-amount">🪙 {{ kvp[1].monto }}€</span>
         </div>
-      </div>
-
-      <div class="zona-jugador">
-        <h3>Jugador <span *ngIf="manoJugador.length > 0">({{ puntuacionMano(manoJugador) }})</span></h3>
-        <div class="mano">
-          <div *ngFor="let carta of manoJugador; let i = index" 
-               class="carta"
-               [class.roja]="esRojo(carta.charAt(carta.length - 1))"
-               [class.negra]="!esRojo(carta.charAt(carta.length - 1))"
-               [class.animando-entrada]="animandoEntrada"
-               [style.animation-delay]="(i * 0.1) + 's'">
-            <div class="valor">{{ obtenerValor(carta) }}</div>
-            <div class="palo">{{ obtenerPalo(carta) }}</div>
-          </div>
+        <div class="cards-display">
+          <img *ngFor="let carta of kvp[1].manoJugador" [src]="obtenerRutaCarta(carta)" class="playing-card" [class.busted]="getValorMano(kvp[1].manoJugador) > 21" />
         </div>
-      </div>
-
-      <div class="resultado-overlay" *ngIf="juegoTerminado && mensaje">
-        <div class="resultado-mensaje" [ngClass]="resultado">
-          {{ mensaje }}
-          <button class="resultado-btn" (click)="nuevaPartida()">NUEVA PARTIDA</button>
+        <div class="hand-score" [class.busted-text]="getValorMano(kvp[1].manoJugador) > 21">
+          Puntos: {{ getValorMano(kvp[1].manoJugador) }}
+          <span *ngIf="kvp[1].terminada"> (Plantado)</span>
+          <span *ngIf="getValorMano(kvp[1].manoJugador) > 21"> (¡Te pasaste!)</span>
         </div>
       </div>
     </div>
 
-    <div class="acciones">
-      <button (click)="repartir()" [disabled]="cargando || juegoIniciado">
-        {{ cargando ? 'CARGANDO...' : 'REPARTIR' }}
-      </button>
-      <button (click)="pedir()" [disabled]="!juegoIniciado || juegoTerminado || cargando">
-        PEDIR CARTA
-      </button>
-      <button (click)="plantarse()" [disabled]="!juegoIniciado || juegoTerminado || cargando">
-        PLANTARSE
-      </button>
+    <div class="betting-controls" *ngIf="!miPartidaId">
+      <h3>💸 ENTRAR A LA RONDA</h3>
+      <div class="bet-input-group">
+        <button class="btn-chip" (click)="apuestaActual = 10">10€</button>
+        <button class="btn-chip" (click)="apuestaActual = 50">50€</button>
+        <button class="btn-chip" (click)="apuestaActual = 100">100€</button>
+        <input type="number" [(ngModel)]="apuestaActual" class="input-bet" />
+      </div>
+      <button class="btn-action pulse" (click)="apostarYJugar()">APOSTAR Y JUGAR</button>
     </div>
+
+    <div class="action-controls" *ngIf="miPartidaId">
+      <button class="btn-hit" (click)="pedirCarta()">🃏 PEDIR CARTA</button>
+      <button class="btn-stand" (click)="plantarse()">🛑 PLANTARSE</button>
+    </div>
+
   </div>
 </div>

@@ -7,7 +7,8 @@ namespace TrickedDice.Api.Services
         private static readonly string[] Palos = { "C", "D", "T", "P" };
         private static readonly string[] Valores = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
 
-        private readonly ConcurrentDictionary<string, PartidaBlackjack> _partidas = new();
+        private readonly ConcurrentDictionary<string, MesaBlackjack> _mesas = new();
+        private readonly ConcurrentDictionary<string, string> _partidaToMesa = new();
 
         public List<string> CrearBaraja()
         {
@@ -24,61 +25,87 @@ namespace TrickedDice.Api.Services
             return baraja.OrderBy(x => random.Next()).Take(cantidad).ToList();
         }
 
-        public string NuevaPartida(string email, decimal monto)
+        public MesaBlackjack? ObtenerMesa(string roomId)
         {
-            var id = Guid.NewGuid().ToString("N")[..8];
-            var baraja = CrearBaraja();
-            var manoJugador = RepartirCartas(baraja, 2);
-            var manoCrupier = RepartirCartas(baraja.Except(manoJugador).ToList(), 1);
-            _partidas[id] = new PartidaBlackjack
-            {
-                Email = email,
-                Monto = monto,
-                ManoJugador = manoJugador,
-                ManoCrupier = manoCrupier,
-                Baraja = baraja.Except(manoJugador).Except(manoCrupier).ToList()
-            };
-            return id;
+            if (_mesas.TryGetValue(roomId, out var mesa)) return mesa;
+            return null;
         }
 
-        public PartidaBlackjack? ObtenerPartida(string id)
+        public string NuevaPartida(string email, string nombreUsuario, decimal monto, string roomId)
         {
-            _partidas.TryGetValue(id, out var partida);
-            return partida;
+            var idPartida = Guid.NewGuid().ToString("N")[..8];
+            var mesa = _mesas.GetOrAdd(roomId, id => new MesaBlackjack { RoomId = id, Baraja = CrearBaraja() });
+
+            if (mesa.ManoCrupier.Count == 0)
+            {
+                mesa.ManoCrupier = RepartirCartas(mesa.Baraja, 1);
+            }
+
+            mesa.ManosJugadores[idPartida] = new PartidaBlackjack
+            {
+                Email = email,
+                NombreUsuario = nombreUsuario,
+                Monto = monto,
+                ManoJugador = RepartirCartas(mesa.Baraja, 2),
+                Terminada = false
+            };
+
+            _partidaToMesa[idPartida] = roomId;
+            return idPartida;
+        }
+
+        public PartidaBlackjack? ObtenerPartida(string idPartida)
+        {
+            if (_partidaToMesa.TryGetValue(idPartida, out var roomId))
+                if (_mesas.TryGetValue(roomId, out var mesa))
+                    if (mesa.ManosJugadores.TryGetValue(idPartida, out var partida))
+                        return partida;
+            return null;
         }
 
         public string? PedirCarta(string idPartida)
         {
-            var partida = ObtenerPartida(idPartida);
-            if (partida == null || partida.Terminada) return null;
-            var carta = RepartirCartas(partida.Baraja, 1).FirstOrDefault();
+            if (!_partidaToMesa.TryGetValue(idPartida, out var roomId)) return null;
+            if (!_mesas.TryGetValue(roomId, out var mesa)) return null;
+            if (!mesa.ManosJugadores.TryGetValue(idPartida, out var partida)) return null;
+            if (partida.Terminada) return null;
+
+            var carta = RepartirCartas(mesa.Baraja, 1).FirstOrDefault();
             if (carta != null)
             {
                 partida.ManoJugador.Add(carta);
-                partida.Baraja.Remove(carta);
+                mesa.Baraja.Remove(carta);
             }
             return carta;
         }
 
         public void Plantarse(string idPartida)
         {
-            var partida = ObtenerPartida(idPartida);
-            if (partida == null) return;
-            while (ValorMano(partida.ManoCrupier) < 17)
+            if (!_partidaToMesa.TryGetValue(idPartida, out var roomId)) return;
+            if (!_mesas.TryGetValue(roomId, out var mesa)) return;
+            if (!mesa.ManosJugadores.TryGetValue(idPartida, out var partida)) return;
+
+            partida.Terminada = true;
+
+            if (mesa.ManosJugadores.Values.All(p => p.Terminada))
             {
-                var carta = RepartirCartas(partida.Baraja, 1).FirstOrDefault();
-                if (carta == null) break;
-                partida.ManoCrupier.Add(carta);
-                partida.Baraja.Remove(carta);
+                while (ValorMano(mesa.ManoCrupier) < 17)
+                {
+                    var carta = RepartirCartas(mesa.Baraja, 1).FirstOrDefault();
+                    if (carta == null) break;
+                    mesa.ManoCrupier.Add(carta);
+                    mesa.Baraja.Remove(carta);
+                }
             }
         }
 
         public string ObtenerResultado(string idPartida)
         {
-            var partida = ObtenerPartida(idPartida);
-            if (partida == null) return "error";
+            if (!_partidaToMesa.TryGetValue(idPartida, out var roomId) || !_mesas.TryGetValue(roomId, out var mesa) || !mesa.ManosJugadores.TryGetValue(idPartida, out var partida))
+                return "error";
+
             int puntosJugador = ValorMano(partida.ManoJugador);
-            int puntosCrupier = ValorMano(partida.ManoCrupier);
+            int puntosCrupier = ValorMano(mesa.ManoCrupier);
 
             if (puntosJugador > 21) return "crupier";
             if (puntosCrupier > 21) return "jugador";
@@ -93,19 +120,9 @@ namespace TrickedDice.Api.Services
             foreach (var carta in mano)
             {
                 var valor = carta.Length == 3 ? carta[..2] : carta[..1];
-                if (int.TryParse(valor, out int num))
-                {
-                    total += num;
-                }
-                else if (valor == "A")
-                {
-                    ases++;
-                    total += 11;
-                }
-                else
-                {
-                    total += 10;
-                }
+                if (int.TryParse(valor, out int num)) total += num;
+                else if (valor == "A") { ases++; total += 11; }
+                else total += 10;
             }
             while (total > 21 && ases > 0)
             {
@@ -115,19 +132,31 @@ namespace TrickedDice.Api.Services
             return total;
         }
 
-        public void EliminarPartida(string id)
+        public void LimpiarMesa(string roomId)
         {
-            _partidas.TryRemove(id, out _);
+            if (_mesas.TryGetValue(roomId, out var mesa))
+            {
+                mesa.ManoCrupier.Clear();
+                mesa.ManosJugadores.Clear();
+                mesa.Baraja = CrearBaraja();
+            }
         }
+    }
+
+    public class MesaBlackjack
+    {
+        public string RoomId { get; set; } = string.Empty;
+        public List<string> ManoCrupier { get; set; } = new();
+        public List<string> Baraja { get; set; } = new();
+        public ConcurrentDictionary<string, PartidaBlackjack> ManosJugadores { get; set; } = new();
     }
 
     public class PartidaBlackjack
     {
         public string Email { get; set; } = string.Empty;
+        public string NombreUsuario { get; set; } = string.Empty;
         public decimal Monto { get; set; }
         public List<string> ManoJugador { get; set; } = new();
-        public List<string> ManoCrupier { get; set; } = new();
-        public List<string> Baraja { get; set; } = new();
         public bool Terminada { get; set; }
     }
 }

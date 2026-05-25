@@ -30,7 +30,7 @@ namespace TrickedDice.Api.Services
             return (id, saldo);
         }
 
-        public string IniciarPartida(string email, decimal monto)
+        public string IniciarPartida(string email, string nombreUsuario, decimal monto, string roomId)
         {
             using var connection = new SqlConnection(_connectionString);
             connection.Open();
@@ -38,11 +38,10 @@ namespace TrickedDice.Api.Services
             try
             {
                 var idUsuario = ObtenerIdUsuario(connection, transaction, email);
-                var nuevoSaldo = ActualizarSaldo(connection, transaction, idUsuario, -monto);
+                ActualizarSaldo(connection, transaction, idUsuario, -monto);
                 RegistrarTransaccion(connection, transaction, idUsuario, -monto, "APUESTA");
                 transaction.Commit();
-
-                return _blackjackService.NuevaPartida(email, monto);
+                return _blackjackService.NuevaPartida(email, nombreUsuario, monto, roomId);
             }
             catch (Exception ex)
             {
@@ -56,7 +55,6 @@ namespace TrickedDice.Api.Services
         {
             var partida = _blackjackService.ObtenerPartida(idPartida);
             if (partida == null) return 0;
-
             var resultado = _blackjackService.ObtenerResultado(idPartida);
             decimal premio = 0;
             if (resultado == "jugador") premio = partida.Monto * 2;
@@ -71,7 +69,6 @@ namespace TrickedDice.Api.Services
                 var nuevoSaldo = ActualizarSaldo(connection, transaction, idUsuario, premio);
                 if (premio > 0) RegistrarTransaccion(connection, transaction, idUsuario, premio, "PREMIO");
                 transaction.Commit();
-                _blackjackService.EliminarPartida(idPartida);
                 return nuevoSaldo;
             }
             catch (Exception ex)

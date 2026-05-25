@@ -24,4 +24,8 @@ export class ApiService {
   delete<T>(endpoint: string, headers?: HttpHeaders): Observable<T> {
     return this.http.delete<T>(`${this.baseUrl}${endpoint}`, { headers });
   }
+
+  getSaldo(): Observable<{ saldo: number }> {
+    return this.get<{ saldo: number }>('/Usuarios/saldo');
+  }
 }

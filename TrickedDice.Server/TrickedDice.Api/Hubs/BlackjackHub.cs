@@ -17,89 +17,78 @@ namespace TrickedDice.Api.Hubs
             _gameService = gameService;
         }
 
-        private string? GetEmail()
-        {
-            return Context.User?.FindFirst(ClaimTypes.Email)?.Value;
-        }
+        private string? GetEmail() => Context.User?.FindFirst(ClaimTypes.Email)?.Value;
+        private string? GetUserName() => Context.User?.FindFirst(ClaimTypes.Name)?.Value ?? Context.User?.FindFirst("unique_name")?.Value ?? GetEmail();
 
         public async Task JoinTable(string tableId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, tableId);
+            var mesa = _service.ObtenerMesa(tableId);
+            if (mesa != null)
+            {
+                await Clients.Caller.SendAsync("MesaActualizada", mesa);
+            }
         }
 
         public async Task Repartir(string tableId, decimal monto)
         {
             var email = GetEmail();
-            if (string.IsNullOrEmpty(email))
-            {
-                await Clients.Caller.SendAsync("Error", "No se pudo identificar al usuario.");
-                return;
-            }
+            if (string.IsNullOrEmpty(email)) return;
 
             var validacion = _gameService.ValidarUsuario(email, monto);
             if (validacion == null)
             {
-                await Clients.Caller.SendAsync("Error", "Saldo insuficiente o usuario no encontrado.");
+                await Clients.Caller.SendAsync("Error", "Saldo insuficiente.");
                 return;
             }
 
-            var idPartida = _gameService.IniciarPartida(email, monto);
-            var partida = _service.ObtenerPartida(idPartida);
-            var nuevoSaldo = validacion.Value.saldoActual - monto;
+            var idPartida = _gameService.IniciarPartida(email, GetUserName() ?? "Anónimo", monto, tableId);
+            await Clients.Caller.SendAsync("PartidaIniciada", new { idPartida, saldo = validacion.Value.saldoActual - monto });
 
-            await Clients.Caller.SendAsync("CartasRepartidas", new
-            {
-                idPartida,
-                manoJugador = partida!.ManoJugador,
-                manoCrupier = partida.ManoCrupier,
-                saldoActualizado = nuevoSaldo
-            });
+            var mesa = _service.ObtenerMesa(tableId);
+            await Clients.Group(tableId).SendAsync("MesaActualizada", mesa);
         }
 
-        public async Task PedirCarta(string partidaId)
+        public async Task PedirCarta(string partidaId, string tableId)
         {
-            var email = GetEmail();
-            if (string.IsNullOrEmpty(email))
-            {
-                await Clients.Caller.SendAsync("Error", "No autorizado.");
-                return;
-            }
-
-            var carta = _service.PedirCarta(partidaId);
+            _service.PedirCarta(partidaId);
             var partida = _service.ObtenerPartida(partidaId);
-            await Clients.Caller.SendAsync("CartaPedida", new
+            if (partida != null && _service.ValorMano(partida.ManoJugador) > 21)
             {
-                carta,
-                manoJugador = partida?.ManoJugador
-            });
+                _service.Plantarse(partidaId);
+                await CheckMesaFinalizada(tableId);
+            }
+            else
+            {
+                var mesa = _service.ObtenerMesa(tableId);
+                await Clients.Group(tableId).SendAsync("MesaActualizada", mesa);
+            }
         }
 
-        public async Task Plantarse(string partidaId)
+        public async Task Plantarse(string partidaId, string tableId)
         {
-            var email = GetEmail();
-            if (string.IsNullOrEmpty(email))
-            {
-                await Clients.Caller.SendAsync("Error", "No autorizado.");
-                return;
-            }
-
             _service.Plantarse(partidaId);
-            var partida = _service.ObtenerPartida(partidaId);
-            if (partida == null)
+            await CheckMesaFinalizada(tableId);
+        }
+
+        private async Task CheckMesaFinalizada(string tableId)
+        {
+            var mesa = _service.ObtenerMesa(tableId);
+            if (mesa != null && mesa.ManosJugadores.Count > 0 && mesa.ManosJugadores.Values.All(p => p.Terminada))
             {
-                await Clients.Caller.SendAsync("Error", "Partida no encontrada.");
-                return;
+                await Clients.Group(tableId).SendAsync("MesaFinalizada", mesa);
+
+                foreach (var kvp in mesa.ManosJugadores)
+                {
+                    _gameService.ResolverPartida(kvp.Key, kvp.Value.Email);
+                }
+                
+                _service.LimpiarMesa(tableId);
             }
-
-            var resultado = _service.ObtenerResultado(partidaId);
-            var nuevoSaldo = _gameService.ResolverPartida(partidaId, email);
-
-            await Clients.Caller.SendAsync("ResultadoBlackjack", new
+            else
             {
-                resultado,
-                manoCrupierCompleta = partida.ManoCrupier,
-                saldoActualizado = nuevoSaldo
-            });
+                await Clients.Group(tableId).SendAsync("MesaActualizada", mesa);
+            }
         }
     }
 }

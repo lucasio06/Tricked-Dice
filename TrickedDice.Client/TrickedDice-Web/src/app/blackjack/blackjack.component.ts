@@ -1,10 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../auth.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { SignalrService } from '../services/signalr.service';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
-import { SignalrService } from '../services/signalr.service';
+import { RUTAS } from '../utils/rutas.const';
+import { ApiService } from '../services/api.service';
 
 @Component({
   selector: 'app-blackjack',
@@ -14,254 +16,115 @@ import { SignalrService } from '../services/signalr.service';
   styleUrls: ['./blackjack.component.scss']
 })
 export class BlackjackComponent implements OnInit, OnDestroy {
-  montoApuesta: number = 10;
-  saldo: number = 0;
-  manoJugador: string[] = [];
-  manoCrupier: string[] = [];
-  idPartida: string = '';
-  juegoIniciado: boolean = false;
-  juegoTerminado: boolean = false;
-  cargando: boolean = false;
-  mensaje: string = '';
-  resultado: string = '';
-  animandoEntrada: boolean = false;
-
-  private audioContext: AudioContext | null = null;
+  tableId: string = '';
+  mesa: any = null;
+  miPartidaId: string | null = null;
+  apuestaActual: number = 10;
+  saldoActual: number = 0;
+  nombreUsuarioActual: string = '';
 
   constructor(
+    private route: ActivatedRoute,
+    private router: Router,
     private signalrService: SignalrService,
-    private authService: AuthService,
-    private toast: ToastService
+    private toast: ToastService,
+    private apiService: ApiService,
+    private zone: NgZone
   ) {}
 
-  async ngOnInit(): Promise<void> {
-    this.authService.usuario$.subscribe(usuario => {
-      if (usuario) {
-        this.saldo = usuario.saldo;
+  async ngOnInit() {
+    this.obtenerNombreUsuario();
+    this.apiService.getSaldo().subscribe(res => { this.saldoActual = res.saldo; });
+
+    this.route.queryParams.subscribe(async params => {
+      this.tableId = params['mesa'];
+      if (!this.tableId) {
+        this.toast.error('Mesa no especificada');
+        this.router.navigate([RUTAS.lobby]);
+        return;
       }
-    });
+      
+      await this.signalrService.startConnection('/hubs/blackjack');
+      await this.signalrService.invoke('JoinTable', this.tableId);
 
-    const conectado = await this.signalrService.startConnection('/hubs/blackjack');
-    if (!conectado) {
-      this.toast.error('No se pudo conectar al juego.');
-      return;
-    }
+      this.signalrService.on('MesaActualizada', (mesa: any) => {
+        this.zone.run(() => { this.mesa = mesa; });
+      });
 
-    this.signalrService.on('Error', (mensaje: string) => {
-      this.cargando = false;
-      this.toast.error(mensaje);
-    });
+      this.signalrService.on('MesaFinalizada', (mesa: any) => {
+        this.zone.run(() => {
+          this.mesa = mesa;
+          this.toast.info('La ronda ha terminado. Comprobando resultados...');
+          setTimeout(() => {
+            this.miPartidaId = null;
+            this.mesa = null;
+            this.apiService.getSaldo().subscribe(res => { this.saldoActual = res.saldo; });
+          }, 5000);
+        });
+      });
 
-    this.signalrService.on('CartasRepartidas', (data: any) => {
-      this.manoJugador = data.manoJugador;
-      this.manoCrupier = data.manoCrupier;
-      this.idPartida = data.idPartida;
-      this.saldo = data.saldoActualizado;
-      this.authService.actualizarSaldo(data.saldoActualizado);
-      this.juegoIniciado = true;
-      this.cargando = false;
-      this.animarEntrada();
-      this.sonidoRepartir();
-    });
+      this.signalrService.on('PartidaIniciada', (data: any) => {
+        this.zone.run(() => {
+          this.miPartidaId = data.idPartida;
+          this.saldoActual = data.saldo;
+          this.toast.success('¡Has entrado a la ronda!');
+        });
+      });
 
-    this.signalrService.on('CartaPedida', (data: any) => {
-      this.manoJugador = data.manoJugador;
-      this.cargando = false;
-      this.animarEntrada();
-
-      if (data.carta === null) {
-        this.juegoTerminado = true;
-        this.juegoIniciado = false;
-        this.resultado = 'derrota';
-        this.mensaje = '¡Te has pasado de 21!';
-        this.sonidoPerder();
-      }
-    });
-
-    this.signalrService.on('ResultadoBlackjack', (data: any) => {
-      this.manoCrupier = data.manoCrupierCompleta;
-      this.saldo = data.saldoActualizado;
-      this.authService.actualizarSaldo(data.saldoActualizado);
-      this.juegoTerminado = true;
-      this.juegoIniciado = false;
-      this.cargando = false;
-      this.animarEntrada();
-
-      if (data.resultado === 'jugador') {
-        this.resultado = 'victoria';
-        this.mensaje = '¡Has ganado!';
-        this.sonidoGanar();
-      } else if (data.resultado === 'empate') {
-        this.resultado = 'empate';
-        this.mensaje = 'Empate. Recuperas tu apuesta.';
-      } else {
-        this.resultado = 'derrota';
-        this.mensaje = 'El crupier gana.';
-        this.sonidoPerder();
-      }
+      this.signalrService.on('Error', (msg: string) => {
+        this.zone.run(() => { this.toast.error(msg); });
+      });
     });
   }
 
-  ngOnDestroy(): void {
+  ngOnDestroy() {
     this.signalrService.stopConnection();
   }
 
-  async repartir(): Promise<void> {
-    if (this.montoApuesta <= 0 || this.montoApuesta > this.saldo) {
-      this.toast.warning('Monto de apuesta inválido.');
-      return;
-    }
-
-    this.cargando = true;
-    this.mensaje = '';
-    this.resultado = '';
-    this.juegoTerminado = false;
-    this.manoCrupier = [];
-    this.manoJugador = [];
-
-    await this.signalrService.invoke('Repartir', 'mesa-principal', this.montoApuesta);
-  }
-
-  async pedir(): Promise<void> {
-    if (!this.juegoIniciado || this.juegoTerminado || this.cargando) return;
-    this.cargando = true;
-    this.sonidoSeleccion();
-    await this.signalrService.invoke('PedirCarta', this.idPartida);
-  }
-
-  async plantarse(): Promise<void> {
-    if (!this.juegoIniciado || this.juegoTerminado || this.cargando) return;
-    this.cargando = true;
-    this.sonidoSeleccion();
-    await this.signalrService.invoke('Plantarse', this.idPartida);
-  }
-
-  nuevaPartida(): void {
-    this.manoJugador = [];
-    this.manoCrupier = [];
-    this.juegoIniciado = false;
-    this.juegoTerminado = false;
-    this.resultado = '';
-    this.mensaje = '';
-    this.idPartida = '';
-  }
-
-  obtenerValor(carta: string): string {
-    if (carta.length === 3) return carta.substring(0, 2);
-    return carta.charAt(0);
-  }
-
-  obtenerPalo(carta: string): string {
-    const ultimo = carta.charAt(carta.length - 1);
-    switch (ultimo) {
-      case 'C': return '♥';
-      case 'D': return '♦';
-      case 'T': return '♣';
-      case 'P': return '♠';
-      default: return '';
+  obtenerNombreUsuario() {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (usuarioStr) {
+      const userObj = JSON.parse(usuarioStr);
+      this.nombreUsuarioActual = userObj.nombreUsuario || userObj.nombre || '';
     }
   }
 
-  esRojo(palo: string): boolean {
-    return palo === 'C' || palo === 'D';
+  getJugadores(): any[] {
+    return this.mesa && this.mesa.manosJugadores ? (Object.entries(this.mesa.manosJugadores) as any[]) : [];
   }
 
-  puntuacionMano(mano: string[]): number {
+  getValorMano(mano: string[]): number {
     let total = 0;
     let ases = 0;
     for (const carta of mano) {
-      const valor = this.obtenerValor(carta);
-      if (valor === 'A') {
-        ases++;
-        total += 11;
-      } else if (['J', 'Q', 'K'].includes(valor)) {
-        total += 10;
-      } else {
-        total += parseInt(valor);
-      }
+        let valor = carta.length === 3 ? carta.substring(0, 2) : carta.charAt(0);
+        if (!isNaN(Number(valor))) { total += Number(valor); }
+        else if (valor === 'A') { ases++; total += 11; }
+        else { total += 10; }
     }
-    while (total > 21 && ases > 0) {
-      total -= 10;
-      ases--;
-    }
+    while (total > 21 && ases > 0) { total -= 10; ases--; }
     return total;
   }
 
-  private animarEntrada(): void {
-    this.animandoEntrada = false;
-    setTimeout(() => {
-      this.animandoEntrada = true;
-    }, 10);
-  }
-
-  private getAudioContext(): AudioContext {
-    if (!this.audioContext) {
-      this.audioContext = new AudioContext();
+  async apostarYJugar() {
+    if (this.apuestaActual <= 0 || this.apuestaActual > this.saldoActual) {
+      this.toast.error('Apuesta no válida o saldo insuficiente');
+      return;
     }
-    return this.audioContext;
+    await this.signalrService.invoke('Repartir', this.tableId, this.apuestaActual);
   }
 
-  private sonidoSeleccion(): void {
-    const ctx = this.getAudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    gain.gain.setValueAtTime(0.05, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.05);
+  async pedirCarta() {
+    if (!this.miPartidaId) return;
+    await this.signalrService.invoke('PedirCarta', this.miPartidaId, this.tableId);
   }
 
-  private sonidoRepartir(): void {
-    const ctx = this.getAudioContext();
-    for (let i = 0; i < 4; i++) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      const tiempo = ctx.currentTime + i * 0.1;
-      osc.frequency.setValueAtTime(500 + i * 150, tiempo);
-      gain.gain.setValueAtTime(0.06, tiempo);
-      gain.gain.exponentialRampToValueAtTime(0.001, tiempo + 0.12);
-      osc.start(tiempo);
-      osc.stop(tiempo + 0.12);
-    }
+  async plantarse() {
+    if (!this.miPartidaId) return;
+    await this.signalrService.invoke('Plantarse', this.miPartidaId, this.tableId);
   }
 
-  private sonidoGanar(): void {
-    const ctx = this.getAudioContext();
-    const notas = [523, 659, 784, 1047];
-    notas.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      const tiempo = ctx.currentTime + i * 0.12;
-      osc.frequency.setValueAtTime(freq, tiempo);
-      gain.gain.setValueAtTime(0.12, tiempo);
-      gain.gain.exponentialRampToValueAtTime(0.001, tiempo + 0.2);
-      osc.start(tiempo);
-      osc.stop(tiempo + 0.2);
-    });
-  }
-
-  private sonidoPerder(): void {
-    const ctx = this.getAudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(300, ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(150, ctx.currentTime + 0.4);
-    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.4);
+  obtenerRutaCarta(carta: string): string {
+    return `assets/cartas/${carta}.png`;
   }
 }

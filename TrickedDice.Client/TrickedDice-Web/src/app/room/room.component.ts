@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -35,11 +35,15 @@ export class RoomComponent implements OnInit, OnDestroy {
   showPasswordModal: boolean = false;
   private hasLeft: boolean = false;
 
+  mensajes: {usuario: string, texto: string}[] = [];
+  nuevoMensaje: string = '';
+
   constructor(
     private signalrService: SignalrService,
     private toast: ToastService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private zone: NgZone
   ) {}
 
   ngOnInit(): void {
@@ -66,63 +70,110 @@ export class RoomComponent implements OnInit, OnDestroy {
       }
     });
 
-    // ✅ Escuchar cuando alguien se une
     this.signalrService.on('PlayerJoined', (playerName: string) => {
-      console.log('📡 PlayerJoined:', playerName);
-      if (this.room && !this.room.jugadores.includes(playerName)) {
-        this.room.jugadores.push(playerName);
-        this.actualizarEsCreador();
-        this.toast.info(`${playerName} se ha unido a la sala.`);
-      }
+      this.zone.run(() => {
+        if (this.room && !this.room.jugadores.includes(playerName)) {
+          this.room.jugadores.push(playerName);
+          this.actualizarEsCreador();
+          this.toast.info(`${playerName} se ha unido a la sala.`);
+        }
+      });
+    });
+
+    this.signalrService.on('PlayerLeft', (playerName: string) => {
+      this.zone.run(() => {
+        if (this.room) {
+          this.room.jugadores = this.room.jugadores.filter(j => j.trim().toLowerCase() !== playerName.trim().toLowerCase());
+          this.toast.info(`🏃 ${playerName} ha abandonado la sala.`);
+          this.actualizarEsCreador();
+        }
+      });
     });
 
     this.signalrService.on('RoomUpdated', (room: any) => {
-      if (room.id === this.roomId) {
-        this.room = this.normalizarRoom(room);
-        this.actualizarEsCreador();
-      }
+      this.zone.run(() => {
+        const parsedId = room.id || room.Id || room.ID;
+        if (parsedId === this.roomId) {
+          this.room = this.normalizarRoom(room);
+          this.actualizarEsCreador();
+        }
+      });
     });
 
     this.signalrService.on('RoomJoined', (room: any) => {
-      if (room.id === this.roomId) {
-        this.room = this.normalizarRoom(room);
-        this.actualizarEsCreador();
-        this.toast.success(`Te has unido a ${this.room.nombre}`);
-      }
+      this.zone.run(() => {
+        const parsedId = room.id || room.Id || room.ID;
+        if (parsedId === this.roomId) {
+          this.room = this.normalizarRoom(room);
+          this.actualizarEsCreador();
+          this.toast.success(`Te has unido a ${this.room.nombre}`);
+        }
+      });
+    });
+
+    this.signalrService.on('RoomPrivacyToggled', (esPrivada: boolean) => {
+      this.zone.run(() => {
+        if (this.room) {
+          this.room.esPrivada = esPrivada;
+          this.toast.info(esPrivada ? 'La sala ahora es Privada 🔒' : 'La sala ahora es Pública 🌐');
+        }
+      });
     });
 
     this.signalrService.on('GameStarted', (gameType: string, roomId: string) => {
-      if (roomId === this.roomId) {
-        if (this.room) {
-          const mesasActivas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
-          const mesasActualizadas = mesasActivas.filter((m: any) => m.id !== this.room!.id);
-          mesasActualizadas.push(this.room);
-          localStorage.setItem('mesasActivas', JSON.stringify(mesasActualizadas));
+      this.zone.run(() => {
+        if (roomId === this.roomId) {
+          if (this.room) {
+            const mesasActivas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
+            const mesasActualizadas = mesasActivas.filter((m: any) => m.id !== this.room!.id);
+            mesasActualizadas.push(this.room);
+            localStorage.setItem('mesasActivas', JSON.stringify(mesasActualizadas));
+          }
+          this.toast.success(`La partida ha comenzado.`);
+          this.irAJuego(gameType, roomId);
         }
-        this.toast.success(`La partida ha comenzado. Redirigiendo...`);
-        this.irAJuego(gameType, roomId);
-      }
+      });
+    });
+
+    this.signalrService.on('ReceiveMessage', (usuario: string, texto: string) => {
+      this.zone.run(() => {
+        this.mensajes.push({ usuario, texto });
+      });
     });
 
     this.signalrService.on('Error', (msg: string) => {
-      this.toast.error(msg);
-      if (msg.toLowerCase().includes('password')) {
-        this.showPasswordModal = true;
-      }
+      this.zone.run(() => {
+        this.toast.error(msg);
+        if (msg.toLowerCase().includes('password') || msg.toLowerCase().includes('contrase')) {
+          this.showPasswordModal = true;
+        }
+      });
     });
+  }
+
+  async enviarMensaje() {
+    const msg = this.nuevoMensaje.trim();
+    if (!msg) return;
+
+    this.nuevoMensaje = '';
+    try {
+      await this.signalrService.invoke('SendMessage', this.roomId, msg);
+    } catch (e) {
+      this.toast.error('Error al enviar el mensaje');
+    }
   }
 
   private normalizarRoom(room: any): Room {
     return {
-      id: room.id,
-      nombre: room.nombre || room.name,
-      juego: room.juego || room.gameType,
-      esPrivada: room.esPrivada ?? room.isPrivate,
-      contrasena: room.contrasena || room.password,
-      creador: room.creador || room.creator,
-      creadorId: room.creadorId || room.creatorId,
-      jugadores: room.jugadores || room.players || [],
-      maxJugadores: room.maxJugadores ?? room.maxPlayers ?? 8
+      id: room.id || room.Id || room.ID,
+      nombre: room.nombre || room.Nombre || room.name,
+      juego: room.juego || room.Juego || room.gameType,
+      esPrivada: room.esPrivada ?? room.EsPrivada ?? room.isPrivate ?? false,
+      contrasena: room.contrasena || room.Contrasena || room.password,
+      creador: room.creador || room.Creador || room.creator,
+      creadorId: room.creadorId || room.CreadorId || room.creatorId,
+      jugadores: room.jugadores || room.Jugadores || room.players || [],
+      maxJugadores: room.maxJugadores ?? room.MaxJugadores ?? room.maxPlayers ?? 8
     };
   }
 
@@ -139,7 +190,6 @@ export class RoomComponent implements OnInit, OnDestroy {
     try {
       await this.signalrService.invoke('JoinRoom', this.roomId, '');
     } catch (err) {
-      console.error('Error al unirse:', err);
       this.toast.error('No se pudo unir a la sala');
       this.router.navigate([RUTAS.lobby]);
     }
@@ -169,7 +219,6 @@ export class RoomComponent implements OnInit, OnDestroy {
         const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
         this.currentUser = payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || payload.unique_name || payload.name || 'Usuario';
       } catch (e) {
-        console.error('Error decodificando token', e);
         this.currentUser = 'Usuario';
       }
     } else {
