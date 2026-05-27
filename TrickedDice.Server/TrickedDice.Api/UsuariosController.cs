@@ -161,6 +161,46 @@ namespace TrickedDice.Api.Controllers
             }
         }
 
+        [HttpGet("saldo")]
+        [Authorize]
+        public IActionResult GetSaldo()
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                return Unauthorized("Token inválido o email no encontrado.");
+            }
+
+            try
+            {
+                using (var connection = new SqlConnection(_conn))
+                {
+                    connection.Open();
+                    string sql = "SELECT SALDO FROM USUARIO WHERE EMAIL = @Email";
+                    using (var cmd = new SqlCommand(sql, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@Email", email);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                return Ok(new
+                                {
+                                    saldo = Convert.ToDecimal(reader["SALDO"])
+                                });
+                            }
+                            return NotFound("Usuario no encontrado.");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error interno al obtener saldo.");
+                return StatusCode(500, "Error interno del servidor al obtener el saldo.");
+            }
+        }
+
         [HttpPut("recargar")]
         [Authorize]
         public IActionResult RecargarSaldo([FromBody] RecargaModel model)
@@ -178,7 +218,6 @@ namespace TrickedDice.Api.Controllers
 
                 try
                 {
-                    // 1. Obtener ID_USUARIO y saldo actual
                     int idUsuario;
                     decimal saldoActual;
                     string sqlGet = "SELECT ID_USUARIO, SALDO FROM USUARIO WHERE EMAIL = @Email";
@@ -194,7 +233,6 @@ namespace TrickedDice.Api.Controllers
                         }
                     }
 
-                    // 2. Actualizar saldo
                     string sqlUpdate = "UPDATE USUARIO SET SALDO = SALDO + @cantidad WHERE ID_USUARIO = @idUsuario";
                     using (var cmdUpdate = new SqlCommand(sqlUpdate, c, transaction))
                     {
@@ -205,7 +243,6 @@ namespace TrickedDice.Api.Controllers
 
                     decimal nuevoSaldo = saldoActual + model.Cantidad;
 
-                    // 3. Registrar transacción
                     string sqlTrans = @"INSERT INTO TRANSACCION (ID_USUARIO, CANTIDAD, TIPO_TRANSACCION) 
                                        VALUES (@idUsuario, @cantidad, 'RECARGA')";
                     using (var cmdTrans = new SqlCommand(sqlTrans, c, transaction))
