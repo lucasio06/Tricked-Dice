@@ -9,13 +9,13 @@ namespace TrickedDice.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class VideoPokerController : ControllerBase
+    public class PokerController : ControllerBase
     {
         private readonly string? _connectionString;
-        private readonly ILogger<VideoPokerController> _logger;
+        private readonly ILogger<PokerController> _logger;
         private readonly PokerService _pokerService;
 
-        public VideoPokerController(IConfiguration configuration, ILogger<VideoPokerController> logger, PokerService pokerService)
+        public PokerController(IConfiguration configuration, ILogger<PokerController> logger, PokerService pokerService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
             _logger = logger;

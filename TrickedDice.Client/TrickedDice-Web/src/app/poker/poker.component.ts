@@ -7,13 +7,13 @@ import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { SignalrService } from '../services/signalr.service';
 
 @Component({
-  selector: 'app-video-poker',
+  selector: 'app-poker',
   standalone: true,
   imports: [CommonModule, FormsModule, NavbarComponent],
-  templateUrl: './video-poker.component.html',
-  styleUrls: ['./video-poker.component.scss']
+  templateUrl: './poker.component.html',
+  styleUrls: ['./poker.component.scss']
 })
-export class VideoPokerComponent implements OnInit, OnDestroy {
+export class PokerComponent implements OnInit, OnDestroy {
   mano: string[] = [];
   cartasSeleccionadas: boolean[] = [false, false, false, false, false];
   montoApuesta: number = 10;
