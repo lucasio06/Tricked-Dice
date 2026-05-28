@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -22,10 +22,13 @@ interface HistorialResultado {
   selector: 'app-blackjack',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, NavbarComponent],
+  providers: [SignalrService],
   templateUrl: './blackjack.component.html',
   styleUrls: ['./blackjack.component.scss']
 })
 export class BlackjackComponent implements OnInit, OnDestroy {
+  @Input() tableIdInput: string = '';
+
   tableId: string = '';
   mesa: any = null;
   miPartidaId: string | null = null;
@@ -36,10 +39,16 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   currentUserEmail: string = '';
 
   mostrarModalResultado: boolean = false;
+  mostrarConfirmacionSalir: boolean = false;
+  esperandoSiguienteRonda: boolean = false;
+  bloqueoApuesta: boolean = false;
+
   resultadoModal: { texto: string; premio: number; puntosJugador: number; puntosCrupier: number; monto: number } = 
     { texto: '', premio: 0, puntosJugador: 0, puntosCrupier: 0, monto: 0 };
   historialResultados: HistorialResultado[] = [];
+  
   private tiempoLimpiarResultados: any = null;
+  private timeoutReinicio: any = null;
 
   private signalrService = inject(SignalrService);
   private toast = inject(ToastService);
@@ -59,17 +68,30 @@ export class BlackjackComponent implements OnInit, OnDestroy {
     });
 
     this.route.queryParams.subscribe(async params => {
-      this.tableId = params['mesa'];
+      this.tableId = this.tableIdInput || params['mesa'] || '';
       if (!this.tableId) {
         this.tableId = 'SOLO_MODE_DEFAULT';
-        this.toast.info('Entrando en modo solitario...');
       }
 
       await this.signalrService.startConnection('/hubs/blackjack');
       await this.signalrService.invoke('JoinTable', this.tableId);
 
       this.signalrService.on('MesaActualizada', (mesa: any) => {
-        this.zone.run(() => { this.mesa = mesa; });
+        this.zone.run(() => { 
+          this.mesa = mesa; 
+          
+          if (this.miPartidaId) {
+            const misDatos = this.getJugadores().find(j => j[0] === this.miPartidaId);
+            if (misDatos && !misDatos[1].terminada && this.esMiTurno()) {
+              const valor = this.getValorMano(misDatos[1].manoJugador);
+              if (valor >= 21) {
+                setTimeout(() => {
+                  this.plantarse();
+                }, 1000);
+              }
+            }
+          }
+        });
       });
 
       this.signalrService.on('MesaFinalizada', (data: any) => {
@@ -77,8 +99,9 @@ export class BlackjackComponent implements OnInit, OnDestroy {
           const mesaData = data.mesa || data;
           const resultados = data.resultados;
           this.mesa = mesaData;
+          this.bloqueoApuesta = false;
 
-          let miResultado = null;
+          let miResultado: any = null;
           if (resultados && typeof resultados === 'object') {
             const emailKey = Object.keys(resultados).find(key => 
               key.toLowerCase().trim() === this.currentUserEmail ||
@@ -107,32 +130,36 @@ export class BlackjackComponent implements OnInit, OnDestroy {
 
             this.mostrarResultado(tipo, premio, puntosJugador, puntosCrupier, montoApostado);
             this.saldoActual = miResultado.saldoActualizado;
-            this.authService.actualizarSaldo(this.saldoActual);
+            this.authService.actualizarSaldoLocal(this.saldoActual);
             this.agregarAlHistorial(tipo, premio, puntosJugador, puntosCrupier, montoApostado);
-          } else {
-            this.toast.warning('No se pudo obtener el resultado de tu partida. Revisa tu saldo.');
           }
 
-          setTimeout(() => {
+          if (this.timeoutReinicio) clearTimeout(this.timeoutReinicio);
+          this.timeoutReinicio = setTimeout(() => {
             this.miPartidaId = null;
             this.mesa = null;
-          }, 5000);
+            this.esperandoSiguienteRonda = false;
+          }, 2800);
         });
       });
 
       this.signalrService.on('PartidaIniciada', (data: any) => {
         this.zone.run(() => {
           this.miPartidaId = data.idPartida;
+          this.esperandoSiguienteRonda = false;
+          this.bloqueoApuesta = false;
           this.apiService.getSaldo().subscribe(res => {
             this.saldoActual = res.saldo;
-            this.authService.actualizarSaldo(res.saldo);
+            this.authService.actualizarSaldoLocal(res.saldo);
           });
-          this.toast.success('¡Has entrado a la ronda!');
         });
       });
 
       this.signalrService.on('Error', (msg: string) => {
-        this.zone.run(() => { this.toast.error(msg); });
+        this.zone.run(() => { 
+          this.toast.error(msg); 
+          this.bloqueoApuesta = false;
+        });
       });
     });
   }
@@ -140,6 +167,11 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.signalrService.stopConnection();
     if (this.tiempoLimpiarResultados) clearTimeout(this.tiempoLimpiarResultados);
+    if (this.timeoutReinicio) clearTimeout(this.timeoutReinicio);
+  }
+
+  trackByIndex(index: number, obj: any): any {
+    return index;
   }
 
   private agregarAlHistorial(resultado: string, premio: number, puntosJugador: number, puntosCrupier: number, monto: number): void {
@@ -151,12 +183,12 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       puntuacionCrupier: puntosCrupier,
       montoApostado: monto
     });
-    if (this.historialResultados.length > 20) this.historialResultados.pop();
+    if (this.historialResultados.length > 15) this.historialResultados.pop();
 
     if (this.tiempoLimpiarResultados) clearTimeout(this.tiempoLimpiarResultados);
     this.tiempoLimpiarResultados = setTimeout(() => {
       this.historialResultados = [];
-    }, 30000);
+    }, 45000);
   }
 
   private mostrarResultado(tipo: 'win' | 'lose' | 'push', premio: number, puntosJugador: number, puntosCrupier: number, monto: number): void {
@@ -173,12 +205,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       monto 
     };
     this.mostrarModalResultado = true;
-
-    if (tipo === 'win') this.toast.win(`¡Ganaste ${premio}€!`);
-    else if (tipo === 'push') this.toast.info(`Empate, recuperas ${monto}€`);
-    else this.toast.lose(`Perdiste ${monto}€`);
-
-    setTimeout(() => this.cerrarModalResultado(), 4000);
+    setTimeout(() => this.cerrarModalResultado(), 2800);
   }
 
   cerrarModalResultado(): void {
@@ -186,8 +213,57 @@ export class BlackjackComponent implements OnInit, OnDestroy {
     this.resultadoModal = { texto: '', premio: 0, puntosJugador: 0, puntosCrupier: 0, monto: 0 };
   }
 
+  noApostar(): void {
+    this.esperandoSiguienteRonda = true;
+  }
+
   getJugadores(): any[] {
-    return this.mesa && this.mesa.manosJugadores ? (Object.entries(this.mesa.manosJugadores) as any[]) : [];
+    if (!this.mesa || !this.mesa.manosJugadores) return [];
+    return Object.entries(this.mesa.manosJugadores).sort((a, b) => a[0].localeCompare(b[0]));
+  }
+
+  get asientoss(): any[] {
+    const arr = new Array(4).fill(null);
+    const jugadores = this.getJugadores();
+    jugadores.forEach((jugador, index) => {
+      if (index < 4) {
+        arr[index] = jugador;
+      }
+    });
+    return arr;
+  }
+
+  getTurnoActualId(): string | null {
+    if (!this.mesa || !this.mesa.manosJugadores) return null;
+    const jugadores = this.getJugadores();
+    
+    const jugando = jugadores.filter(j => j[1].manoJugador && j[1].manoJugador.length > 0);
+    if (jugando.length === 0) return null;
+
+    const jugadorActivo = jugando.find(j => !j[1].terminada);
+    return jugadorActivo ? jugadorActivo[0] : null;
+  }
+
+  esMiTurno(): boolean {
+    if (!this.miPartidaId) return false;
+    return this.miPartidaId === this.getTurnoActualId();
+  }
+
+  getNombreTurnoActual(): string {
+    const id = this.getTurnoActualId();
+    if (!id) return '';
+    const j = this.getJugadores().find(j => j[0] === id);
+    return j ? j[1].nombreUsuario : '';
+  }
+
+  getSeatStyle(index: number): any {
+    switch (index) {
+      case 0: return { transform: 'translateY(-15px) rotate(8deg)' };
+      case 1: return { transform: 'translateY(15px) rotate(2deg)' };
+      case 2: return { transform: 'translateY(15px) rotate(-2deg)' };
+      case 3: return { transform: 'translateY(-15px) rotate(-8deg)' };
+      default: return {};
+    }
   }
 
   getValorMano(mano: string[]): number {
@@ -208,10 +284,8 @@ export class BlackjackComponent implements OnInit, OnDestroy {
     if (!carta || carta === '?' || carta === 'reverso' || carta === 'hidden') {
       return { valor: '', palo: '', color: 'reverso' };
     }
-
     const valor = carta.length === 3 ? carta.substring(0, 2) : carta.charAt(0);
     const paloChar = carta.charAt(carta.length - 1).toUpperCase();
-
     let palo = '';
     let color = 'negra';
 
@@ -228,37 +302,46 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       case '♣': palo = '♣'; color = 'negra'; break;
       default: palo = paloChar; color = 'negra'; break;
     }
-
     return { valor, palo, color };
   }
 
   async apostarYJugar() {
+    if (this.bloqueoApuesta) return;
     if (this.montoApuesta <= 0 || this.montoApuesta > this.saldoActual) {
       this.toast.error('Apuesta no válida o saldo insuficiente');
       return;
     }
+    this.bloqueoApuesta = true;
     await this.signalrService.invoke('Repartir', this.tableId, this.montoApuesta);
+    
     setTimeout(() => {
-      this.apiService.getSaldo().subscribe(res => {
-        this.saldoActual = res.saldo;
-        this.authService.actualizarSaldo(res.saldo);
-      });
-    }, 500);
+      this.bloqueoApuesta = false;
+    }, 2000);
   }
 
   async pedirCarta() {
-    if (!this.miPartidaId) return;
+    if (!this.miPartidaId || !this.esMiTurno()) return;
     await this.signalrService.invoke('PedirCarta', this.miPartidaId, this.tableId);
   }
 
   async plantarse() {
-    if (!this.miPartidaId) return;
+    if (!this.miPartidaId || !this.esMiTurno()) return;
     await this.signalrService.invoke('Plantarse', this.miPartidaId, this.tableId);
+  }
+
+  confirmarSalir(): void {
+    this.mostrarConfirmacionSalir = false;
+    if (this.tableId && this.tableId !== 'SOLO_MODE_DEFAULT') {
+      const mesas: any[] = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
+      const actualizadas = mesas.filter((m: any) => m.id !== this.tableId);
+      localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
+    }
+    this.router.navigate([RUTAS.lobby]);
   }
 
   volverAlLobby(): void {
     if (this.tableId && this.tableId !== 'SOLO_MODE_DEFAULT') {
-      const mesas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
+      const mesas: any[] = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
       const actualizadas = mesas.filter((m: any) => m.id !== this.tableId);
       localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
     }

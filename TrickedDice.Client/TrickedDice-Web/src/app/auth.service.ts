@@ -94,7 +94,7 @@ export class AuthService {
     }
   }
 
-  private actualizarSaldoLocal(nuevoSaldo: number): void {
+  public actualizarSaldoLocal(nuevoSaldo: number): void {
     this.actualizarSaldo(nuevoSaldo);
   }
 

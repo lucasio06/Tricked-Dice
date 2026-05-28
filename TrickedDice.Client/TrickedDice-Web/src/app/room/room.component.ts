@@ -6,6 +6,7 @@ import { SignalrService } from '../services/signalr.service';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { RUTAS } from '../utils/rutas.const';
+import { BlackjackComponent } from '../blackjack/blackjack.component';
 
 interface Room {
   id: string;
@@ -22,7 +23,7 @@ interface Room {
 @Component({
   selector: 'app-room',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, BlackjackComponent],
   templateUrl: './room.component.html',
   styleUrls: ['./room.component.scss']
 })
@@ -33,6 +34,7 @@ export class RoomComponent implements OnInit, OnDestroy {
   isCreator: boolean = false;
   passwordInput: string = '';
   showPasswordModal: boolean = false;
+  gameStarted: boolean = false;
   private hasLeft: boolean = false;
 
   mensajes: {usuario: string, texto: string}[] = [];
@@ -253,18 +255,19 @@ export class RoomComponent implements OnInit, OnDestroy {
   }
 
   irAJuego(gameType: string, roomId: string): void {
-    switch (gameType) {
-      case 'Ruleta':
-        this.router.navigate([RUTAS.ruleta], { queryParams: { mesa: roomId } });
-        break;
-      case 'Blackjack':
-        this.router.navigate([RUTAS.blackjack], { queryParams: { mesa: roomId } });
-        break;
-      case 'Poker':
-        this.router.navigate([RUTAS.videoPoker], { queryParams: { mesa: roomId } });
-        break;
-      default:
-        this.router.navigate([RUTAS.home]);
+    if (gameType === 'Blackjack') {
+      this.gameStarted = true;
+    } else {
+      switch (gameType) {
+        case 'Ruleta':
+          this.router.navigate([RUTAS.ruleta], { queryParams: { mesa: roomId } });
+          break;
+        case 'Poker':
+          this.router.navigate([RUTAS.videoPoker], { queryParams: { mesa: roomId } });
+          break;
+        default:
+          this.router.navigate([RUTAS.home]);
+      }
     }
   }
 

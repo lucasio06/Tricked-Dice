@@ -1,7 +1,7 @@
 <app-navbar></app-navbar>
 
 <div class="room-container" *ngIf="room">
-  <div class="room-card">
+  <div class="room-card" *ngIf="!gameStarted">
     <div class="room-header">
       <h1 class="room-title">{{ room.nombre }}</h1>
       <div class="room-badge" [ngClass]="room.esPrivada ? 'private' : 'public'">
@@ -52,6 +52,10 @@
         <button class="btn-primary" (click)="enviarMensaje()">Enviar</button>
       </div>
     </div>
+  </div>
+
+  <div class="active-game-container" *ngIf="gameStarted">
+    <app-blackjack *ngIf="room.juego === 'Blackjack'" [tableIdInput]="roomId"></app-blackjack>
   </div>
 </div>
 
