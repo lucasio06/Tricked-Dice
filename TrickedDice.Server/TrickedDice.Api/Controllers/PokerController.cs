@@ -75,12 +75,14 @@ namespace TrickedDice.Api.Controllers
 
                 var baraja = _pokerService.CrearBaraja();
                 var mano = _pokerService.RepartirMano(baraja, 5);
+                var (multiplicador, nombreMano) = _pokerService.EvaluarMano(mano);
 
                 transaction.Commit();
 
                 return Ok(new
                 {
                     mano,
+                    nombreMano,
                     saldoActualizado = nuevoSaldo
                 });
             }

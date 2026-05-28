@@ -15,7 +15,7 @@
             <div class="pago-item"><span>Escalera</span><span>4x</span></div>
             <div class="pago-item"><span>Trío</span><span>3x</span></div>
             <div class="pago-item"><span>Doble Pareja</span><span>2x</span></div>
-            <div class="pago-item"><span>Jotas o Mejor</span><span>1x</span></div>
+            <div class="pago-item"><span>Pareja (Jotas o Mejor)</span><span>1x</span></div>
           </div>
 
           <div class="pot-area">
@@ -23,16 +23,20 @@
           </div>
         </div>
 
+        <div class="hand-indicator" *ngIf="nombreManoActual">
+          <span class="hand-text">{{ nombreManoActual }}</span>
+        </div>
+
         <div class="player-cards" *ngIf="mano.length > 0">
           <div *ngFor="let carta of mano; let i = index"
                class="playing-card"
                [class.seleccionada]="cartasSeleccionadas[i]"
-               [class.animando]="animandoReparto && !cartasSeleccionadas[i]"
+               [class.animando]="animandoCards[i]"
                [style.animation-delay]="(i * 0.1) + 's'"
                (click)="toggleSeleccion(i)">
             <div class="valor" [ngClass]="{'rojo': obtenerPalo(carta) === '♥' || obtenerPalo(carta) === '♦'}">{{ obtenerValor(carta) }}</div>
             <div class="palo" [ngClass]="{'rojo': obtenerPalo(carta) === '♥' || obtenerPalo(carta) === '♦'}">{{ obtenerPalo(carta) }}</div>
-            <div class="hold" *ngIf="cartasSeleccionadas[i]">HOLD</div>
+            <div class="hold" *ngIf="cartasSeleccionadas[i]">DESCARTAR</div>
           </div>
         </div>
 

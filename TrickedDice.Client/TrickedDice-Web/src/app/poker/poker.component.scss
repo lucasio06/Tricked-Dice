@@ -16,7 +16,7 @@ $brown-table: #4a2e1b;
 
 .poker-wrapper {
   background-color: $bg-main;
-  min-height: calc(100vh - 150px);
+  min-height: calc(100vh - 80px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -30,6 +30,7 @@ $brown-table: #4a2e1b;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 1.5rem;
 }
 
@@ -41,8 +42,9 @@ $brown-table: #4a2e1b;
   border-radius: 250px;
   border: 18px solid $brown-table;
   box-shadow: 
-    0 0 30px rgba($neon-purple, 0.4),
-    inset 0 0 40px rgba(#000, 0.8),
+    0 0 50px $gold-main,
+    0 0 100px rgba($gold-light, 0.8),
+    inset 0 0 40px rgba(#000, 0.9),
     0 15px 0 $bg-sec;
   padding: 15px;
   display: flex;
@@ -122,6 +124,26 @@ $brown-table: #4a2e1b;
     letter-spacing: 2px;
     font-size: 1.2rem;
     text-shadow: 0 0 10px $gold-main;
+  }
+}
+
+.hand-indicator {
+  background: linear-gradient(90deg, transparent, rgba($neon-purple, 0.3), transparent);
+  padding: 5px 40px;
+  border-top: 1px solid rgba($neon-purple, 0.5);
+  border-bottom: 1px solid rgba($neon-purple, 0.5);
+  margin-top: -10px;
+  animation: pulseNeon 2s infinite alternate;
+
+  .hand-text {
+    color: $gold-light;
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-shadow: 
+      0 0 5px $gold-main,
+      0 0 15px $neon-purple;
   }
 }
 
@@ -281,11 +303,16 @@ $brown-table: #4a2e1b;
 .mensaje {
   font-size: 1.5rem;
   font-weight: bold;
-  color: $neon-purple;
-  text-shadow: 0 0 10px $neon-purple;
+  color: $gold-light;
+  text-shadow: 0 0 10px $gold-main;
   text-transform: uppercase;
   letter-spacing: 2px;
   animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes pulseNeon {
+  from { box-shadow: 0 0 5px rgba($neon-purple, 0.1); }
+  to { box-shadow: 0 0 15px rgba($neon-purple, 0.4); }
 }
 
 @keyframes pulseHold {

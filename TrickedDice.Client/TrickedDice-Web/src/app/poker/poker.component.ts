@@ -16,14 +16,15 @@ import { SignalrService } from '../services/signalr.service';
 export class PokerComponent implements OnInit, OnDestroy {
   mano: string[] = [];
   cartasSeleccionadas: boolean[] = [false, false, false, false, false];
+  animandoCards: boolean[] = [false, false, false, false, false];
   montoApuesta: number = 10;
   saldo: number = 0;
   mensaje: string = '';
   cargando: boolean = false;
   juegoIniciado: boolean = false;
   premioActual: number = 0;
-  animandoReparto: boolean = false;
   cambiando: boolean = false;
+  nombreManoActual: string = '';
 
   private audioContext: AudioContext | null = null;
 
@@ -51,11 +52,14 @@ export class PokerComponent implements OnInit, OnDestroy {
       this.saldo = res.saldoActualizado;
       this.authService.actualizarSaldo(res.saldoActualizado);
       this.cartasSeleccionadas = [false, false, false, false, false];
+      this.animandoCards = [true, true, true, true, true];
       this.juegoIniciado = true;
       this.premioActual = 0;
-      this.mensaje = 'Selecciona las cartas que quieres cambiar';
+      
+      this.nombreManoActual = this.traducirMano(res.nombreMano);
+
+      this.mensaje = 'SELECCIONA LAS CARTAS QUE QUIERES DESCARTAR';
       this.cargando = false;
-      this.animandoReparto = true;
       this.sonidoRepartir();
     });
 
@@ -66,14 +70,18 @@ export class PokerComponent implements OnInit, OnDestroy {
       this.premioActual = res.premio;
       this.juegoIniciado = false;
       this.cambiando = false;
-      this.animandoReparto = true;
+      
+      this.animandoCards = [...this.cartasSeleccionadas];
+      this.cartasSeleccionadas = [false, false, false, false, false];
+
+      this.nombreManoActual = this.traducirMano(res.nombreMano);
 
       if (res.premio > 0) {
-        this.mensaje = `¡${res.nombreMano}! Ganaste ${res.premio.toFixed(2)} €`;
+        this.mensaje = `¡GANASTE ${res.premio.toFixed(2)} €!`;
         this.sonidoGanar();
-        this.toast.win(`¡${res.nombreMano}! +${res.premio.toFixed(2)}€`);
+        this.toast.win(`¡${this.nombreManoActual}! +${res.premio.toFixed(2)}€`);
       } else {
-        this.mensaje = 'Sin premio. ¡Mejor suerte la próxima!';
+        this.mensaje = 'SIN PREMIO. ¡INTÉNTALO DE NUEVO!';
         this.sonidoPerder();
         this.toast.lose('Sin premio.');
       }
@@ -99,9 +107,11 @@ export class PokerComponent implements OnInit, OnDestroy {
 
     this.cargando = true;
     this.mensaje = '';
+    this.nombreManoActual = '';
     this.mano = [];
+    this.animandoCards = [false, false, false, false, false];
+    this.cartasSeleccionadas = [false, false, false, false, false];
     this.cambiando = false;
-    this.animandoReparto = false;
     await this.signalrService.invoke('Repartir', this.montoApuesta);
   }
 
@@ -122,21 +132,21 @@ export class PokerComponent implements OnInit, OnDestroy {
     }
   }
 
+  private async procesarCambio(): Promise<void> {
+    const indices = this.cartasSeleccionadas
+      .map((descartar, i) => descartar ? i : -1)
+      .filter(i => i !== -1);
+
+    this.cargando = true;
+    this.animandoCards = [false, false, false, false, false];
+    await this.signalrService.invoke('CambiarCartas', this.mano, indices, this.montoApuesta);
+  }
+
   toggleSeleccion(index: number): void {
     if (this.juegoIniciado) {
       this.sonidoSeleccion();
       this.cartasSeleccionadas[index] = !this.cartasSeleccionadas[index];
     }
-  }
-
-  private async procesarCambio(): Promise<void> {
-    const indices = this.cartasSeleccionadas
-      .map((sel, i) => sel ? i : -1)
-      .filter(i => i !== -1);
-
-    this.cargando = true;
-    this.animandoReparto = false;
-    await this.signalrService.invoke('CambiarCartas', this.mano, indices, this.montoApuesta);
   }
 
   obtenerValor(carta: string): string {
@@ -157,6 +167,15 @@ export class PokerComponent implements OnInit, OnDestroy {
 
   esRojo(palo: string): boolean {
     return palo === 'C' || palo === 'D';
+  }
+
+  private traducirMano(manoBackend: string): string {
+    if (!manoBackend) return 'CARTA ALTA';
+    const upper = manoBackend.toUpperCase();
+    if (upper === 'JOTAS O MEJOR' || upper === 'JACKS OR BETTER') {
+      return 'Pareja (Jotas o Mejor)';
+    }
+    return upper;
   }
 
   private getAudioContext(): AudioContext {
