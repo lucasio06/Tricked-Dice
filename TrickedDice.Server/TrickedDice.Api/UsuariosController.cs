@@ -5,7 +5,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.RegularExpressions; // Requerido para usar Regex
+using System.Text.RegularExpressions;
+using Google.Apis.Auth;
 
 namespace TrickedDice.Api.Controllers
 {
@@ -71,7 +72,7 @@ namespace TrickedDice.Api.Controllers
                         cmd.Parameters.AddWithValue("@pa", model.PrimerApellido);
                         cmd.Parameters.AddWithValue("@sa", (object?)model.SegundoApellido ?? DBNull.Value);
                         cmd.Parameters.AddWithValue("@nu", model.NombreUsuario);
-                        cmd.Parameters.AddWithValue("@nick", (object?)model.Nickname ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@nick", string.IsNullOrWhiteSpace(model.Nickname) ? model.NombreUsuario : model.Nickname);
                         cmd.Parameters.AddWithValue("@fn", model.FechaNacimiento);
                         cmd.Parameters.AddWithValue("@dni", model.Dni);
 
@@ -136,6 +137,92 @@ namespace TrickedDice.Api.Controllers
                 return StatusCode(500, "Error interno del servidor al iniciar sesión.");
             }
         }
+
+        [AllowAnonymous]
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginModel model)
+        {
+            try
+            {
+                var payload = await GoogleJsonWebSignature.ValidateAsync(model.IdToken);
+                if (payload == null)
+                {
+                    return Unauthorized("Token de Google no válido.");
+                }
+
+                string email = payload.Email;
+                string nombre = payload.GivenName ?? "Usuario";
+                string apellido = payload.FamilyName ?? "Google";
+                string nombreUsuarioDefecto = email.Split('@')[0]; 
+
+                using (SqlConnection c = new SqlConnection(_conn))
+                {
+                    await c.OpenAsync();
+
+                    string sqlCheck = "SELECT ID_USUARIO, NOMBRE, SALDO, BANEADO FROM USUARIO WHERE EMAIL = @e";
+                    using (SqlCommand cmdCheck = new SqlCommand(sqlCheck, c))
+                    {
+                        cmdCheck.Parameters.AddWithValue("@e", email);
+                        using (SqlDataReader r = await cmdCheck.ExecuteReaderAsync())
+                        {
+                            if (r.Read())
+                            {
+                                if (Convert.ToBoolean(r["BANEADO"]))
+                                {
+                                    return Unauthorized("Tu cuenta ha sido baneada. Contacta con soporte.");
+                                }
+
+                                var tokenExistente = GenerarToken(r["NOMBRE"].ToString()!, email);
+                                return Ok(new
+                                {
+                                    token = tokenExistente,
+                                    nombre = r["NOMBRE"],
+                                    saldo = Convert.ToDecimal(r["SALDO"]),
+                                    esNuevo = false
+                                });
+                            }
+                        }
+                    }
+
+                    string sqlInsert = @"INSERT INTO USUARIO 
+                        (EMAIL, CONTRASENA, NOMBRE, PRIMER_APELLIDO, NOMBRE_USUARIO, FECHA_NACIMIENTO, DNI, SALDO, BANEADO) 
+                        VALUES (@e, @p, @n, @pa, @nu, @fn, @dni, 0, 0)";
+
+                    using (SqlCommand cmdInsert = new SqlCommand(sqlInsert, c))
+                    {
+                        cmdInsert.Parameters.AddWithValue("@e", email);
+                        cmdInsert.Parameters.AddWithValue("@p", Guid.NewGuid().ToString()); // Hash inaccesible
+                        cmdInsert.Parameters.AddWithValue("@n", nombre);
+                        cmdInsert.Parameters.AddWithValue("@pa", apellido);
+                        cmdInsert.Parameters.AddWithValue("@nu", nombreUsuarioDefecto);
+                        cmdInsert.Parameters.AddWithValue("@fn", new DateTime(2000, 1, 1)); // Fecha comodín
+                        cmdInsert.Parameters.AddWithValue("@dni", ""); // Se solicitará completar luego
+
+                        await cmdInsert.ExecuteNonQueryAsync();
+                    }
+
+                    var tokenNuevo = GenerarToken(nombre, email);
+                    return Ok(new
+                    {
+                        token = tokenNuevo,
+                        nombre = nombre,
+                        saldo = 0m,
+                        esNuevo = true 
+                    });
+                }
+            }
+            catch (InvalidJwtException)
+            {
+                return Unauthorized("El token de Google ha expirado o es inválido.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en GoogleLogin.");
+                return StatusCode(500, "Error interno del servidor al autenticar con Google.");
+            }
+        }
+
+        public record GoogleLoginModel(string IdToken);
 
         [HttpGet("perfil")]
         [Authorize]

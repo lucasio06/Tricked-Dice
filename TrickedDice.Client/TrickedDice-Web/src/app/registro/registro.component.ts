@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { RUTAS } from '../utils/rutas.const';
+declare var google: any;
 
 @Component({
   selector: 'app-registro',
@@ -12,7 +13,7 @@ import { RUTAS } from '../utils/rutas.const';
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.css']
 })
-export class RegistroComponent {
+export class RegistroComponent implements OnInit {
   usuarioData = {
     username: '',
     email: '',
@@ -25,14 +26,67 @@ export class RegistroComponent {
   };
 
   dniInvalido = false;
-  contrasenaInvalida = false; // <-- Nueva propiedad de control
+  contrasenaInvalida = false;
   isLoading: boolean = false;
   errorMessage: string | null = null;
 
   constructor(
     private authService: AuthService,
-    public router: Router
+    public router: Router,
+    private ngZone: NgZone
   ) {}
+
+  ngOnInit() {
+    if (typeof google !== 'undefined') {
+      google.accounts.id.initialize({
+        client_id: '150911175141-uqqcdjlgge80rm381n4raolk8darhkg1.apps.googleusercontent.com',
+        callback: this.handleGoogleCredentialResponse.bind(this)
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById('googleBtn'),
+        { theme: 'dark', size: 'large', text: 'continue_with', width: '300' }
+      );
+    }
+  }
+
+  /* 
+    Recordar CAMBIAR URL PERMITIDA cuando se haga el despliegue en la consola de administración de Google.
+    Lo tengo que cambiar en Orígenes autorizados de JavaScript.
+  */
+ 
+  handleGoogleCredentialResponse(response: any) {
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    this.authService.googleLogin(response.credential).subscribe({
+      next: (res) => {
+        this.isLoading = false;
+
+        localStorage.setItem('token', res.token); 
+
+        const perfilConstruido = {
+          nombre: res.nombre,
+          email: res.email || '',
+          saldo: res.saldo
+        };
+        
+        this.authService['cacheUser'](perfilConstruido);
+        this.authService['usuarioSubject'].next(perfilConstruido);
+
+        this.ngZone.run(() => {
+          alert(`¡Bienvenido a Tricked Dice, ${res.nombre}!`);
+          this.router.navigate(['/lobby']); 
+        });
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.errorMessage = err.error || 'Error al autenticar con Google.';
+        });
+      }
+    });
+  }
 
   validarDNI(): boolean {
     const dni = this.usuarioData.dni ? this.usuarioData.dni.trim().toUpperCase() : '';
