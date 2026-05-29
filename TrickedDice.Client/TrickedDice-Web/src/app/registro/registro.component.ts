@@ -25,6 +25,7 @@ export class RegistroComponent {
   };
 
   dniInvalido = false;
+  contrasenaInvalida = false; // <-- Nueva propiedad de control
   isLoading: boolean = false;
   errorMessage: string | null = null;
 
@@ -43,35 +44,78 @@ export class RegistroComponent {
 
     const letras = "TRWAGMYFPDXBNJZSQVHLCKE";
     const numerosPart = dni.substring(0, 8);
-    const letraPart = dni.charAt(8);
+    const letraPart = dni[8];
 
-    const soloNumeros = /^\d+$/.test(numerosPart);
-    if (!soloNumeros) {
+    if (!/^\d+$/.test(numerosPart)) {
       this.dniInvalido = true;
       return false;
     }
 
-    if (!/[A-Z]/i.test(letraPart)) {
+    const index = parseInt(numerosPart, 10) % 23;
+    if (letras[index] !== letraPart) {
       this.dniInvalido = true;
       return false;
     }
 
-    const numero = parseInt(numerosPart, 10);
-    const letraCorrecta = letras[numero % 23];
-    this.dniInvalido = letraCorrecta !== letraPart;
-    return !this.dniInvalido;
+    this.dniInvalido = false;
+    return true;
+  }
+
+  validarContrasena(): boolean {
+    const password = this.usuarioData.password || '';
+    
+    const patron = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    
+    this.contrasenaInvalida = !patron.test(password);
+    return !this.contrasenaInvalida;
+  }
+
+  validarEmail(): boolean {
+    const email = this.usuarioData.email || '';
+    const patronEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return patronEmail.test(email);
+  }
+
+  esMayorDeEdad(): boolean {
+    if (!this.usuarioData.fechaNacimiento) return false;
+    const fechaNac = new Date(this.usuarioData.fechaNacimiento);
+    const hoy = new Date();
+    
+    let edad = hoy.getFullYear() - fechaNac.getFullYear();
+    const mes = hoy.getMonth() - fechaNac.getMonth();
+    
+    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
+      edad--;
+    }
+    return edad >= 18;
   }
 
   onSubmit() {
     this.errorMessage = null;
 
-    if (!this.usuarioData.email || !this.usuarioData.password || !this.usuarioData.nombre || !this.usuarioData.primerApellido || !this.usuarioData.fechaNacimiento) {
+    if (!this.usuarioData.username || !this.usuarioData.email || !this.usuarioData.password || 
+        !this.usuarioData.nombre || !this.usuarioData.primerApellido || !this.usuarioData.fechaNacimiento) {
       this.errorMessage = 'Por favor, completa todos los campos obligatorios.';
       return;
     }
 
-    if (!this.validarDNI()) {
+    if (!this.validarEmail()) {
+      this.errorMessage = 'Por favor, introduce un correo electrónico válido (ejemplo@dominio.com).';
+      return;
+    }
+
+    if (!this.esMayorDeEdad()) {
+      this.errorMessage = 'Debes ser mayor de 18 años para registrarte en la plataforma.';
+      return;
+    }
+
+    if (this.usuarioData.dni && !this.validarDNI()) {
       this.errorMessage = 'El DNI introducido no es válido. Formato: 12345678Z';
+      return;
+    }
+
+    if (!this.validarContrasena()) {
+      this.errorMessage = 'La contraseña no cumple con los requisitos mínimos de seguridad.';
       return;
     }
 
@@ -97,12 +141,13 @@ export class RegistroComponent {
       },
       error: (err) => {
         this.isLoading = false;
-        if (err.status === 409) {
+        if (err.status === 400 && err.error) {
+          this.errorMessage = err.error.mensaje || err.error;
+        } else if (err.status === 409) {
           this.errorMessage = 'El email o nombre de usuario ya está en uso.';
         } else {
-          this.errorMessage = 'Error al crear la cuenta. Inténtalo de nuevo.';
+          this.errorMessage = 'Ocurrió un error en el servidor. Inténtalo de nuevo.';
         }
-        console.error('Registro error:', err);
       }
     });
   }

@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions; // Requerido para usar Regex
 
 namespace TrickedDice.Api.Controllers
 {
@@ -28,6 +29,23 @@ namespace TrickedDice.Api.Controllers
         [HttpPost("registro")]
         public IActionResult Registrar([FromBody] RegistroModel model)
         {
+            if (string.IsNullOrWhiteSpace(model.NombreUsuario) || string.IsNullOrWhiteSpace(model.Email))
+            {
+                return BadRequest("El nombre de usuario y el email son campos obligatorios.");
+            }
+
+            var edad = DateTime.Today.Year - model.FechaNacimiento.Year;
+            if (model.FechaNacimiento.Date > DateTime.Today.AddYears(-edad)) edad--;
+            if (edad < 18)
+            {
+                return BadRequest("Debes ser mayor de 18 años para registrarte.");
+            }
+            
+            if (!ValidarContrasena(model.Password))
+            {
+                return BadRequest("La contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula, un número y un carácter especial.");
+            }
+
             if (!ValidarDNI(model.Dni))
             {
                 return BadRequest("El DNI introducido no es válido.");
@@ -308,6 +326,14 @@ namespace TrickedDice.Api.Controllers
                 _logger.LogError(ex, "Error al obtener transacciones.");
                 return StatusCode(500, "Error interno del servidor.");
             }
+        }
+
+        private bool ValidarContrasena(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password)) return false;
+            string patron = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$";
+            
+            return Regex.IsMatch(password, patron);
         }
 
         private bool ValidarDNI(string dni)
