@@ -27,11 +27,11 @@ namespace TrickedDice.Api.Hubs
 
         public async Task NotificarInicioGiro(string mesaId)
         {
-        var email = ObtenerEmail();
-        if (string.IsNullOrEmpty(email)) return;
+            var email = ObtenerEmail();
+            if (string.IsNullOrEmpty(email)) return;
 
-        var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        await Clients.Group($"ruleta_{mesaId}").SendAsync("GiroIniciado", startTime);
+            var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            await Clients.Group($"ruleta_{mesaId}").SendAsync("GiroIniciado", startTime);
         }
 
         public async Task AgregarApuestaMesa(string mesaId, ApuestaDto apuesta)
@@ -65,6 +65,30 @@ namespace TrickedDice.Api.Hubs
             catch (Exception ex)
             {
                 await Clients.Caller.SendAsync("Error", ex.Message);
+            }
+        }
+
+        public async Task GirarMultiple(string mesaId, List<ApuestaDto> apuestas)
+        {
+            var email = ObtenerEmail();
+            if (string.IsNullOrEmpty(email))
+            {
+                await Clients.Caller.SendAsync("Error", "No autorizado.");
+                return;
+            }
+
+            try
+            {
+                var resultados = await _service.ProcesarGiroIndividual(email, apuestas);
+                await Clients.Caller.SendAsync("ResultadoGiro", resultados);
+            }
+            catch (InvalidOperationException ex)
+            {
+                await Clients.Caller.SendAsync("Error", ex.Message);
+            }
+            catch (Exception)
+            {
+                await Clients.Caller.SendAsync("Error", "Error interno al procesar el giro individual.");
             }
         }
     }

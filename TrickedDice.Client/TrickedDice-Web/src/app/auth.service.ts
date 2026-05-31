@@ -120,4 +120,8 @@ export class AuthService {
   googleLogin(idToken: string): Observable<any> {
     return this.api.post('/usuarios/google-login', { idToken });
   }
+
+  completarPerfil(datos: { dni: string, fechaNacimiento: string }): Observable<any> {
+    return this.api.post('/usuarios/completar-perfil', datos);
+  }
 }

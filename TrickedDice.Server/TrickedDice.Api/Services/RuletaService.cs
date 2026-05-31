@@ -25,7 +25,7 @@ namespace TrickedDice.Api.Services
         public async Task<Dictionary<string, object>> GirarMesa(string mesaId)
         {
             using var connection = new SqlConnection(_connectionString);
-            connection.Open();
+            await connection.OpenAsync();
             using var transaction = connection.BeginTransaction();
             try
             {
@@ -43,7 +43,7 @@ namespace TrickedDice.Api.Services
                     var nombre = grupo.Key.Nombre;
                     var apuestas = grupo.Select(a => a.Apuesta).ToList();
                     
-                    var res = GirarRuletaMultipleInterno(email, apuestas, connection, transaction, numeroGanador);
+                    var res = ProcesarApuestasUsuario(email, apuestas, connection, transaction, numeroGanador);
                     resultados[email] = new { gano = res.gano, premio = res.premio, saldoActualizado = res.saldoActualizado };
                     
                     historialGlobal.Add(new { usuario = nombre, gano = res.gano, premio = res.premio });
@@ -65,12 +65,46 @@ namespace TrickedDice.Api.Services
             }
         }
 
-        private (bool gano, decimal premio, decimal saldoActualizado) GirarRuletaMultipleInterno(string email, List<ApuestaDto> apuestas, SqlConnection connection, SqlTransaction transaction, int numeroGanador)
+        public async Task<Dictionary<string, object>> ProcesarGiroIndividual(string email, List<ApuestaDto> apuestas)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                var rnd = new Random();
+                int numeroGanador = NumerosRuleta[rnd.Next(0, NumerosRuleta.Length)];
+
+                var res = ProcesarApuestasUsuario(email, apuestas, connection, transaction, numeroGanador);
+
+                transaction.Commit();
+
+                return new Dictionary<string, object>
+                {
+                    ["numeroGanador"] = numeroGanador,
+                    ["gano"] = res.gano,
+                    ["premio"] = res.premio,
+                    ["saldoActualizado"] = res.saldoActualizado
+                };
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        private (bool gano, decimal premio, decimal saldoActualizado) ProcesarApuestasUsuario(string email, List<ApuestaDto> apuestas, SqlConnection connection, SqlTransaction transaction, int numeroGanador)
         {
             var idUsuario = ObtenerIdUsuario(connection, transaction, email);
             var saldoActual = ObtenerSaldo(connection, transaction, idUsuario);
             var montoTotal = apuestas.Sum(a => a.Monto);
             
+            if (saldoActual < montoTotal)
+            {
+                throw new InvalidOperationException("Saldo insuficiente.");
+            }
+
             decimal premioTotal = 0;
             bool algunaGanadora = false;
             foreach (var apuesta in apuestas)
@@ -78,9 +112,11 @@ namespace TrickedDice.Api.Services
                 var (gano, premio) = CalcularPremio(apuesta.Monto, apuesta.Tipo, apuesta.Valor, numeroGanador);
                 if (gano) { algunaGanadora = true; premioTotal += premio; }
             }
+
             var nuevoSaldo = saldoActual - montoTotal + premioTotal;
             ActualizarSaldo(connection, transaction, idUsuario, nuevoSaldo);
-            RegistrarTransaccion(connection, transaction, idUsuario, -montoTotal, "APUESTA");
+            
+            if (montoTotal > 0) RegistrarTransaccion(connection, transaction, idUsuario, -montoTotal, "APUESTA");
             if (premioTotal > 0) RegistrarTransaccion(connection, transaction, idUsuario, premioTotal, "PREMIO");
             
             return (algunaGanadora, premioTotal, nuevoSaldo);

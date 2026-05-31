@@ -191,12 +191,13 @@ namespace TrickedDice.Api.Controllers
                     using (SqlCommand cmdInsert = new SqlCommand(sqlInsert, c))
                     {
                         cmdInsert.Parameters.AddWithValue("@e", email);
-                        cmdInsert.Parameters.AddWithValue("@p", Guid.NewGuid().ToString()); // Hash inaccesible
+                        cmdInsert.Parameters.AddWithValue("@p", Guid.NewGuid().ToString());
                         cmdInsert.Parameters.AddWithValue("@n", nombre);
                         cmdInsert.Parameters.AddWithValue("@pa", apellido);
                         cmdInsert.Parameters.AddWithValue("@nu", nombreUsuarioDefecto);
-                        cmdInsert.Parameters.AddWithValue("@fn", new DateTime(2000, 1, 1)); // Fecha comodín
-                        cmdInsert.Parameters.AddWithValue("@dni", ""); // Se solicitará completar luego
+                        cmdInsert.Parameters.AddWithValue("@fn", new DateTime(2000, 1, 1));
+                        string dniTemporal = "TMP" + Guid.NewGuid().ToString().Substring(0, 6).ToUpper();
+                        cmdInsert.Parameters.AddWithValue("@dni", dniTemporal);
 
                         await cmdInsert.ExecuteNonQueryAsync();
                     }
@@ -219,6 +220,46 @@ namespace TrickedDice.Api.Controllers
             {
                 _logger.LogError(ex, "Error en GoogleLogin.");
                 return StatusCode(500, "Error interno del servidor al autenticar con Google.");
+            }
+        }
+
+        [HttpPost("completar-perfil")]
+        [Authorize]
+        public async Task<IActionResult> CompletarPerfil([FromBody] CompletarPerfilModel model)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email)) return Unauthorized("Token inválido.");
+
+            var edad = DateTime.Today.Year - model.FechaNacimiento.Year;
+            if (model.FechaNacimiento.Date > DateTime.Today.AddYears(-edad)) edad--;
+            
+            if (edad < 18) return BadRequest(new { mensaje = "Debes ser mayor de 18 años para apostar." });
+            if (!ValidarDNI(model.Dni)) return BadRequest(new { mensaje = "El DNI introducido no es válido." });
+
+            try
+            {
+                using (SqlConnection c = new SqlConnection(_conn))
+                {
+                    await c.OpenAsync();
+                    string sql = "UPDATE USUARIO SET DNI = @dni, FECHA_NACIMIENTO = @fn WHERE EMAIL = @email";
+                    using (SqlCommand cmd = new SqlCommand(sql, c))
+                    {
+                        cmd.Parameters.AddWithValue("@dni", model.Dni);
+                        cmd.Parameters.AddWithValue("@fn", model.FechaNacimiento);
+                        cmd.Parameters.AddWithValue("@email", email);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+                return Ok(new { msg = "Perfil completado correctamente." });
+            }
+            catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
+            {
+                return Conflict(new { mensaje = "Este DNI ya está registrado en otra cuenta." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al completar perfil.");
+                return StatusCode(500, new { mensaje = "Error interno al actualizar el perfil." });
             }
         }
 
@@ -456,4 +497,6 @@ namespace TrickedDice.Api.Controllers
     public record LoginModel(string Email, string Password);
 
     public record RecargaModel(decimal Cantidad);
+
+    public record CompletarPerfilModel(string Dni, DateTime FechaNacimiento);
 }

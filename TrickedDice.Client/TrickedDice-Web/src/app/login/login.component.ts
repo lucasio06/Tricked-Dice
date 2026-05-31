@@ -60,10 +60,14 @@ export class LoginComponent implements OnInit{
         this.authService['cacheUser'](perfilUsuario);
         this.authService['usuarioSubject'].next(perfilUsuario);
 
-        this.toast.success(`¡Bienvenido de nuevo, ${res.nombre}!`);
-
         this.ngZone.run(() => {
-          this.router.navigate([RUTAS.home]); 
+          if (res.esNuevo) {
+            this.toast.success('¡Cuenta creada! Completa tus datos legales.');
+            this.router.navigate([RUTAS.completarPerfil]);
+          } else {
+            this.toast.success(`¡Bienvenido de nuevo, ${res.nombre}!`);
+            this.router.navigate([RUTAS.home]); 
+          }
         });
       },
       error: (err) => {

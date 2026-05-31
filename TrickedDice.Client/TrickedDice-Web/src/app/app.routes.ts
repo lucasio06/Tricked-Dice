@@ -15,6 +15,7 @@ import { PoliticaPrivacidadComponent } from './politica-privacidad/politica-priv
 import { SoporteComponent } from './soporte/soporte.component';
 import { LobbyComponent } from './lobby/lobby.component';
 import { RoomComponent } from './room/room.component';
+import { CompletarPerfilComponent } from './completar-perfil/completar-perfil.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -27,6 +28,7 @@ export const routes: Routes = [
   { path: 'admin', component: AdminComponent, canActivate: [AuthGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegistroComponent },
+  { path: 'completar-perfil', component: CompletarPerfilComponent, canActivate: [AuthGuard] },
   { path: 'sobre-nosotros', component: SobreNosotrosComponent },
   { path: 'politica-privacidad', component: PoliticaPrivacidadComponent },
   { path: 'soporte', component: SoporteComponent },
