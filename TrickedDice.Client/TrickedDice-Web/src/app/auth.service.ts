@@ -116,4 +116,8 @@ export class AuthService {
   getUsuarioActual(): UsuarioPerfil | null {
     return this.usuarioSubject.value;
   }
+
+  googleLogin(idToken: string): Observable<any> {
+    return this.api.post('/usuarios/google-login', { idToken });
+  }
 }
