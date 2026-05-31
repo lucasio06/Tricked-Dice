@@ -9,13 +9,44 @@ import { AuthService } from '../auth.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { RUTAS } from '../utils/rutas.const';
 
+export interface PartidaBlackjack {
+  email: string;
+  nombreUsuario: string;
+  monto: number;
+  manoJugador: string[];
+  terminada: boolean;
+}
+
+export interface MesaBlackjack {
+  roomId: string;
+  manoCrupier: string[];
+  baraja: string[];
+  manosJugadores: { [key: string]: PartidaBlackjack };
+}
+
+export interface ResultadoBlackjack {
+  gano: boolean;
+  premio: number;
+  saldoActualizado: number;
+  puntosJugador: number;
+  puntosCrupier: number;
+  montoApostado: number;
+}
+
 interface HistorialResultado {
   fecha: Date;
-  resultado: string;
+  resultado: 'win' | 'lose' | 'push';
   premio: number;
   puntuacionJugador: number;
   puntuacionCrupier: number;
   montoApostado: number;
+}
+
+export interface CartaDetalle {
+  valor: string;
+  palo: string;
+  color: string;
+  simbolo: string;
 }
 
 @Component({
@@ -30,7 +61,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   @Input() tableIdInput: string = '';
 
   tableId: string = '';
-  mesa: any = null;
+  mesa: MesaBlackjack | null = null;
   miPartidaId: string | null = null;
   montoApuesta: number = 10;
   cantidadesFijas: number[] = [1, 5, 10, 25, 50, 100, 500];
@@ -43,8 +74,8 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   esperandoSiguienteRonda: boolean = false;
   bloqueoApuesta: boolean = false;
 
-  resultadoModal: { texto: string; premio: number; puntosJugador: number; puntosCrupier: number; monto: number } = 
-    { texto: '', premio: 0, puntosJugador: 0, puntosCrupier: 0, monto: 0 };
+  resultadoModal: { texto: string; premio: number; puntosJugador: number; puntosCrupier: number; monto: number; tipo: 'win' | 'lose' | 'push' } = 
+    { texto: '', premio: 0, puntosJugador: 0, puntosCrupier: 0, monto: 0, tipo: 'push' };
   historialResultados: HistorialResultado[] = [];
   
   private tiempoLimpiarResultados: any = null;
@@ -76,14 +107,14 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       await this.signalrService.startConnection('/hubs/blackjack');
       await this.signalrService.invoke('JoinTable', this.tableId);
 
-      this.signalrService.on('MesaActualizada', (mesa: any) => {
+      this.signalrService.on('MesaActualizada', (mesa: MesaBlackjack) => {
         this.zone.run(() => { 
           this.mesa = mesa; 
           
           if (this.miPartidaId) {
-            const misDatos = this.getJugadores().find(j => j[0] === this.miPartidaId);
-            if (misDatos && !misDatos[1].terminada && this.esMiTurno()) {
-              const valor = this.getValorMano(misDatos[1].manoJugador);
+            const misDatos = this.getJugadores().find(j => j.id === this.miPartidaId);
+            if (misDatos && !misDatos.partida.terminada && this.esMiTurno()) {
+              const valor = this.getValorMano(misDatos.partida.manoJugador);
               if (valor >= 21) {
                 setTimeout(() => {
                   this.plantarse();
@@ -94,26 +125,24 @@ export class BlackjackComponent implements OnInit, OnDestroy {
         });
       });
 
-      this.signalrService.on('MesaFinalizada', (data: any) => {
+      this.signalrService.on('MesaFinalizada', (data: { mesa: MesaBlackjack, resultados: { [email: string]: ResultadoBlackjack } }) => {
         this.zone.run(() => {
-          const mesaData = data.mesa || data;
-          const resultados = data.resultados;
-          this.mesa = mesaData;
+          this.mesa = data.mesa;
           this.bloqueoApuesta = false;
 
-          let miResultado: any = null;
-          if (resultados && typeof resultados === 'object') {
-            const emailKey = Object.keys(resultados).find(key => 
+          let miResultado: ResultadoBlackjack | null = null;
+          if (data.resultados) {
+            const emailKey = Object.keys(data.resultados).find(key => 
               key.toLowerCase().trim() === this.currentUserEmail ||
               key.toLowerCase().trim() === this.nombreUsuarioActual.toLowerCase().trim()
             );
             if (emailKey) {
-              miResultado = resultados[emailKey];
+              miResultado = data.resultados[emailKey];
             }
           }
 
           if (miResultado) {
-            const gano = miResultado.gano === true;
+            const gano = miResultado.gano;
             const premio = miResultado.premio || 0;
             const puntosJugador = miResultado.puntosJugador || 0;
             const puntosCrupier = miResultado.puntosCrupier || 0;
@@ -139,19 +168,17 @@ export class BlackjackComponent implements OnInit, OnDestroy {
             this.miPartidaId = null;
             this.mesa = null;
             this.esperandoSiguienteRonda = false;
-          }, 2800);
+          }, 3500);
         });
       });
 
-      this.signalrService.on('PartidaIniciada', (data: any) => {
+      this.signalrService.on('PartidaIniciada', (data: { idPartida: string, saldo: number }) => {
         this.zone.run(() => {
           this.miPartidaId = data.idPartida;
           this.esperandoSiguienteRonda = false;
           this.bloqueoApuesta = false;
-          this.apiService.getSaldo().subscribe(res => {
-            this.saldoActual = res.saldo;
-            this.authService.actualizarSaldoLocal(res.saldo);
-          });
+          this.saldoActual = data.saldo;
+          this.authService.actualizarSaldoLocal(data.saldo);
         });
       });
 
@@ -174,7 +201,11 @@ export class BlackjackComponent implements OnInit, OnDestroy {
     return index;
   }
 
-  private agregarAlHistorial(resultado: string, premio: number, puntosJugador: number, puntosCrupier: number, monto: number): void {
+  trackById(index: number, obj: { id: string, partida: PartidaBlackjack }): string {
+    return obj.id;
+  }
+
+  private agregarAlHistorial(resultado: 'win' | 'lose' | 'push', premio: number, puntosJugador: number, puntosCrupier: number, monto: number): void {
     this.historialResultados.unshift({
       fecha: new Date(),
       resultado: resultado,
@@ -202,46 +233,40 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       premio: tipo === 'win' ? premio : (tipo === 'push' ? 0 : -monto), 
       puntosJugador, 
       puntosCrupier, 
-      monto 
+      monto,
+      tipo
     };
     this.mostrarModalResultado = true;
-    setTimeout(() => this.cerrarModalResultado(), 2800);
+    setTimeout(() => this.cerrarModalResultado(), 3200);
   }
 
   cerrarModalResultado(): void {
     this.mostrarModalResultado = false;
-    this.resultadoModal = { texto: '', premio: 0, puntosJugador: 0, puntosCrupier: 0, monto: 0 };
+    this.resultadoModal = { texto: '', premio: 0, puntosJugador: 0, puntosCrupier: 0, monto: 0, tipo: 'push' };
   }
 
   noApostar(): void {
     this.esperandoSiguienteRonda = true;
   }
 
-  getJugadores(): any[] {
+  getJugadores(): { id: string, partida: PartidaBlackjack }[] {
     if (!this.mesa || !this.mesa.manosJugadores) return [];
-    return Object.entries(this.mesa.manosJugadores).sort((a, b) => a[0].localeCompare(b[0]));
+    return Object.entries(this.mesa.manosJugadores)
+      .map(([id, partida]) => ({ id, partida }))
+      .sort((a, b) => a.id.localeCompare(b.id));
   }
 
-  get asientoss(): any[] {
-    const arr = new Array(4).fill(null);
-    const jugadores = this.getJugadores();
-    jugadores.forEach((jugador, index) => {
-      if (index < 4) {
-        arr[index] = jugador;
-      }
-    });
-    return arr;
+  get isSoloMode(): boolean {
+    return this.tableId === 'SOLO_MODE_DEFAULT';
   }
 
   getTurnoActualId(): string | null {
     if (!this.mesa || !this.mesa.manosJugadores) return null;
-    const jugadores = this.getJugadores();
-    
-    const jugando = jugadores.filter(j => j[1].manoJugador && j[1].manoJugador.length > 0);
+    const jugando = this.getJugadores().filter(j => j.partida.manoJugador && j.partida.manoJugador.length > 0);
     if (jugando.length === 0) return null;
 
-    const jugadorActivo = jugando.find(j => !j[1].terminada);
-    return jugadorActivo ? jugadorActivo[0] : null;
+    const jugadorActivo = jugando.find(j => !j.partida.terminada);
+    return jugadorActivo ? jugadorActivo.id : null;
   }
 
   esMiTurno(): boolean {
@@ -252,18 +277,8 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   getNombreTurnoActual(): string {
     const id = this.getTurnoActualId();
     if (!id) return '';
-    const j = this.getJugadores().find(j => j[0] === id);
-    return j ? j[1].nombreUsuario : '';
-  }
-
-  getSeatStyle(index: number): any {
-    switch (index) {
-      case 0: return { transform: 'translateY(-15px) rotate(8deg)' };
-      case 1: return { transform: 'translateY(15px) rotate(2deg)' };
-      case 2: return { transform: 'translateY(15px) rotate(-2deg)' };
-      case 3: return { transform: 'translateY(-15px) rotate(-8deg)' };
-      default: return {};
-    }
+    const j = this.getJugadores().find(j => j.id === id);
+    return j ? j.partida.nombreUsuario : '';
   }
 
   getValorMano(mano: string[]): number {
@@ -280,29 +295,26 @@ export class BlackjackComponent implements OnInit, OnDestroy {
     return total;
   }
 
-  obtenerDetallesCarta(carta: string): { valor: string, palo: string, color: string } {
+  obtenerDetallesCarta(carta: string): CartaDetalle {
     if (!carta || carta === '?' || carta === 'reverso' || carta === 'hidden') {
-      return { valor: '', palo: '', color: 'reverso' };
+      return { valor: '', palo: '', color: 'reverso', simbolo: '' };
     }
     const valor = carta.length === 3 ? carta.substring(0, 2) : carta.charAt(0);
     const paloChar = carta.charAt(carta.length - 1).toUpperCase();
     let palo = '';
+    let simbolo = '';
     let color = 'negra';
 
     switch (paloChar) {
-      case 'H': palo = '♥'; color = 'roja'; break;
-      case 'D': palo = '♦'; color = 'roja'; break;
-      case 'S': palo = '♠'; color = 'negra'; break;
-      case 'C': palo = '♣'; color = 'negra'; break;
-      case 'P': palo = '♠'; color = 'negra'; break;
-      case 'T': palo = '♣'; color = 'negra'; break;
-      case '♥': palo = '♥'; color = 'roja'; break;
-      case '♦': palo = '♦'; color = 'roja'; break;
-      case '♠': palo = '♠'; color = 'negra'; break;
-      case '♣': palo = '♣'; color = 'negra'; break;
-      default: palo = paloChar; color = 'negra'; break;
+      case 'H': case '♥': palo = 'corazones'; simbolo = '♥'; color = 'roja'; break;
+      case 'D': case '♦': palo = 'diamantes'; simbolo = '♦'; color = 'roja'; break;
+      case 'S': case '♠': palo = 'picas'; simbolo = '♠'; color = 'negra'; break;
+      case 'C': case '♣': palo = 'treboles'; simbolo = '♣'; color = 'negra'; break;
+      case 'P': palo = 'picas'; simbolo = '♠'; color = 'negra'; break;
+      case 'T': palo = 'treboles'; simbolo = '♣'; color = 'negra'; break;
+      default: palo = paloChar; simbolo = paloChar; color = 'negra'; break;
     }
-    return { valor, palo, color };
+    return { valor, palo, color, simbolo };
   }
 
   async apostarYJugar() {
@@ -336,7 +348,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       const actualizadas = mesas.filter((m: any) => m.id !== this.tableId);
       localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
     }
-    this.router.navigate([RUTAS.lobby]);
+    this.router.navigate([RUTAS.home]);
   }
 
   volverAlLobby(): void {
@@ -345,6 +357,6 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       const actualizadas = mesas.filter((m: any) => m.id !== this.tableId);
       localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
     }
-    this.router.navigate([RUTAS.lobby]);
+    this.router.navigate([RUTAS.home]);
   }
 }
