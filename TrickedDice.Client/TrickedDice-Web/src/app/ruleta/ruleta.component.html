@@ -149,10 +149,10 @@
               </div>
             </div>
             <div class="apuestas-grid">
-              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('vecinos0')">Vecinos del 0</button>
-              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('tercio')">Tercio</button>
-              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('huerfanos')">Huérfanos</button>
-              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('juego0')">Juego al 0</button>
+              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('vecinos0')" (mouseenter)="resaltarGrupoAvanzada('vecinos0')" (mouseleave)="limpiarResaltado()">Vecinos del 0</button>
+              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('tercio')" (mouseenter)="resaltarGrupoAvanzada('tercio')" (mouseleave)="limpiarResaltado()">Tercio</button>
+              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('huerfanos')" (mouseenter)="resaltarGrupoAvanzada('huerfanos')" (mouseleave)="limpiarResaltado()">Huérfanos</button>
+              <button class="apuesta-btn especial" (click)="seleccionarAvanzada('juego0')" (mouseenter)="resaltarGrupoAvanzada('juego0')" (mouseleave)="limpiarResaltado()">Juego al 0</button>
             </div>
             <div class="apuesta-col" style="margin-top: 10px;">
               <label class="apuesta-label">Finales (último dígito)</label>

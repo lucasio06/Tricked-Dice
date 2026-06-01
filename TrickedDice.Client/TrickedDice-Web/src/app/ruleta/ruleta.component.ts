@@ -154,6 +154,13 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    this.signalrService.on("ForceLogout", (emailBaneado: string) => {
+      if (this.currentUserEmail.toLowerCase() === emailBaneado.toLowerCase()) {
+        this.authService.logout();
+        this.toast.error("HAS SIDO BANEADO DEL SERVIDOR.");
+      }
+    });
+
     this.route.queryParams.subscribe(params => {
       this.mesaId = params['mesa'] || '';
       if (this.mesaId) {
@@ -621,6 +628,10 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  resaltarGrupoAvanzada(tipo: string): void {
+    this.resaltarGrupo(tipo);
+  }
+
   seleccionarFinal(): void {
     const digito = parseInt(this.valorApuestaFinal);
     const numeros = [];
@@ -656,13 +667,25 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.saldo -= this.montoTotalApostado;
 
+    const apuestasParaBackend = this.apuestasActuales.map(a => {
+      let t = a.tipo.toString().toLowerCase();
+      let v = this.mapearValorApuesta(a).toLowerCase().trim();
+
+      if (t === 'paridad' || t === 'mitad') {
+        t = v;
+        v = '';
+      }
+
+      return {
+        tipo: t,
+        valor: v,
+        monto: a.monto
+      };
+    });
+
     if (this.mesaId) {
-      for (const ap of this.apuestasActuales) {
-        await this.signalrService.invoke('AgregarApuestaMesa', this.mesaId, {
-          tipo: ap.tipo,
-          valor: this.mapearValorApuesta(ap),
-          monto: ap.monto
-        });
+      for (const ap of apuestasParaBackend) {
+        await this.signalrService.invoke('AgregarApuestaMesa', this.mesaId, ap);
       }
       this.apuestasConfirmadas.push(...this.apuestasActuales);
       this.apuestasActuales = [];
@@ -679,12 +702,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       for (let ap of this.apuestasActuales) {
         delete ap.estado;
       }
-
-      const apuestasParaBackend = this.apuestasActuales.map(a => ({
-        tipo: a.tipo,
-        valor: this.mapearValorApuesta(a),
-        monto: a.monto,
-      }));
 
       this.guardarEstadoHistorial();
 
@@ -891,9 +908,12 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       case 'mitad': {
         if (numeroGanador === 0) return 0;
-        const esBaja = numeroGanador <= 18;
-        const apuestaBaja = numerosApuesta[0] === 1;
-        return (esBaja === apuestaBaja) ? 2 : 0;
+        const apuestaMitad = numerosApuesta[0] === 1 ? 1 : 19;
+        if (apuestaMitad === 1) {
+            return (numeroGanador >= 1 && numeroGanador <= 18) ? 2 : 0;
+        } else {
+            return (numeroGanador >= 19 && numeroGanador <= 36) ? 2 : 0;
+        }
       }
       case 'docena': {
         if (numeroGanador === 0) return 0;
@@ -1055,8 +1075,10 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       const mesas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
       const actualizadas = mesas.filter((m: any) => m.id !== this.mesaId);
       localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
+      this.router.navigate([RUTAS.lobby]);
+    } else {
+      this.router.navigate(['/']);
     }
-    this.router.navigate([RUTAS.lobby]);
   }
 
   private getAudioContext(): AudioContext {

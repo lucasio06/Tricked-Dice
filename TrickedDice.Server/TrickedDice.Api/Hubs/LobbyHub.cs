@@ -11,8 +11,9 @@ namespace TrickedDice.Api.Hubs
         private static readonly ConcurrentDictionary<string, Room> Rooms = new();
         private static readonly ConcurrentDictionary<string, string> UserRooms = new();
         private static readonly ConcurrentDictionary<string, string> OnlineUsers = new();
-        private static readonly ConcurrentDictionary<string, HashSet<string>> UserFriends = new();
-        private static readonly ConcurrentDictionary<string, HashSet<string>> PendingRequests = new();
+        private static readonly ConcurrentDictionary<string, HashSet<string>> UserFriends = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, HashSet<string>> PendingRequests = new(StringComparer.OrdinalIgnoreCase);
+
         private readonly ILogger<LobbyHub> _logger;
 
         public LobbyHub(ILogger<LobbyHub> logger)
@@ -38,66 +39,76 @@ namespace TrickedDice.Api.Hubs
 
         public async Task GetOnlineUsers()
         {
-            var users = OnlineUsers.Values.ToList();
+            var users = OnlineUsers.Values.Distinct().ToList();
             await Clients.Caller.SendAsync("OnlineUsers", users);
         }
 
         public async Task GetFriendList()
         {
-            var userId = Context.ConnectionId;
-            UserFriends.TryGetValue(userId, out var friends);
+            var myName = UserName;
+            if (myName == null) return;
+            UserFriends.TryGetValue(myName, out var friends);
             await Clients.Caller.SendAsync("FriendList", friends?.ToList() ?? new List<string>());
         }
 
         public async Task GetPendingRequests()
         {
-            var userId = Context.ConnectionId;
-            PendingRequests.TryGetValue(userId, out var requests);
+            var myName = UserName;
+            if (myName == null) return;
+            PendingRequests.TryGetValue(myName, out var requests);
             await Clients.Caller.SendAsync("PendingRequests", requests?.ToList() ?? new List<string>());
         }
 
         public async Task SendFriendRequest(string userName)
         {
-            if (string.IsNullOrEmpty(userName)) return;
-            var targetConnection = OnlineUsers.FirstOrDefault(x => x.Value == userName).Key;
-            if (targetConnection == null)
+            var myName = UserName;
+            if (myName == null || string.IsNullOrEmpty(userName)) return;
+            if (myName.Equals(userName, StringComparison.OrdinalIgnoreCase)) return;
+
+            PendingRequests.AddOrUpdate(userName, new HashSet<string> { myName }, (k, v) => { v.Add(myName); return v; });
+
+            var targetConnections = OnlineUsers.Where(x => string.Equals(x.Value, userName, StringComparison.OrdinalIgnoreCase)).Select(x => x.Key).ToList();
+            foreach (var conn in targetConnections)
             {
-                await Clients.Caller.SendAsync("Error", "Usuario no encontrado o no conectado.");
-                return;
+                await Clients.Client(conn).SendAsync("FriendRequestReceived", myName);
             }
-            var requesterName = UserName ?? "Anónimo";
-            PendingRequests.AddOrUpdate(targetConnection, new HashSet<string> { requesterName }, (k, v) => { v.Add(requesterName); return v; });
-            await Clients.Client(targetConnection).SendAsync("FriendRequestReceived", requesterName);
         }
 
         public async Task AcceptFriendRequest(string userName)
         {
-            var userId = Context.ConnectionId;
-            PendingRequests.AddOrUpdate(userId, new HashSet<string>(), (k, v) => { v.Remove(userName); return v; });
-            UserFriends.AddOrUpdate(userId, new HashSet<string> { userName }, (k, v) => { v.Add(userName); return v; });
-            var friendConnection = OnlineUsers.FirstOrDefault(x => x.Value == userName).Key;
-            if (friendConnection != null)
+            var myName = UserName;
+            if (myName == null) return;
+
+            PendingRequests.AddOrUpdate(myName, new HashSet<string>(), (k, v) => { v.Remove(userName); return v; });
+            UserFriends.AddOrUpdate(myName, new HashSet<string> { userName }, (k, v) => { v.Add(userName); return v; });
+            UserFriends.AddOrUpdate(userName, new HashSet<string> { myName }, (k, v) => { v.Add(myName); return v; });
+
+            var targetConnections = OnlineUsers.Where(x => string.Equals(x.Value, userName, StringComparison.OrdinalIgnoreCase)).Select(x => x.Key).ToList();
+            foreach (var conn in targetConnections)
             {
-                UserFriends.AddOrUpdate(friendConnection, new HashSet<string> { UserName! }, (k, v) => { v.Add(UserName!); return v; });
+                await Clients.Client(conn).SendAsync("FriendAdded", myName);
             }
+
             await Clients.Caller.SendAsync("FriendAdded", userName);
             await GetFriendList();
+            await GetPendingRequests();
         }
 
         public async Task RejectFriendRequest(string userName)
         {
-            var userId = Context.ConnectionId;
-            PendingRequests.AddOrUpdate(userId, new HashSet<string>(), (k, v) => { v.Remove(userName); return v; });
+            var myName = UserName;
+            if (myName == null) return;
+            PendingRequests.AddOrUpdate(myName, new HashSet<string>(), (k, v) => { v.Remove(userName); return v; });
             await GetPendingRequests();
         }
 
         public async Task InviteFriend(string friendName, string roomId)
         {
             if (!Rooms.TryGetValue(roomId, out var room)) return;
-            var friendConnection = OnlineUsers.FirstOrDefault(x => x.Value == friendName).Key;
-            if (friendConnection != null)
+            var targetConnections = OnlineUsers.Where(x => string.Equals(x.Value, friendName, StringComparison.OrdinalIgnoreCase)).Select(x => x.Key).ToList();
+            foreach (var conn in targetConnections)
             {
-                await Clients.Client(friendConnection).SendAsync("FriendInvitation", UserName, room);
+                await Clients.Client(conn).SendAsync("FriendInvitation", UserName, room);
             }
         }
 
@@ -144,23 +155,24 @@ namespace TrickedDice.Api.Hubs
                 return;
             }
 
-            if (!room.jugadores.Contains(UserName ?? "Anónimo"))
+            var userName = UserName ?? "Anónimo";
+            if (!room.jugadores.Contains(userName))
             {
-                room.jugadores.Add(UserName ?? "Anónimo");
+                room.jugadores.Add(userName);
             }
             
             UserRooms[Context.ConnectionId] = roomId;
             await Groups.AddToGroupAsync(Context.ConnectionId, $"room_{roomId}");
             await Clients.Caller.SendAsync("RoomJoined", room);
-            await Clients.Group($"room_{roomId}").SendAsync("PlayerJoined", UserName);
+            await Clients.Group($"room_{roomId}").SendAsync("PlayerJoined", userName);
             await BroadcastRooms();
         }
 
         public async Task LeaveRoom(string roomId)
         {
             if (!Rooms.TryGetValue(roomId, out var room)) return;
-            var userName = UserName ?? "Anónimo";
 
+            var userName = UserName ?? "Anónimo";
             if (room.jugadores.Contains(userName))
             {
                 room.jugadores.Remove(userName);
@@ -187,6 +199,7 @@ namespace TrickedDice.Api.Hubs
         {
             if (!Rooms.TryGetValue(roomId, out var room)) return;
             if (room.creadorId != Context.ConnectionId) return;
+
             room.esPrivada = !room.esPrivada;
             await Clients.Group($"room_{roomId}").SendAsync("RoomPrivacyToggled", room.esPrivada);
             await BroadcastRooms();
@@ -196,6 +209,7 @@ namespace TrickedDice.Api.Hubs
         {
             if (!Rooms.TryGetValue(roomId, out var room)) return;
             if (room.creadorId != Context.ConnectionId) return;
+
             await Clients.Group($"room_{roomId}").SendAsync("GameStarted", room.juego, roomId);
         }
 
@@ -224,16 +238,16 @@ namespace TrickedDice.Api.Hubs
         {
             var userName = UserName ?? Context.ConnectionId;
             OnlineUsers[Context.ConnectionId] = userName;
-            var usersList = OnlineUsers.Values.ToList();
-            await Clients.All.SendAsync("OnlineUsers", usersList);
 
+            var usersList = OnlineUsers.Values.Distinct().ToList();
+            await Clients.All.SendAsync("OnlineUsers", usersList);
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             OnlineUsers.TryRemove(Context.ConnectionId, out _);
-            var usersList = OnlineUsers.Values.ToList();
+            var usersList = OnlineUsers.Values.Distinct().ToList();
             await Clients.All.SendAsync("OnlineUsers", usersList);
 
             if (UserRooms.TryGetValue(Context.ConnectionId, out var roomId))

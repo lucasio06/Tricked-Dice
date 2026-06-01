@@ -1,10 +1,18 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { SignalrService } from '../services/signalr.service';
+import { RUTAS } from '../utils/rutas.const';
+
+interface HistorialPoker {
+  mano: string;
+  premio: number;
+  gano: boolean;
+}
 
 @Component({
   selector: 'app-poker',
@@ -25,19 +33,23 @@ export class PokerComponent implements OnInit, OnDestroy {
   premioActual: number = 0;
   cambiando: boolean = false;
   nombreManoActual: string = '';
+  historial: HistorialPoker[] = [];
+  currentUserEmail: string = '';
 
   private audioContext: AudioContext | null = null;
 
   constructor(
     private signalrService: SignalrService,
     private authService: AuthService,
-    private toast: ToastService
+    private toast: ToastService,
+    private router: Router
   ) {}
 
   async ngOnInit(): Promise<void> {
     this.authService.usuario$.subscribe(usuario => {
       if (usuario) {
         this.saldo = usuario.saldo;
+        this.currentUserEmail = usuario.email || '';
       }
     });
 
@@ -46,6 +58,13 @@ export class PokerComponent implements OnInit, OnDestroy {
       this.toast.error('No se pudo conectar al juego.');
       return;
     }
+
+    this.signalrService.on("ForceLogout", (emailBaneado: string) => {
+      if (this.currentUserEmail.toLowerCase() === emailBaneado.toLowerCase()) {
+        this.authService.logout();
+        this.toast.error("HAS SIDO BANEADO DEL SERVIDOR.");
+      }
+    });
 
     this.signalrService.on('ManoRepartida', (res: any) => {
       this.mano = res.mano;
@@ -59,7 +78,7 @@ export class PokerComponent implements OnInit, OnDestroy {
       this.nombreManoActual = this.traducirMano(res.nombreMano);
 
       this.mensaje = 'SELECCIONA LAS CARTAS QUE QUIERES DESCARTAR';
-      this.cargando = false;
+      this.cargando = false; 
       this.sonidoRepartir();
     });
 
@@ -75,6 +94,13 @@ export class PokerComponent implements OnInit, OnDestroy {
       this.cartasSeleccionadas = [false, false, false, false, false];
 
       this.nombreManoActual = this.traducirMano(res.nombreMano);
+
+      this.historial.unshift({
+        mano: this.nombreManoActual,
+        premio: res.premio,
+        gano: res.premio > 0
+      });
+      if (this.historial.length > 10) this.historial.pop();
 
       if (res.premio > 0) {
         this.mensaje = `¡GANASTE ${res.premio.toFixed(2)} €!`;
@@ -100,8 +126,13 @@ export class PokerComponent implements OnInit, OnDestroy {
   }
 
   async repartir(): Promise<void> {
-    if (this.montoApuesta <= 0 || this.montoApuesta > this.saldo) {
+    if (this.montoApuesta <= 0) {
       this.toast.warning('Monto de apuesta inválido.');
+      return;
+    }
+    
+    if (this.montoApuesta > this.saldo) {
+      this.toast.warning('Saldo insuficiente.');
       return;
     }
 
@@ -176,6 +207,10 @@ export class PokerComponent implements OnInit, OnDestroy {
       return 'Pareja (Jotas o Mejor)';
     }
     return upper;
+  }
+  
+  volverAlLobby(): void {
+    this.router.navigate(['/']);
   }
 
   private getAudioContext(): AudioContext {

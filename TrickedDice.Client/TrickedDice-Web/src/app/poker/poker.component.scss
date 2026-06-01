@@ -1,3 +1,4 @@
+@use "sass:color";
 $bg-main: #0f051d;
 $bg-sec: #1a1125;
 $bg-deep: #090411;
@@ -281,7 +282,7 @@ $brown-table: #4a2e1b;
     box-shadow: 0 4px 0 $gold-dark, 0 0 15px rgba($gold-main, 0.4);
 
     &:hover:not(:disabled) {
-      background: linear-gradient(to bottom, lighten($gold-light, 10%), $gold-light);
+      background: linear-gradient(to bottom, color.adjust($gold-light, $lightness: 10%), $gold-light);
       box-shadow: 0 4px 0 $gold-dark, 0 0 25px rgba($gold-main, 0.6);
       transform: translateY(-2px);
     }

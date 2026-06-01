@@ -1,4 +1,7 @@
 <app-navbar></app-navbar>
+<div class="top-actions-bar" style="display: flex; justify-content: flex-end; padding: 10px 20px; position: absolute; top: 80px; right: 0; width: 100%; z-index: 10;">
+  <button class="btn-salir-header" (click)="volverAlLobby()" style="background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">🚪 SALIR AL LOBBY</button>
+</div>
 <div class="poker-wrapper">
   <div class="casino-room">
     <div class="poker-table">
@@ -69,5 +72,15 @@
     </div>
 
     <div class="mensaje" *ngIf="mensaje">{{ mensaje }}</div>
+
+    <div class="historial-container" *ngIf="historial.length > 0" style="width: 100%; max-width: 900px; background: rgba(9,4,17,0.8); border: 1px solid #d4af37; border-radius: 15px; padding: 15px; margin-top: 10px;">
+      <h3 style="color: #e0c070; text-align: center; margin-top: 0; font-size: 1.1rem; letter-spacing: 2px;">HISTORIAL DE PARTIDAS</h3>
+      <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;">
+        <div *ngFor="let h of historial" [ngStyle]="{'background': h.gano ? 'rgba(46, 204, 113, 0.2)' : 'rgba(231, 76, 60, 0.2)', 'border': h.gano ? '1px solid #2ecc71' : '1px solid #e74c3c'}" style="min-width: 120px; padding: 10px; border-radius: 8px; text-align: center;">
+          <div style="color: #f0d8a8; font-size: 0.8rem; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">{{ h.mano }}</div>
+          <div [ngStyle]="{'color': h.gano ? '#2ecc71' : '#e74c3c', 'font-weight': 'bold'}">{{ h.gano ? '+' + h.premio : h.premio }}€</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

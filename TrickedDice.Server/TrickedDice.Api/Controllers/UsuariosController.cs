@@ -160,7 +160,7 @@ namespace TrickedDice.Api.Controllers
         private bool ValidarContrasena(string password)
         {
             if (string.IsNullOrWhiteSpace(password)) return false;
-            return Regex.IsMatch(password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$");
+            return Regex.IsMatch(password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$");
         }
 
         private bool ValidarDNI(string dni)

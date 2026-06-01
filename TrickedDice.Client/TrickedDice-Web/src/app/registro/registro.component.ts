@@ -50,11 +50,6 @@ export class RegistroComponent implements OnInit {
     }
   }
 
-  /* 
-    Recordar CAMBIAR URL PERMITIDA cuando se haga el despliegue en la consola de administración de Google.
-    Lo tengo que cambiar en Orígenes autorizados de JavaScript.
-  */
- 
   handleGoogleCredentialResponse(response: any) {
     this.isLoading = true;
     this.errorMessage = null;
@@ -118,7 +113,10 @@ export class RegistroComponent implements OnInit {
   validarContrasena(): boolean {
     const password = this.usuarioData.password || '';
     
-    const patron = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    // Corregida la expresión regular para incluir el caracter '!'
+    // Se asegura de que haya al menos una minúscula, una mayúscula, un dígito, 
+    // y al menos uno de los siguientes caracteres especiales: @ $ ! % * ? & #
+    const patron = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
     
     this.contrasenaInvalida = !patron.test(password);
     return !this.contrasenaInvalida;
@@ -169,7 +167,7 @@ export class RegistroComponent implements OnInit {
     }
 
     if (!this.validarContrasena()) {
-      this.errorMessage = 'La contraseña no cumple con los requisitos mínimos de seguridad.';
+      this.errorMessage = 'La contraseña no cumple con los requisitos mínimos de seguridad. Debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&#).';
       return;
     }
 

@@ -136,6 +136,27 @@ namespace TrickedDice.Api.Services
                     var colorApostado = valor.ToLower();
                     var colorGanador = Rojos.Contains(numero) ? "rojo" : numero == 0 ? "verde" : "negro";
                     return (colorApostado == colorGanador && numero != 0) ? (true, monto * 2) : (false, 0);
+                case "par":
+                    return (numero != 0 && numero % 2 == 0) ? (true, monto * 2) : (false, 0);
+                case "impar":
+                    return (numero != 0 && numero % 2 != 0) ? (true, monto * 2) : (false, 0);
+                case "falta":
+                case "1-18":
+                    return (numero >= 1 && numero <= 18) ? (true, monto * 2) : (false, 0);
+                case "pasa":
+                case "19-36":
+                    return (numero >= 19 && numero <= 36) ? (true, monto * 2) : (false, 0);
+                case "docena":
+                    if (valor == "1" && numero >= 1 && numero <= 12) return (true, monto * 3);
+                    if (valor == "2" && numero >= 13 && numero <= 24) return (true, monto * 3);
+                    if (valor == "3" && numero >= 25 && numero <= 36) return (true, monto * 3);
+                    return (false, 0);
+                case "columna":
+                    if (numero == 0) return (false, 0);
+                    if (valor == "1" && numero % 3 == 1) return (true, monto * 3);
+                    if (valor == "2" && numero % 3 == 2) return (true, monto * 3);
+                    if (valor == "3" && numero % 3 == 0) return (true, monto * 3);
+                    return (false, 0);
                 case "pleno":
                     return valor == numero.ToString() ? (true, monto * 36) : (false, 0);
                 case "caballo":

@@ -88,10 +88,8 @@ import { ToastService } from '../../services/toast.service';
       from { width: 100%; }
       to { width: 0%; }
     }
-      
   `]
 })
 export class ToastComponent {
   toastService = inject(ToastService);
 }
-

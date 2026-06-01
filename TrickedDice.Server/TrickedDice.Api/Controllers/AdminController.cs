@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using TrickedDice.Api.Hubs;
 using TrickedDice.Api.Repositories.Interfaces;
 
 namespace TrickedDice.Api.Controllers
@@ -10,10 +12,23 @@ namespace TrickedDice.Api.Controllers
     public class AdminController : ControllerBase
     {
         private readonly IAdminRepository _adminRepo;
+        private readonly IHubContext<LobbyHub> _lobbyHub;
+        private readonly IHubContext<RuletaHub> _ruletaHub;
+        private readonly IHubContext<BlackjackHub> _blackjackHub;
+        private readonly IHubContext<PokerHub> _pokerHub;
 
-        public AdminController(IAdminRepository adminRepo)
+        public AdminController(
+            IAdminRepository adminRepo, 
+            IHubContext<LobbyHub> lobbyHub,
+            IHubContext<RuletaHub> ruletaHub,
+            IHubContext<BlackjackHub> blackjackHub,
+            IHubContext<PokerHub> pokerHub)
         {
             _adminRepo = adminRepo;
+            _lobbyHub = lobbyHub;
+            _ruletaHub = ruletaHub;
+            _blackjackHub = blackjackHub;
+            _pokerHub = pokerHub;
         }
 
         [HttpGet("usuarios")]
@@ -42,6 +57,19 @@ namespace TrickedDice.Api.Controllers
         {
             var exito = await _adminRepo.CambiarEstadoBaneoAsync(idUsuario, model.Baneado);
             if (!exito) return NotFound(new { mensaje = "Usuario no encontrado." });
+            
+            if (model.Baneado)
+            {
+                var usuarios = await _adminRepo.GetUsuariosAsync();
+                var usuarioBaneado = usuarios.FirstOrDefault(u => u.IdUsuario == idUsuario);
+                if (usuarioBaneado != null)
+                {
+                    await _lobbyHub.Clients.All.SendAsync("ForceLogout", usuarioBaneado.Email);
+                    await _ruletaHub.Clients.All.SendAsync("ForceLogout", usuarioBaneado.Email);
+                    await _blackjackHub.Clients.All.SendAsync("ForceLogout", usuarioBaneado.Email);
+                    await _pokerHub.Clients.All.SendAsync("ForceLogout", usuarioBaneado.Email);
+                }
+            }
             
             return Ok(new { mensaje = model.Baneado ? "Usuario baneado." : "Usuario desbaneado." });
         }

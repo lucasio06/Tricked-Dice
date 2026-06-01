@@ -47,6 +47,12 @@ export class SignalrService {
     }
   }
 
+  public off(event: string) {
+    if (this.hubConnection) {
+      this.hubConnection.off(event);
+    }
+  }
+
   public async invoke(method: string, ...args: any[]) {
     if (this.isConnected()) {
       try {
@@ -65,6 +71,7 @@ export class SignalrService {
       if (this.hubConnection) {
         await this.hubConnection.stop();
         this.hubConnection = null;
+        this.currentHubUrl = '';
       }
     } catch (err) {
       console.error("Error al cerrar conexión:", err);

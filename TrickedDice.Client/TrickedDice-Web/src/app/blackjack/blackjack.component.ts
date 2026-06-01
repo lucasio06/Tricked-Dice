@@ -80,6 +80,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   
   private tiempoLimpiarResultados: any = null;
   private timeoutReinicio: any = null;
+  private audioContext: AudioContext | null = null;
 
   private signalrService = inject(SignalrService);
   private toast = inject(ToastService);
@@ -106,6 +107,14 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       }
 
       await this.signalrService.startConnection('/hubs/blackjack');
+      
+      this.signalrService.on("ForceLogout", (emailBaneado: string) => {
+        if (this.currentUserEmail.toLowerCase() === emailBaneado.toLowerCase()) {
+          this.authService.logout();
+          this.toast.error("HAS SIDO BANEADO DEL SERVIDOR.");
+        }
+      });
+
       await this.signalrService.invoke('JoinTable', this.tableId);
 
       this.signalrService.on('MesaActualizada', (mesa: MesaBlackjack) => {
@@ -152,10 +161,13 @@ export class BlackjackComponent implements OnInit, OnDestroy {
             let tipo: 'win' | 'lose' | 'push';
             if (gano) {
               tipo = 'win';
+              this.sonidoGanar();
             } else if (premio === montoApostado) {
               tipo = 'push';
+              this.sonidoEmpate();
             } else {
               tipo = 'lose';
+              this.sonidoPerder();
             }
 
             this.mostrarResultado(tipo, premio, puntosJugador, puntosCrupier, montoApostado);
@@ -180,6 +192,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
           this.bloqueoApuesta = false;
           this.saldoActual = data.saldo;
           this.authService.actualizarSaldoLocal(data.saldo);
+          this.sonidoCarta();
         });
       });
 
@@ -231,7 +244,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
 
     this.resultadoModal = { 
       texto, 
-      premio: tipo === 'win' ? premio : (tipo === 'push' ? 0 : -monto), 
+      premio: tipo === 'win' ? premio : (tipo === 'push' ? monto : -monto), 
       puntosJugador, 
       puntosCrupier, 
       monto,
@@ -334,22 +347,19 @@ export class BlackjackComponent implements OnInit, OnDestroy {
 
   async pedirCarta() {
     if (!this.miPartidaId || !this.esMiTurno()) return;
+    this.sonidoCarta();
     await this.signalrService.invoke('PedirCarta', this.miPartidaId, this.tableId);
   }
 
   async plantarse() {
     if (!this.miPartidaId || !this.esMiTurno()) return;
+    this.sonidoPlantar();
     await this.signalrService.invoke('Plantarse', this.miPartidaId, this.tableId);
   }
 
   confirmarSalir(): void {
     this.mostrarConfirmacionSalir = false;
-    if (this.tableId && !this.tableId.startsWith('SOLO_')) {
-      const mesas: any[] = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
-      const actualizadas = mesas.filter((m: any) => m.id !== this.tableId);
-      localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
-    }
-    this.router.navigate([RUTAS.home]);
+    this.volverAlLobby();
   }
 
   volverAlLobby(): void {
@@ -357,7 +367,89 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       const mesas: any[] = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
       const actualizadas = mesas.filter((m: any) => m.id !== this.tableId);
       localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
+      this.router.navigate([RUTAS.lobby]);
+    } else {
+      this.router.navigate(['/']);
     }
-    this.router.navigate([RUTAS.home]);
+  }
+
+  private getAudioContext(): AudioContext {
+    if (!this.audioContext) this.audioContext = new AudioContext();
+    return this.audioContext;
+  }
+
+  private sonidoCarta(): void {
+    const ctx = this.getAudioContext();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.type = "sine";
+    o.frequency.setValueAtTime(800, ctx.currentTime);
+    g.gain.setValueAtTime(0.08, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime + 0.1);
+  }
+
+  private sonidoPlantar(): void {
+    const ctx = this.getAudioContext();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.type = "triangle";
+    o.frequency.setValueAtTime(300, ctx.currentTime);
+    g.gain.setValueAtTime(0.1, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime + 0.15);
+  }
+
+  private sonidoGanar(): void {
+    const ctx = this.getAudioContext();
+    [523, 659, 784, 1047].forEach((f, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.type = "sine";
+      o.frequency.setValueAtTime(f, ctx.currentTime + i * 0.12);
+      g.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.12);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.2);
+      o.start(ctx.currentTime + i * 0.12);
+      o.stop(ctx.currentTime + i * 0.12 + 0.2);
+    });
+  }
+
+  private sonidoPerder(): void {
+    const ctx = this.getAudioContext();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.type = "sine";
+    o.frequency.setValueAtTime(300, ctx.currentTime);
+    o.frequency.linearRampToValueAtTime(150, ctx.currentTime + 0.4);
+    g.gain.setValueAtTime(0.1, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime + 0.4);
+  }
+
+  private sonidoEmpate(): void {
+    const ctx = this.getAudioContext();
+    [440, 440].forEach((f, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.type = "square";
+      o.frequency.setValueAtTime(f, ctx.currentTime + i * 0.2);
+      g.gain.setValueAtTime(0.05, ctx.currentTime + i * 0.2);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.15);
+      o.start(ctx.currentTime + i * 0.2);
+      o.stop(ctx.currentTime + i * 0.2 + 0.15);
+    });
   }
 }

@@ -22,6 +22,7 @@ $bg-card: #1a1125;
   width: 100%;
   max-width: 1200px;
   box-shadow: 0 0 50px rgba($gold, 0.3);
+  overflow: hidden; /* Evita que el contenido desborde la tarjeta */
 
   h1 {
     color: $gold;
@@ -72,8 +73,9 @@ $bg-card: #1a1125;
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Más responsive */
   gap: 20px;
+  width: 100%;
 }
 
 .stat-card {
@@ -82,6 +84,8 @@ $bg-card: #1a1125;
   border-radius: 15px;
   padding: 20px;
   text-align: center;
+  overflow-wrap: break-word; /* Rompe palabras largas */
+  word-wrap: break-word;
 
   .stat-label {
     display: block;
@@ -93,9 +97,10 @@ $bg-card: #1a1125;
   }
 
   .stat-value {
-    font-size: 2rem;
+    font-size: clamp(1.2rem, 4vw, 2rem); /* Escala fluida basada en el viewport */
     font-weight: 900;
     color: #f0d8a8;
+    word-break: break-all; /* Asegura que los números gigantes se rompan */
   }
 }
 
@@ -103,14 +108,17 @@ $bg-card: #1a1125;
 .negativo { color: #e74c3c !important; }
 
 .tabla-scroll {
+  overflow-x: auto; /* Permite scroll horizontal si la tabla es muy ancha */
   overflow-y: auto;
   max-height: 700px;
   border-radius: 15px;
   background: rgba(0, 0, 0, 0.2);
   padding: 0;
+  width: 100%; /* Asegura que ocupe todo el ancho disponible */
 
   &::-webkit-scrollbar {
     width: 6px;
+    height: 6px; /* Scrollbar horizontal */
   }
 
   &::-webkit-scrollbar-track {
@@ -125,6 +133,7 @@ $bg-card: #1a1125;
 
   table {
     width: 100%;
+    min-width: 600px; /* Asegura que la tabla no se aplaste demasiado */
     border-collapse: separate;
     border-spacing: 0;
     color: #f0d8a8;
@@ -220,6 +229,7 @@ $bg-card: #1a1125;
   letter-spacing: 1px;
   border: none;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+  white-space: nowrap; /* Evita que el texto del botón se rompa */
 
   &.banear {
     background: linear-gradient(to bottom, #ff3366, #cc0033);

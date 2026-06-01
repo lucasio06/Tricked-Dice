@@ -4,6 +4,8 @@ import { AdminService } from '../services/admin.service';
 import { UsuarioAdmin, TransaccionAdmin, Estadisticas } from '../models/api-responses';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
+import { SignalrService } from '../services/signalr.service'; // Asegúrate de tener este import
+import { ApiService } from '../services/api.service';
 
 @Component({
   selector: 'app-admin',
@@ -21,7 +23,8 @@ export class AdminComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
-    private toast: ToastService
+    private toast: ToastService,
+    private apiService: ApiService // Inyectado para forzar la desconexión
   ) {}
 
   ngOnInit(): void {
@@ -81,7 +84,7 @@ export class AdminComponent implements OnInit {
   banearUsuario(idUsuario: number): void {
     this.adminService.banearUsuario(idUsuario, true).subscribe({
       next: () => {
-        this.toast.success('Usuario baneado correctamente.');
+        this.toast.success('Usuario baneado y desconectado correctamente.');
         this.cargarUsuarios();
       },
       error: () => {
