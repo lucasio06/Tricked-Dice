@@ -4,6 +4,8 @@ using System.Text;
 using TrickedDice.Api.Hubs;
 using TrickedDice.Api.Services;
 using TrickedDice.Api.Middlewares;
+using TrickedDice.Api.Repositories;
+using TrickedDice.Api.Repositories.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +46,7 @@ builder.Services.AddSingleton<PokerService>();
 builder.Services.AddSingleton<RuletaService>();
 builder.Services.AddScoped<BlackjackGameService>();
 builder.Services.AddScoped<PokerGameService>();
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 
 var app = builder.Build();
 
