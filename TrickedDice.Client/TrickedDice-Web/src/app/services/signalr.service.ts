@@ -23,7 +23,11 @@ export class SignalrService {
     const url = `${this.signalRBase}${hubUrl}`;
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(url, { accessTokenFactory: () => this.authService.getToken() || '' })
+      .withUrl(url, {
+        accessTokenFactory: () => this.authService.getToken() || '',
+        skipNegotiation: true,
+        transport: signalR.HttpTransportType.WebSockets
+      })
       .withAutomaticReconnect()
       .build();
 

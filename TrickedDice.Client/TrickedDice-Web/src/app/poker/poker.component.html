@@ -1,86 +1,148 @@
 <app-navbar></app-navbar>
-<div class="top-actions-bar" style="display: flex; justify-content: flex-end; padding: 10px 20px; position: absolute; top: 80px; right: 0; width: 100%; z-index: 10;">
-  <button class="btn-salir-header" (click)="volverAlLobby()" style="background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">🚪 SALIR AL LOBBY</button>
-</div>
-<div class="poker-wrapper">
-  <div class="casino-room">
-    <div class="poker-table">
-      <div class="table-inner-ring">
-        
-        <div class="table-top-section">
-          <div class="tabla-pagos-interna">
-            <h3>TABLA DE PAGOS</h3>
-            <div class="pago-item"><span>Escalera Real</span><span>250x</span></div>
-            <div class="pago-item"><span>Escalera de Color</span><span>50x</span></div>
-            <div class="pago-item"><span>Póker</span><span>25x</span></div>
-            <div class="pago-item"><span>Full House</span><span>9x</span></div>
-            <div class="pago-item"><span>Color</span><span>6x</span></div>
-            <div class="pago-item"><span>Escalera</span><span>4x</span></div>
-            <div class="pago-item"><span>Trío</span><span>3x</span></div>
-            <div class="pago-item"><span>Doble Pareja</span><span>2x</span></div>
-            <div class="pago-item"><span>Pareja (Jotas o Mejor)</span><span>1x</span></div>
-          </div>
 
-          <div class="pot-area">
-            <span class="pot-text">PREMIO: {{ premioActual | number:'1.2-2' }} €</span>
-          </div>
-        </div>
+<div class="poker-container">
+  
+  <div class="top-actions-bar" *ngIf="soyJugador">
+    <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE MESA</button>
+    <div style="flex-grow: 1;"></div>
+    <button class="btn-ayuda-header">📖 CÓMO JUGAR</button>
+  </div>
 
-        <div class="hand-indicator" *ngIf="nombreManoActual">
-          <span class="hand-text">{{ nombreManoActual }}</span>
-        </div>
+  <h1 class="casino-title">TEXAS HOLD'EM</h1>
 
-        <div class="player-cards" *ngIf="mano.length > 0">
-          <div *ngFor="let carta of mano; let i = index"
-               class="playing-card"
-               [class.seleccionada]="cartasSeleccionadas[i]"
-               [class.animando]="animandoCards[i]"
-               [style.animation-delay]="(i * 0.1) + 's'"
-               (click)="toggleSeleccion(i)">
-            <div class="valor" [ngClass]="{'rojo': obtenerPalo(carta) === '♥' || obtenerPalo(carta) === '♦'}">{{ obtenerValor(carta) }}</div>
-            <div class="palo" [ngClass]="{'rojo': obtenerPalo(carta) === '♥' || obtenerPalo(carta) === '♦'}">{{ obtenerPalo(carta) }}</div>
-            <div class="hold" *ngIf="cartasSeleccionadas[i]">DESCARTAR</div>
-          </div>
-        </div>
-
-        <div class="player-cards" *ngIf="mano.length === 0">
-          <div class="card-placeholder"></div>
-          <div class="card-placeholder"></div>
-          <div class="card-placeholder"></div>
-          <div class="card-placeholder"></div>
-          <div class="card-placeholder"></div>
-        </div>
-
+  <div class="modal-overlay" *ngIf="mostrarConfirmacionSalir">
+    <div class="modal-content exit-modal">
+      <div class="modal-icon">🚪</div>
+      <h3>¿Abandonar la mesa?</h3>
+      <p>Saldrás de la sala y perderás tu asiento.</p>
+      <div class="modal-buttons">
+        <button class="btn-cancel" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
+        <button class="btn-confirm" (click)="confirmarSalir()">SALIR</button>
       </div>
     </div>
+  </div>
 
-    <div class="controls-panel">
-      <button class="btn-casino btn-action" (click)="repartir()" [disabled]="cargando || juegoIniciado">
-        <span *ngIf="!cargando">REPARTIR</span>
-        <span *ngIf="cargando">CARGANDO...</span>
-      </button>
+  <div class="buy-in-overlay" *ngIf="!soyJugador">
+    <div class="modal-content buy-in-modal">
+      <div class="modal-icon">💰</div>
+      <h2>Únete a la Mesa</h2>
+      <p>Introduce tu Buy-in para sentarte:</p>
+      <input type="number" [(ngModel)]="buyIn" class="gold-input">
       
-      <div class="bet-controls">
-        <span class="bet-label">APUESTA:</span>
-        <input type="number" [(ngModel)]="montoApuesta" [disabled]="juegoIniciado" min="1" class="bet-input">
+      <div class="modal-buttons">
+        <button class="btn-cancel" (click)="volverAlLobby()" [disabled]="procesando">SALIR</button>
+        <button class="btn-confirm" (click)="sentarse()" [disabled]="procesando">
+          {{ procesando ? 'CARGANDO...' : 'SENTARSE (' + buyIn + '€)' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-panel" *ngIf="soyJugador && (mesa?.fase === 4 || !mesa?.cartasComunitarias?.length)">
+    <button class="admin-button" (click)="iniciarMano()" [disabled]="procesando">
+      <i class="fas fa-play"></i> {{ procesando ? 'REPARTIENDO...' : 'REPARTIR NUEVA MANO' }}
+    </button>
+  </div>
+
+  <div class="table-wrapper">
+    <div class="poker-table">
+      <div class="table-inner-ring"></div>
+      
+      <div class="table-center">
+        <div class="pot-display">
+          <span>BOTE CENTRAL</span>
+          <span class="gold-text">{{ mesa?.bote || 0 }} €</span>
+        </div>
+        
+        <div class="community-cards">
+          <ng-container *ngIf="!mesa?.cartasComunitarias?.length">
+            <div class="card-slot empty" *ngFor="let i of [1,2,3,4,5]"></div>
+          </ng-container>
+
+          <ng-container *ngFor="let carta of mesa?.cartasComunitarias; let i = index; trackBy: trackByIndex">
+            <ng-container *ngIf="obtenerDetallesCarta(carta) as cDet">
+              <div class="playing-card animando-entrada" [ngClass]="cDet.color" [style.animation-delay]="(i * 0.1) + 's'">
+                <div class="card-corner top-left">
+                  <span>{{cDet.valor}}</span><span class="suit">{{cDet.palo}}</span>
+                </div>
+                <div class="card-center suit">{{cDet.palo}}</div>
+                <div class="card-corner bottom-right">
+                  <span>{{cDet.valor}}</span><span class="suit">{{cDet.palo}}</span>
+                </div>
+              </div>
+            </ng-container>
+          </ng-container>
+        </div>
       </div>
 
-      <button class="btn-casino btn-action" (click)="cambiar()" [disabled]="cargando || !juegoIniciado">
-        <span *ngIf="!cargando">CAMBIAR</span>
-        <span *ngIf="cargando">CARGANDO...</span>
-      </button>
-    </div>
+      <div class="players-container" *ngIf="mesa">
+        <div class="player-seat" 
+             *ngFor="let jugador of jugadoresLista"
+             [class.active-turn]="mesa.turnoActualEmail === jugador.email"
+             [class.folded]="jugador.folded"
+             [class.is-me]="jugador.email === miEmail">
+          
+          <div class="player-info">
+            <h4 class="player-name">{{ jugador.nombreUsuario }}</h4>
+            <p class="player-balance">{{ jugador.saldo }} €</p>
+            <div class="bet-chip" *ngIf="jugador.apuestaActual > 0">{{ jugador.apuestaActual }} €</div>
+            <span class="status-badge fold" *ngIf="jugador.folded">FOLD</span>
+            <span class="status-badge allin" *ngIf="jugador.allIn">ALL IN</span>
+          </div>
 
-    <div class="mensaje" *ngIf="mensaje">{{ mensaje }}</div>
+          <div class="player-cards">
+            <div class="card-wrapper" *ngFor="let carta of jugador.mano; let i = index; trackBy: trackByIndex" [style.z-index]="i">
+              
+              <ng-container *ngIf="jugador.email === miEmail || mesa.fase === 4">
+                <ng-container *ngIf="obtenerDetallesCarta(carta) as cDet">
+                  <div class="playing-card mini animando-entrada" [ngClass]="cDet.color" [style.animation-delay]="(i * 0.15) + 's'">
+                    <div class="card-corner top-left"><span>{{cDet.valor}}</span><span class="suit">{{cDet.palo}}</span></div>
+                    <div class="card-center suit">{{cDet.palo}}</div>
+                    <div class="card-corner bottom-right"><span>{{cDet.valor}}</span><span class="suit">{{cDet.palo}}</span></div>
+                  </div>
+                </ng-container>
+              </ng-container>
 
-    <div class="historial-container" *ngIf="historial.length > 0" style="width: 100%; max-width: 900px; background: rgba(9,4,17,0.8); border: 1px solid #d4af37; border-radius: 15px; padding: 15px; margin-top: 10px;">
-      <h3 style="color: #e0c070; text-align: center; margin-top: 0; font-size: 1.1rem; letter-spacing: 2px;">HISTORIAL DE PARTIDAS</h3>
-      <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;">
-        <div *ngFor="let h of historial" [ngStyle]="{'background': h.gano ? 'rgba(46, 204, 113, 0.2)' : 'rgba(231, 76, 60, 0.2)', 'border': h.gano ? '1px solid #2ecc71' : '1px solid #e74c3c'}" style="min-width: 120px; padding: 10px; border-radius: 8px; text-align: center;">
-          <div style="color: #f0d8a8; font-size: 0.8rem; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">{{ h.mano }}</div>
-          <div [ngStyle]="{'color': h.gano ? '#2ecc71' : '#e74c3c', 'font-weight': 'bold'}">{{ h.gano ? '+' + h.premio : h.premio }}€</div>
+              <ng-container *ngIf="jugador.email !== miEmail && mesa.fase !== 4">
+                <div class="playing-card mini back animando-entrada" [style.animation-delay]="(i * 0.15) + 's'"></div>
+              </ng-container>
+
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <div class="action-bar-wrapper" *ngIf="soyJugador && esMiTurno">
+    <div class="processing-indicator" *ngIf="procesando">
+      <div class="spinner"></div><span>PROCESANDO APUESTA...</span>
+    </div>
+
+    <div class="action-panel" [class.is-processing]="procesando">
+      <div class="game-controls">
+        <button class="btn-action btn-fold" [disabled]="procesando" (click)="enviarAccion('fold')">
+          <span>FOLD</span><small>Retirarse</small>
+        </button>
+        <button class="btn-action btn-check" [disabled]="procesando" (click)="enviarAccion('check')">
+          <span>CHECK</span><small>Pasar</small>
+        </button>
+        <button class="btn-action btn-call" [disabled]="procesando" (click)="enviarAccion('call')">
+          <span>CALL</span><small>{{mesa?.apuestaActual || 0}} €</small>
+        </button>
+        
+        <div class="raise-group">
+          <div class="raise-input-wrapper">
+            <button class="raise-adjust" [disabled]="procesando" (click)="disminuirRaise()">-</button>
+            <input type="number" [(ngModel)]="cantidadRaise" min="{{mesa?.apuestaActual || 0}}" [disabled]="procesando">
+            <button class="raise-adjust" [disabled]="procesando" (click)="aumentarRaise()">+</button>
+          </div>
+          <button class="btn-action btn-raise" [disabled]="procesando" (click)="enviarAccion('raise')">
+            <span>RAISE</span><small>Subir</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

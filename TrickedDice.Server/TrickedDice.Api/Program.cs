@@ -47,7 +47,6 @@ builder.Services.AddSingleton<BlackjackService>();
 builder.Services.AddSingleton<PokerService>();
 builder.Services.AddSingleton<RuletaService>();
 builder.Services.AddScoped<BlackjackGameService>();
-builder.Services.AddScoped<PokerGameService>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
@@ -78,6 +77,6 @@ app.MapControllers();
 app.MapHub<LobbyHub>("/hubs/lobby");
 app.MapHub<BlackjackHub>("/hubs/blackjack");
 app.MapHub<RuletaHub>("/hubs/ruleta");
-app.MapHub<PokerHub>("/hubs/poker");
+app.MapHub<PokerHub>("/pokerHub");
 
 app.Run();
