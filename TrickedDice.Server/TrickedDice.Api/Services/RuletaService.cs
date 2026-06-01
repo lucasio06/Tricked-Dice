@@ -8,7 +8,7 @@ namespace TrickedDice.Api.Services
         private readonly string? _connectionString;
         private static readonly int[] NumerosRuleta = { 0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26 };
         private static readonly int[] Rojos = { 1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36 };
-        private static readonly ConcurrentDictionary<string, ConcurrentBag<ApuestaUsuario>> MesasApuestas = new();
+        private readonly ConcurrentDictionary<string, ConcurrentBag<ApuestaUsuario>> MesasApuestas = new();
 
         public RuletaService(IConfiguration configuration)
         {
@@ -24,17 +24,23 @@ namespace TrickedDice.Api.Services
 
         public async Task<Dictionary<string, object>> GirarMesa(string mesaId)
         {
+            if (!MesasApuestas.TryRemove(mesaId, out var bag))
+            {
+                return new Dictionary<string, object>();
+            }
+
+            var apuestasMesa = bag.ToList();
+            if (!apuestasMesa.Any()) return new Dictionary<string, object>();
+
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
             using var transaction = connection.BeginTransaction();
             try
             {
-                var rnd = new Random();
-                int numeroGanador = NumerosRuleta[rnd.Next(0, NumerosRuleta.Length)];
+                int numeroGanador = NumerosRuleta[Random.Shared.Next(0, NumerosRuleta.Length)];
                 var resultados = new Dictionary<string, object>();
                 var historialGlobal = new List<object>();
                 
-                var apuestasMesa = MesasApuestas.TryGetValue(mesaId, out var bag) ? bag.ToList() : new List<ApuestaUsuario>();
                 var agrupado = apuestasMesa.GroupBy(a => new { a.Email, a.Nombre });
                 
                 foreach (var grupo in agrupado)
@@ -50,7 +56,7 @@ namespace TrickedDice.Api.Services
                 }
                 
                 transaction.Commit();
-                MesasApuestas.TryRemove(mesaId, out _);
+                
                 return new Dictionary<string, object>
                 {
                     ["numeroGanador"] = numeroGanador,
@@ -72,8 +78,7 @@ namespace TrickedDice.Api.Services
             using var transaction = connection.BeginTransaction();
             try
             {
-                var rnd = new Random();
-                int numeroGanador = NumerosRuleta[rnd.Next(0, NumerosRuleta.Length)];
+                int numeroGanador = NumerosRuleta[Random.Shared.Next(0, NumerosRuleta.Length)];
 
                 var res = ProcesarApuestasUsuario(email, apuestas, connection, transaction, numeroGanador);
 

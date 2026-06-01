@@ -39,9 +39,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddSingleton<BlackjackService>();
-builder.Services.AddScoped<PokerService>();
+builder.Services.AddSingleton<PokerService>();
+builder.Services.AddSingleton<RuletaService>();
 builder.Services.AddScoped<BlackjackGameService>();
-builder.Services.AddScoped<RuletaService>();
 builder.Services.AddScoped<PokerGameService>();
 
 var app = builder.Build();

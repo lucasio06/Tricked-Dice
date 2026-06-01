@@ -101,7 +101,8 @@ export class BlackjackComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(async params => {
       this.tableId = this.tableIdInput || params['mesa'] || '';
       if (!this.tableId) {
-        this.tableId = 'SOLO_MODE_DEFAULT';
+        const randomId = Math.random().toString(36).substring(2, 10);
+        this.tableId = `SOLO_${randomId}`;
       }
 
       await this.signalrService.startConnection('/hubs/blackjack');
@@ -257,7 +258,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   }
 
   get isSoloMode(): boolean {
-    return this.tableId === 'SOLO_MODE_DEFAULT';
+    return this.tableId.startsWith('SOLO_');
   }
 
   getTurnoActualId(): string | null {
@@ -343,7 +344,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
 
   confirmarSalir(): void {
     this.mostrarConfirmacionSalir = false;
-    if (this.tableId && this.tableId !== 'SOLO_MODE_DEFAULT') {
+    if (this.tableId && !this.tableId.startsWith('SOLO_')) {
       const mesas: any[] = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
       const actualizadas = mesas.filter((m: any) => m.id !== this.tableId);
       localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
@@ -352,7 +353,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   }
 
   volverAlLobby(): void {
-    if (this.tableId && this.tableId !== 'SOLO_MODE_DEFAULT') {
+    if (this.tableId && !this.tableId.startsWith('SOLO_')) {
       const mesas: any[] = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
       const actualizadas = mesas.filter((m: any) => m.id !== this.tableId);
       localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
