@@ -14,11 +14,13 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular",
-        policy => policy.WithOrigins("http://localhost:4200")
-                        .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .AllowCredentials());
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.SetIsOriginAllowed(_ => true)
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials();
+    });
 });
 
 builder.Services.AddSignalR(options =>
@@ -56,7 +58,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors("AllowAngular");
+app.UseCors("AllowAll");
 app.UseRouting();
 app.UseMiddleware<ExceptionMiddleware>();
 app.Use(async (context, next) =>
