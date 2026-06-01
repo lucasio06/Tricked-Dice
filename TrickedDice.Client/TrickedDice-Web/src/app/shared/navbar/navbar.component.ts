@@ -48,6 +48,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
   
   esAdmin(): boolean {
-    return this.usuarioActivo?.email === 'admin@trickeddice.com';
+    return this.usuarioActivo?.rol === 'Admin';
   }
 }

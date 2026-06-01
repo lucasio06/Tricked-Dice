@@ -64,7 +64,8 @@ export class AuthService {
         const perfil: UsuarioPerfil = {
           nombre: res.nombre,
           email: email,
-          saldo: res.saldo
+          saldo: res.saldo,
+          rol: res.rol
         };
         this.cacheUser(perfil);
         this.usuarioSubject.next(perfil);

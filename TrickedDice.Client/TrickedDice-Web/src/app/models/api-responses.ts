@@ -2,12 +2,14 @@ export interface LoginResponse {
   token: string;
   nombre: string;
   saldo: number;
+  rol: string;
 }
 
 export interface UsuarioPerfil {
   nombre: string;
   email: string;
   saldo: number;
+  rol?: string;
 }
 
 export interface RecargarResponse {

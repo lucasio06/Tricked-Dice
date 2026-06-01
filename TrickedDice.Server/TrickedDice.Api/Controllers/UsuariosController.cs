@@ -101,7 +101,7 @@ namespace TrickedDice.Api.Controllers
                 using (SqlConnection c = new SqlConnection(_conn))
                 {
                     c.Open();
-                    string sql = "SELECT ID_USUARIO, NOMBRE, CONTRASENA, SALDO, BANEADO FROM USUARIO WHERE EMAIL = @e";
+                    string sql = "SELECT ID_USUARIO, NOMBRE, CONTRASENA, SALDO, BANEADO, ROL FROM USUARIO WHERE EMAIL = @e";
                     using (SqlCommand cmd = new SqlCommand(sql, c))
                     {
                         cmd.Parameters.AddWithValue("@e", model.Email);
@@ -117,12 +117,13 @@ namespace TrickedDice.Api.Controllers
                                 string hashDB = r["CONTRASENA"].ToString()!;
                                 if (BCrypt.Net.BCrypt.Verify(model.Password, hashDB))
                                 {
-                                    var token = GenerarToken(r["NOMBRE"].ToString()!, model.Email);
+                                    var token = GenerarToken(r["NOMBRE"].ToString()!, model.Email, r["ROL"].ToString()!);
                                     return Ok(new
                                     {
                                         token = token,
                                         nombre = r["NOMBRE"],
-                                        saldo = Convert.ToDecimal(r["SALDO"])
+                                        saldo = Convert.ToDecimal(r["SALDO"]),
+                                        rol = r["ROL"].ToString()
                                     });
                                 }
                             }
@@ -280,7 +281,7 @@ namespace TrickedDice.Api.Controllers
                 using (var connection = new SqlConnection(_conn))
                 {
                     connection.Open();
-                    string sql = "SELECT NOMBRE, EMAIL, SALDO FROM USUARIO WHERE EMAIL = @Email";
+                    string sql = "SELECT NOMBRE, EMAIL, SALDO, ROL FROM USUARIO WHERE EMAIL = @Email";
                     using (var cmd = new SqlCommand(sql, connection))
                     {
                         cmd.Parameters.AddWithValue("@Email", email);
@@ -292,7 +293,8 @@ namespace TrickedDice.Api.Controllers
                                 {
                                     nombre = reader["NOMBRE"].ToString(),
                                     email = reader["EMAIL"].ToString(),
-                                    saldo = Convert.ToDecimal(reader["SALDO"])
+                                    saldo = Convert.ToDecimal(reader["SALDO"]),
+                                    rol = reader["ROL"].ToString()
                                 });
                             }
                             return NotFound("Usuario no encontrado.");
@@ -477,11 +479,15 @@ namespace TrickedDice.Api.Controllers
             return letras[numeros % 23] == letraPart;
         }
 
-        private string GenerarToken(string nombre, string email)
+        private string GenerarToken(string nombre, string email, string rol = "User")
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-            var claims = new[] { new Claim(ClaimTypes.Name, nombre), new Claim(ClaimTypes.Email, email) };
+            var claims = new[] { 
+                new Claim(ClaimTypes.Name, nombre), 
+                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.Role, rol)
+            };
             var token = new JwtSecurityToken(_config["Jwt:Issuer"], _config["Jwt:Audience"], claims,
               expires: DateTime.Now.AddMinutes(120), signingCredentials: credentials);
             return new JwtSecurityTokenHandler().WriteToken(token);

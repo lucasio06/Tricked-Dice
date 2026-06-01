@@ -7,7 +7,7 @@ namespace TrickedDice.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public class AdminController : ControllerBase
     {
         private readonly string? _connectionString;
@@ -19,17 +19,9 @@ namespace TrickedDice.Api.Controllers
             _logger = logger;
         }
 
-        private bool EsAdmin()
-        {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
-            return email == "admin@trickeddice.com";
-        }
-
         [HttpGet("usuarios")]
         public IActionResult GetUsuarios()
         {
-            if (!EsAdmin()) return Forbid();
-
             try
             {
                 using var connection = new SqlConnection(_connectionString);
@@ -70,8 +62,6 @@ namespace TrickedDice.Api.Controllers
         [HttpGet("transacciones")]
         public IActionResult GetTransacciones([FromQuery] int? idUsuario)
         {
-            if (!EsAdmin()) return Forbid();
-
             try
             {
                 using var connection = new SqlConnection(_connectionString);
@@ -123,8 +113,6 @@ namespace TrickedDice.Api.Controllers
         [HttpGet("estadisticas")]
         public IActionResult GetEstadisticas()
         {
-            if (!EsAdmin()) return Forbid();
-
             try
             {
                 using var connection = new SqlConnection(_connectionString);
@@ -189,8 +177,6 @@ namespace TrickedDice.Api.Controllers
         [HttpPut("banear/{idUsuario}")]
         public IActionResult BanearUsuario(int idUsuario, [FromBody] BanearModel model)
         {
-            if (!EsAdmin()) return Forbid();
-
             try
             {
                 using var connection = new SqlConnection(_connectionString);
