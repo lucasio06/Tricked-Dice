@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using TrickedDice.Api.Hubs;
 using TrickedDice.Api.Services;
+using TrickedDice.Api.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +54,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAngular");
 app.UseRouting();
+app.UseMiddleware<ExceptionMiddleware>();
 app.Use(async (context, next) =>
 {
     var token = context.Request.Query["access_token"].FirstOrDefault();
