@@ -21,8 +21,7 @@ namespace TrickedDice.Api.Services
 
         public List<string> RepartirCartas(List<string> baraja, int cantidad)
         {
-            var random = new Random();
-            return baraja.OrderBy(x => random.Next()).Take(cantidad).ToList();
+            return baraja.OrderBy(x => Random.Shared.Next()).Take(cantidad).ToList();
         }
 
         public MesaBlackjack? ObtenerMesa(string roomId)
@@ -36,21 +35,24 @@ namespace TrickedDice.Api.Services
             var idPartida = Guid.NewGuid().ToString("N")[..8];
             var mesa = _mesas.GetOrAdd(roomId, id => new MesaBlackjack { RoomId = id, Baraja = CrearBaraja() });
 
-            if (mesa.ManoCrupier.Count == 0)
+            lock (mesa.LockObj)
             {
-                mesa.ManoCrupier = RepartirCartas(mesa.Baraja, 1);
+                if (mesa.ManoCrupier.Count == 0)
+                {
+                    mesa.ManoCrupier = RepartirCartas(mesa.Baraja, 1);
+                }
+
+                mesa.ManosJugadores[idPartida] = new PartidaBlackjack
+                {
+                    Email = email,
+                    NombreUsuario = nombreUsuario,
+                    Monto = monto,
+                    ManoJugador = RepartirCartas(mesa.Baraja, 2),
+                    Terminada = false
+                };
+
+                _partidaToMesa[idPartida] = roomId;
             }
-
-            mesa.ManosJugadores[idPartida] = new PartidaBlackjack
-            {
-                Email = email,
-                NombreUsuario = nombreUsuario,
-                Monto = monto,
-                ManoJugador = RepartirCartas(mesa.Baraja, 2),
-                Terminada = false
-            };
-
-            _partidaToMesa[idPartida] = roomId;
             return idPartida;
         }
 
@@ -67,34 +69,42 @@ namespace TrickedDice.Api.Services
         {
             if (!_partidaToMesa.TryGetValue(idPartida, out var roomId)) return null;
             if (!_mesas.TryGetValue(roomId, out var mesa)) return null;
-            if (!mesa.ManosJugadores.TryGetValue(idPartida, out var partida)) return null;
-            if (partida.Terminada) return null;
 
-            var carta = RepartirCartas(mesa.Baraja, 1).FirstOrDefault();
-            if (carta != null)
+            lock (mesa.LockObj)
             {
-                partida.ManoJugador.Add(carta);
-                mesa.Baraja.Remove(carta);
+                if (!mesa.ManosJugadores.TryGetValue(idPartida, out var partida)) return null;
+                if (partida.Terminada) return null;
+
+                var carta = RepartirCartas(mesa.Baraja, 1).FirstOrDefault();
+                if (carta != null)
+                {
+                    partida.ManoJugador.Add(carta);
+                    mesa.Baraja.Remove(carta);
+                }
+                return carta;
             }
-            return carta;
         }
 
         public void Plantarse(string idPartida)
         {
             if (!_partidaToMesa.TryGetValue(idPartida, out var roomId)) return;
             if (!_mesas.TryGetValue(roomId, out var mesa)) return;
-            if (!mesa.ManosJugadores.TryGetValue(idPartida, out var partida)) return;
 
-            partida.Terminada = true;
-
-            if (mesa.ManosJugadores.Values.All(p => p.Terminada))
+            lock (mesa.LockObj)
             {
-                while (ValorMano(mesa.ManoCrupier) < 17)
+                if (!mesa.ManosJugadores.TryGetValue(idPartida, out var partida)) return;
+
+                partida.Terminada = true;
+
+                if (mesa.ManosJugadores.Values.All(p => p.Terminada))
                 {
-                    var carta = RepartirCartas(mesa.Baraja, 1).FirstOrDefault();
-                    if (carta == null) break;
-                    mesa.ManoCrupier.Add(carta);
-                    mesa.Baraja.Remove(carta);
+                    while (ValorMano(mesa.ManoCrupier) < 17)
+                    {
+                        var carta = RepartirCartas(mesa.Baraja, 1).FirstOrDefault();
+                        if (carta == null) break;
+                        mesa.ManoCrupier.Add(carta);
+                        mesa.Baraja.Remove(carta);
+                    }
                 }
             }
         }
@@ -136,9 +146,12 @@ namespace TrickedDice.Api.Services
         {
             if (_mesas.TryGetValue(roomId, out var mesa))
             {
-                mesa.ManoCrupier.Clear();
-                mesa.ManosJugadores.Clear();
-                mesa.Baraja = CrearBaraja();
+                lock (mesa.LockObj)
+                {
+                    mesa.ManoCrupier.Clear();
+                    mesa.ManosJugadores.Clear();
+                    mesa.Baraja = CrearBaraja();
+                }
             }
         }
     }
@@ -149,6 +162,7 @@ namespace TrickedDice.Api.Services
         public List<string> ManoCrupier { get; set; } = new();
         public List<string> Baraja { get; set; } = new();
         public ConcurrentDictionary<string, PartidaBlackjack> ManosJugadores { get; set; } = new();
+        public readonly object LockObj = new object();
     }
 
     public class PartidaBlackjack

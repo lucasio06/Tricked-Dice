@@ -64,7 +64,8 @@ export class AuthService {
         const perfil: UsuarioPerfil = {
           nombre: res.nombre,
           email: email,
-          saldo: res.saldo
+          saldo: res.saldo,
+          rol: res.rol
         };
         this.cacheUser(perfil);
         this.usuarioSubject.next(perfil);
@@ -115,5 +116,13 @@ export class AuthService {
 
   getUsuarioActual(): UsuarioPerfil | null {
     return this.usuarioSubject.value;
+  }
+
+  googleLogin(idToken: string): Observable<any> {
+    return this.api.post('/usuarios/google-login', { idToken });
+  }
+
+  completarPerfil(datos: { dni: string, fechaNacimiento: string }): Observable<any> {
+    return this.api.post('/usuarios/completar-perfil', datos);
   }
 }

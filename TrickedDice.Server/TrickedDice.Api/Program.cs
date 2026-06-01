@@ -3,6 +3,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using TrickedDice.Api.Hubs;
 using TrickedDice.Api.Services;
+using TrickedDice.Api.Middlewares;
+using TrickedDice.Api.Repositories;
+using TrickedDice.Api.Repositories.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,11 +14,13 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular",
-        policy => policy.WithOrigins("http://localhost:4200")
-                        .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .AllowCredentials());
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.SetIsOriginAllowed(_ => true)
+               .AllowAnyMethod()
+               .AllowAnyHeader()
+               .AllowCredentials();
+    });
 });
 
 builder.Services.AddSignalR(options =>
@@ -39,10 +44,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddSingleton<BlackjackService>();
-builder.Services.AddScoped<PokerService>();
+builder.Services.AddSingleton<PokerService>();
+builder.Services.AddSingleton<RuletaService>();
 builder.Services.AddScoped<BlackjackGameService>();
-builder.Services.AddScoped<RuletaService>();
 builder.Services.AddScoped<PokerGameService>();
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
 var app = builder.Build();
 
@@ -51,8 +58,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors("AllowAngular");
+app.UseCors("AllowAll");
 app.UseRouting();
+app.UseMiddleware<ExceptionMiddleware>();
 app.Use(async (context, next) =>
 {
     var token = context.Request.Query["access_token"].FirstOrDefault();

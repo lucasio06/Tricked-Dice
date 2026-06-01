@@ -1,0 +1,31 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <img src="tricked-dice.png" alt="Tricked Dice" class="auth-logo" />
+      <h1>COMPLETAR PERFIL</h1>
+      <p style="color: #f0d8a8; font-size: 0.9rem; margin-top: 10px;">
+        Por normativa legal, debes confirmar tu edad e identidad antes de continuar.
+      </p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #perfilForm="ngForm">
+      <div class="form-group">
+        <label for="dni">DNI / NIE</label>
+        <input type="text" id="dni" name="dni" class="casino-input" [(ngModel)]="dni" required [disabled]="isLoading" placeholder="Ej: 12345678A" />
+      </div>
+
+      <div class="form-group">
+        <label for="fechaNacimiento">Fecha de Nacimiento</label>
+        <input type="date" id="fechaNacimiento" name="fechaNacimiento" class="casino-input" [(ngModel)]="fechaNacimiento" required [disabled]="isLoading" />
+      </div>
+
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" class="play-button" [disabled]="isLoading">
+        {{ isLoading ? 'VERIFICANDO...' : 'CONFIRMAR DATOS' }}
+      </button>
+    </form>
+  </div>
+</div>

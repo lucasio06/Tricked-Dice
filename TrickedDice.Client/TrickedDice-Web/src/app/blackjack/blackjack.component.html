@@ -3,116 +3,129 @@
 <div class="blackjack-container">
   
   <div class="top-actions-bar">
-    <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE SALA</button>
-    <button *ngIf="tableIdInput" class="btn-volver-sala" (click)="volverAlLobby()">💬 VOLVER A LA SALA</button>
+    <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE MESA</button>
+    <button *ngIf="tableIdInput" class="btn-volver-sala" (click)="volverAlLobby()">💬 VOLVER AL LOBBY</button>
   </div>
 
   <div class="blackjack-main">
+    
     <div class="table-felt">
-      <div class="casino-logo">TRICKED DICE</div>
-      
+      <div class="casino-logo">BLACKJACK <span class="logo-accent">PAYS 3 TO 2</span></div>
+      <div class="dealer-shoe"></div>
+
       <div class="zona-crupier">
-        <div class="crupier-badge">
-          🎩 CRUPIER <span *ngIf="mesa && mesa.manoCrupier && mesa.manoCrupier.length > 0">({{ getValorMano(mesa.manoCrupier) }})</span>
+        <div class="crupier-badge" *ngIf="mesa?.manoCrupier?.length">
+          BANCA <span class="crupier-score">{{ getValorMano(mesa!.manoCrupier) }}</span>
         </div>
-        <div class="mano" *ngIf="mesa && mesa.manoCrupier && mesa.manoCrupier.length > 0">
-          <ng-container *ngFor="let carta of mesa.manoCrupier; let i = index; trackBy: trackByIndex">
+        <div class="mano" *ngIf="mesa?.manoCrupier?.length">
+          <ng-container *ngFor="let carta of mesa!.manoCrupier; let i = index; trackBy: trackByIndex">
             <ng-container *ngIf="obtenerDetallesCarta(carta) as cDet">
-              <div class="carta animando-entrada" [ngClass]="cDet.color" [style.animation-delay]="(i * 0.1) + 's'">
-                <div class="valor">{{ cDet.valor }}</div>
-                <div class="palo">{{ cDet.palo }}</div>
+              <div class="playing-card animando-entrada" [ngClass]="cDet.color" [style.animation-delay]="(i * 0.1) + 's'">
+                <div class="card-corner top-left">
+                  <span class="card-val">{{ cDet.valor }}</span>
+                  <span class="card-suit">{{ cDet.simbolo }}</span>
+                </div>
+                <div class="card-center-suit">{{ cDet.simbolo }}</div>
+                <div class="card-corner bottom-right">
+                  <span class="card-val">{{ cDet.valor }}</span>
+                  <span class="card-suit">{{ cDet.simbolo }}</span>
+                </div>
               </div>
             </ng-container>
           </ng-container>
+          <div class="playing-card reverso animando-entrada" *ngIf="mesa!.manoCrupier.length === 1 && getJugadores().length > 0 && !getJugadores()[0].partida.terminada">
+            <div class="card-pattern"></div>
+          </div>
         </div>
-        <div class="mano vacia" *ngIf="!mesa || !mesa.manoCrupier || mesa.manoCrupier.length === 0">
-          <div class="carta-placeholder"></div>
+        <div class="mano vacia" *ngIf="!mesa?.manoCrupier?.length">
+          <div class="playing-card-placeholder">Coloca tu apuesta</div>
         </div>
       </div>
 
-      <div class="multiplayer-section">
-        <div class="zona-jugador" *ngFor="let kvp of asientoss; let i = index; trackBy: trackByIndex" 
-             [ngStyle]="getSeatStyle(i)"
-             [class.is-me]="kvp && kvp[0] === miPartidaId"
-             [class.active-turn]="kvp && kvp[0] === getTurnoActualId()"
-             [class.empty-seat]="!kvp">
+      <div class="multiplayer-section" [class.solo-mode-layout]="isSoloMode">
+        <div class="zona-jugador" *ngFor="let j of getJugadores(); trackBy: trackById" 
+             [class.is-me]="j.id === miPartidaId"
+             [class.active-turn]="j.id === getTurnoActualId()">
              
-          <ng-container *ngIf="kvp">
-            <div class="turn-ring" *ngIf="kvp[0] === getTurnoActualId()"></div>
-            
+          <div class="turn-ring" *ngIf="j.id === getTurnoActualId()"></div>
+          
+          <div class="player-info-container">
             <div class="player-badge">
-              <span class="name">{{ kvp[1].nombreUsuario }}</span>
-              <span class="bet">🪙 {{ kvp[1].monto }}€</span>
+              <span class="name">{{ j.partida.nombreUsuario }}</span>
+              <div class="chips-stack">
+                <div class="chip"></div>
+                <span class="bet">{{ j.partida.monto }}€</span>
+              </div>
             </div>
+            <div class="hand-score" [class.busted-text]="getValorMano(j.partida.manoJugador) > 21" *ngIf="j.partida.manoJugador.length > 0">
+              <span class="score-number">{{ getValorMano(j.partida.manoJugador) }}</span>
+              <span class="status-icon" *ngIf="j.partida.terminada && getValorMano(j.partida.manoJugador) <= 21">✓</span>
+              <span class="status-icon" *ngIf="getValorMano(j.partida.manoJugador) > 21">💥</span>
+            </div>
+          </div>
 
-            <div class="mano">
-              <ng-container *ngFor="let carta of kvp[1].manoJugador; let cIndex = index; trackBy: trackByIndex">
-                <ng-container *ngIf="obtenerDetallesCarta(carta) as cDet">
-                  <div class="carta animando-entrada" 
-                       [ngClass]="cDet.color" 
-                       [class.busted]="getValorMano(kvp[1].manoJugador) > 21"
-                       [style.animation-delay]="(cIndex * 0.1) + 's'">
-                    <div class="valor">{{ cDet.valor }}</div>
-                    <div class="palo">{{ cDet.palo }}</div>
+          <div class="mano cascade">
+            <ng-container *ngFor="let carta of j.partida.manoJugador; let cIndex = index; trackBy: trackByIndex">
+              <ng-container *ngIf="obtenerDetallesCarta(carta) as cDet">
+                <div class="playing-card animando-entrada" 
+                     [ngClass]="cDet.color" 
+                     [class.busted]="getValorMano(j.partida.manoJugador) > 21"
+                     [style.animation-delay]="(cIndex * 0.1) + 's'">
+                  <div class="card-corner top-left">
+                    <span class="card-val">{{ cDet.valor }}</span>
+                    <span class="card-suit">{{ cDet.simbolo }}</span>
                   </div>
-                </ng-container>
+                  <div class="card-center-suit">{{ cDet.simbolo }}</div>
+                  <div class="card-corner bottom-right">
+                    <span class="card-val">{{ cDet.valor }}</span>
+                    <span class="card-suit">{{ cDet.simbolo }}</span>
+                  </div>
+                </div>
               </ng-container>
-            </div>
-
-            <div class="hand-score" [class.busted-text]="getValorMano(kvp[1].manoJugador) > 21" *ngIf="kvp[1].manoJugador && kvp[1].manoJugador.length > 0">
-              <span class="score-number">{{ getValorMano(kvp[1].manoJugador) }}</span>
-              <span class="status-icon" *ngIf="kvp[1].terminada && getValorMano(kvp[1].manoJugador) <= 21">✓</span>
-              <span class="status-icon" *ngIf="getValorMano(kvp[1].manoJugador) > 21">💥</span>
-            </div>
-          </ng-container>
-
-          <ng-container *ngIf="!kvp">
-            <div class="empty-seat-inner">
-              <div class="seat-icon">🪑</div>
-              <span>ASIENTO LIBRE</span>
-            </div>
-          </ng-container>
+            </ng-container>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="bottom-controls">
-      <div class="monto-section" *ngIf="!miPartidaId && !esperandoSiguienteRonda">
-        <div class="fichas-rapidas">
-          <button *ngFor="let valor of cantidadesFijas" class="ficha-rapida"
+    <div class="dashboard-controls">
+      
+      <div class="fase-apuestas" *ngIf="!miPartidaId && !esperandoSiguienteRonda">
+        <div class="fichas-selector">
+          <button *ngFor="let valor of cantidadesFijas" class="ficha-casino"
                   [class.active]="montoApuesta === valor" (click)="montoApuesta = valor">
             {{ valor }}
           </button>
         </div>
+        
         <div class="slider-wrapper">
-          <div class="monto-valor">{{ montoApuesta }} €</div>
           <input type="range" [(ngModel)]="montoApuesta" min="1" [max]="saldoActual > 0 ? saldoActual : 1000" class="monto-slider" />
         </div>
-        <div class="botones-apuesta">
-          <button class="btn-apostar" (click)="apostarYJugar()" [disabled]="bloqueoApuesta">APOSTAR</button>
-          <button class="btn-secundario" (click)="noApostar()">NO APOSTAR ESTA RONDA</button>
+
+        <div class="apuesta-actions">
+          <div class="monto-display">APUESTA: <span>{{ montoApuesta }} €</span></div>
+          <button class="btn-primary-action" (click)="apostarYJugar()" [disabled]="bloqueoApuesta">CONFIRMAR APUESTA</button>
         </div>
       </div>
 
-      <div class="monto-section waiting" *ngIf="!miPartidaId && esperandoSiguienteRonda">
-        <h3 class="panel-title">⏳ ESPERANDO A LA SIGUIENTE RONDA...</h3>
-        <p>Puedes observar la partida o unirte si aún no ha empezado.</p>
-        <button class="btn-apostar mt-3" (click)="esperandoSiguienteRonda = false">APOSTAR AHORA</button>
+      <div class="fase-apuestas waiting-phase" *ngIf="!miPartidaId && esperandoSiguienteRonda">
+        <h3 class="phase-title">⏳ ESPERANDO A LA SIGUIENTE RONDA</h3>
+        <button class="btn-primary-action" (click)="esperandoSiguienteRonda = false">UNIRSE AHORA</button>
       </div>
 
-      <div class="acciones-panel" *ngIf="miPartidaId">
-        <div class="turno-status" [ngClass]="{'is-my-turn': esMiTurno(), 'waiting': !esMiTurno() && getTurnoActualId()}">
-          <span *ngIf="esMiTurno()">🔥 ¡ES TU TURNO, JUEGA! 🔥</span>
-          <span *ngIf="!esMiTurno() && getTurnoActualId()">⏳ Esperando a {{ getNombreTurnoActual() }}...</span>
-          <span *ngIf="!esMiTurno() && !getTurnoActualId()">Repartiendo cartas...</span>
+      <div class="fase-juego" *ngIf="miPartidaId">
+        <div class="status-indicator" [ngClass]="{'is-my-turn': esMiTurno(), 'waiting': !esMiTurno() && getTurnoActualId()}">
+          <span *ngIf="esMiTurno()">TU TURNO</span>
+          <span *ngIf="!esMiTurno() && getTurnoActualId()">ESPERANDO A {{ getNombreTurnoActual() | uppercase }}</span>
+          <span *ngIf="!esMiTurno() && !getTurnoActualId()">RESOLVIENDO MESA...</span>
         </div>
 
-        <div class="botones-container" [class.disabled-panel]="!esMiTurno()">
+        <div class="action-buttons" [class.disabled]="!esMiTurno()">
           <button class="btn-hit" (click)="pedirCarta()" [disabled]="!esMiTurno()">
-            <span class="icon">🃏</span> PEDIR CARTA
+            <span class="btn-icon">👆</span> PEDIR
           </button>
           <button class="btn-stand" (click)="plantarse()" [disabled]="!esMiTurno()">
-            <span class="icon">🛑</span> PLANTARSE
+            <span class="btn-icon">✋</span> PLANTARSE
           </button>
         </div>
       </div>
@@ -132,24 +145,24 @@
 </div>
 
 <div class="modal-overlay" *ngIf="mostrarConfirmacionSalir">
-  <div class="modal-content salir-modal">
-    <div class="modal-icon text-warning">⚠️</div>
-    <h3 class="text-white">¿Abandonar la mesa?</h3>
-    <p class="text-gray mb-4">Saldrás de la sala y perderás tu asiento.</p>
+  <div class="modal-content exit-modal">
+    <div class="modal-icon">🚪</div>
+    <h3>¿Abandonar la mesa?</h3>
+    <p>Saldrás de la sala y perderás tu asiento.</p>
     <div class="modal-buttons">
-      <button class="btn-cerrar" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
-      <button class="btn-stand" (click)="confirmarSalir()">SÍ, SALIR</button>
+      <button class="btn-cancel" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
+      <button class="btn-confirm" (click)="confirmarSalir()">SALIR</button>
     </div>
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="mostrarModalResultado" (click)="cerrarModalResultado()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-icon">{{ resultadoModal.premio > 0 ? '🎉' : '😞' }}</div>
-    <div class="modal-puntos">TÚ: {{ resultadoModal.puntosJugador }} | CRUPIER: {{ resultadoModal.puntosCrupier }}</div>
-    <div class="modal-apuesta">Apuesta: {{ resultadoModal.monto }}€</div>
-    <div class="modal-premio" [ngClass]="resultadoModal.premio > 0 ? 'win' : (resultadoModal.premio < 0 ? 'lose' : 'push')">
-      {{ resultadoModal.texto }}
+<div class="modal-overlay result-overlay" *ngIf="mostrarModalResultado" (click)="cerrarModalResultado()">
+  <div class="modal-content result-card" [ngClass]="resultadoModal.tipo" (click)="$event.stopPropagation()">
+    <div class="result-header">
+      <span class="score-badge">TÚ: {{ resultadoModal.puntosJugador }}</span>
+      <span class="vs">VS</span>
+      <span class="score-badge dealer-badge">BANCA: {{ resultadoModal.puntosCrupier }}</span>
     </div>
+    <div class="result-message">{{ resultadoModal.texto }}</div>
   </div>
 </div>
