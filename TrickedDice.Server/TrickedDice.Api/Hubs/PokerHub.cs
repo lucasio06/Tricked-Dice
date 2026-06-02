@@ -70,7 +70,7 @@ namespace TrickedDice.Api.Hubs
             lock (mesa.LockObj)
             {
                 if (!mesa.Jugadores.TryGetValue(email, out var jugador)) return;
-                if (jugador.Folded || jugador.AllIn) return;
+                if (jugador.Folded || jugador.AllIn || mesa.TurnoActualEmail != email) return;
 
                 jugador.HaActuado = true;
 
@@ -81,6 +81,10 @@ namespace TrickedDice.Api.Hubs
                         break;
 
                     case "check":
+                        if (jugador.ApuestaActual < mesa.ApuestaActual)
+                        {
+                            return;
+                        }
                         break;
 
                     case "call":
@@ -99,6 +103,7 @@ namespace TrickedDice.Api.Hubs
                         break;
 
                     case "raise":
+                        if (cantidad <= 0) return;
                         decimal diferenciaRaise = cantidad - jugador.ApuestaActual;
                         if (jugador.Saldo <= diferenciaRaise)
                         {
@@ -112,6 +117,13 @@ namespace TrickedDice.Api.Hubs
                             jugador.ApuestaActual += diferenciaRaise;
                         }
                         mesa.ApuestaActual = jugador.ApuestaActual;
+                        foreach (var j in mesa.Jugadores.Values)
+                        {
+                            if (j.Email != email && !j.Folded && !j.AllIn)
+                            {
+                                j.HaActuado = false;
+                            }
+                        }
                         break;
                 }
 

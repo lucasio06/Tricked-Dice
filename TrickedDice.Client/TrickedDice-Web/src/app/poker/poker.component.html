@@ -1,20 +1,69 @@
-<app-navbar></app-navbar>
+<app-navbar *ngIf="!soyJugador"></app-navbar>
 
-<div class="poker-container">
+<div class="global-loading" *ngIf="!mesa">
+  <div class="spinner-large"></div>
+  <h2>CONECTANDO AL CASINO...</h2>
+  <p>Preparando la mesa de póker</p>
+  <button class="btn-cancel-loading" (click)="volverAlLobby()">CANCELAR</button>
+</div>
+
+<div class="poker-container" [class.immersive-mode]="soyJugador" *ngIf="mesa">
   
-  <div class="top-actions-bar" *ngIf="soyJugador">
-    <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE MESA</button>
-    <div style="flex-grow: 1;"></div>
-    <button class="btn-ayuda-header">📖 CÓMO JUGAR</button>
+  <div class="top-actions-bar">
+    
+    <div class="left-actions">
+      <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true" *ngIf="soyJugador">🚪 SALIR DE MESA</button>
+      <button class="btn-salir-header" (click)="volverAlLobby()" *ngIf="!soyJugador">⬅ VOLVER AL LOBBY</button>
+    </div>
+
+    <div class="center-actions">
+      <h1 class="casino-title">TEXAS HOLD'EM</h1>
+      <button class="admin-button" (click)="iniciarMano()" [disabled]="procesando" *ngIf="soyJugador && miJugador?.mano?.length === 0 && mesa.fase !== 4">
+        EMPEZAR PARTIDA
+      </button>
+    </div>
+
+    <div class="right-actions">
+      <button class="btn-ayuda-header" (click)="abrirTutorial()">📖 CÓMO JUGAR</button>
+      <button class="btn-ranking-header" (click)="toggleRanking()">🏆 VALOR DE MANOS</button>
+    </div>
+
   </div>
 
-  <h1 class="casino-title">TEXAS HOLD'EM</h1>
+  <div class="history-widget" *ngIf="historialManos.length > 0 && soyJugador">
+    <div class="widget-title">📜 HISTORIAL DE LA SALA</div>
+    <div class="history-content">
+      <div class="history-item" *ngFor="let item of historialManos">
+        <span class="history-id">#{{item.id}}</span>
+        <span class="history-text">{{item.texto}}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ranking-drawer" [class.open]="mostrarRanking">
+    <div class="drawer-header">
+      <h3>JERARQUÍA DE MANOS</h3>
+      <button class="close-drawer" (click)="toggleRanking()">✖</button>
+    </div>
+    
+    <div class="drawer-content">
+      <div class="hand-rank-item"><div class="rank-number">1</div><div class="rank-details"><h4>ESCALERA REAL</h4><div class="demo-cards"><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>A</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>K</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>Q</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>J</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>10</span></div></div></div></div></div>
+      <div class="hand-rank-item"><div class="rank-number">2</div><div class="rank-details"><h4>ESCALERA DE COLOR</h4><div class="demo-cards"><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>9</span></div></div><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>8</span></div></div><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>7</span></div></div><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>6</span></div></div><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>5</span></div></div></div></div></div>
+      <div class="hand-rank-item"><div class="rank-number">3</div><div class="rank-details"><h4>PÓKER</h4><div class="demo-cards"><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>Q</span></div></div><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>Q</span></div></div><div class="playing-card micro black"><div class="card-center suit">♣</div><div class="card-corner top-left"><span>Q</span></div></div><div class="playing-card micro red"><div class="card-center suit">♦</div><div class="card-corner top-left"><span>Q</span></div></div><div class="playing-card micro back"></div></div></div></div>
+      <div class="hand-rank-item"><div class="rank-number">4</div><div class="rank-details"><h4>FULL HOUSE</h4><div class="demo-cards"><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>K</span></div></div><div class="playing-card micro black"><div class="card-center suit">♣</div><div class="card-corner top-left"><span>K</span></div></div><div class="playing-card micro red"><div class="card-center suit">♦</div><div class="card-corner top-left"><span>K</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>2</span></div></div><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>2</span></div></div></div></div></div>
+      <div class="hand-rank-item"><div class="rank-number">5</div><div class="rank-details"><h4>COLOR</h4><div class="demo-cards"><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>K</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>J</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>8</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>4</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>3</span></div></div></div></div></div>
+      <div class="hand-rank-item"><div class="rank-number">6</div><div class="rank-details"><h4>ESCALERA</h4><div class="demo-cards"><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>5</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>4</span></div></div><div class="playing-card micro red"><div class="card-center suit">♦</div><div class="card-corner top-left"><span>3</span></div></div><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>2</span></div></div><div class="playing-card micro black"><div class="card-center suit">♣</div><div class="card-corner top-left"><span>A</span></div></div></div></div></div>
+      <div class="hand-rank-item"><div class="rank-number">7</div><div class="rank-details"><h4>TRÍO</h4><div class="demo-cards"><div class="playing-card micro red"><div class="card-center suit">♦</div><div class="card-corner top-left"><span>7</span></div></div><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>7</span></div></div><div class="playing-card micro black"><div class="card-center suit">♣</div><div class="card-corner top-left"><span>7</span></div></div><div class="playing-card micro back"></div><div class="playing-card micro back"></div></div></div></div>
+      <div class="hand-rank-item"><div class="rank-number">8</div><div class="rank-details"><h4>DOBLE PAREJA</h4><div class="demo-cards"><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>J</span></div></div><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>J</span></div></div><div class="playing-card micro black"><div class="card-center suit">♣</div><div class="card-corner top-left"><span>8</span></div></div><div class="playing-card micro red"><div class="card-center suit">♦</div><div class="card-corner top-left"><span>8</span></div></div><div class="playing-card micro back"></div></div></div></div>
+      <div class="hand-rank-item"><div class="rank-number">9</div><div class="rank-details"><h4>PAREJA</h4><div class="demo-cards"><div class="playing-card micro red"><div class="card-center suit">♥</div><div class="card-corner top-left"><span>A</span></div></div><div class="playing-card micro black"><div class="card-center suit">♣</div><div class="card-corner top-left"><span>A</span></div></div><div class="playing-card micro back"></div><div class="playing-card micro back"></div><div class="playing-card micro back"></div></div></div></div>
+      <div class="hand-rank-item"><div class="rank-number">10</div><div class="rank-details"><h4>CARTA ALTA</h4><div class="demo-cards"><div class="playing-card micro black"><div class="card-center suit">♠</div><div class="card-corner top-left"><span>A</span></div></div><div class="playing-card micro back"></div><div class="playing-card micro back"></div><div class="playing-card micro back"></div><div class="playing-card micro back"></div></div></div></div>
+    </div>
+  </div>
 
   <div class="modal-overlay" *ngIf="mostrarConfirmacionSalir">
     <div class="modal-content exit-modal">
       <div class="modal-icon">🚪</div>
       <h3>¿Abandonar la mesa?</h3>
-      <p>Saldrás de la sala y perderás tu asiento.</p>
       <div class="modal-buttons">
         <button class="btn-cancel" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
         <button class="btn-confirm" (click)="confirmarSalir()">SALIR</button>
@@ -22,25 +71,61 @@
     </div>
   </div>
 
-  <div class="buy-in-overlay" *ngIf="!soyJugador">
-    <div class="modal-content buy-in-modal">
-      <div class="modal-icon">💰</div>
-      <h2>Únete a la Mesa</h2>
-      <p>Introduce tu Buy-in para sentarte:</p>
-      <input type="number" [(ngModel)]="buyIn" class="gold-input">
-      
+  <div class="modal-overlay" *ngIf="mostrarTutorial" (click)="cerrarTutorial()">
+    <div class="modal-content tutorial-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-icon">📖</div>
+        <h2>Cómo jugar al Texas Hold'em</h2>
+        <button class="close-btn" (click)="cerrarTutorial()">✖</button>
+      </div>
+      <div class="tutorial-body">
+        <section><h3 class="gold-text">🎯 El Objetivo</h3><p>Formar la <strong>mejor mano de 5 cartas</strong> combinando tus 2 privadas con las 5 comunitarias.</p></section>
+        <section><h3 class="gold-text">⏱️ Las Fases</h3>
+          <ul>
+            <li><strong>Preflop:</strong> Recibes 2 cartas. Apuestas.</li>
+            <li><strong>Flop:</strong> Se revelan 3 cartas.</li>
+            <li><strong>Turn:</strong> Se revela 1 carta.</li>
+            <li><strong>River:</strong> Se revela la última carta.</li>
+            <li><strong>Showdown:</strong> Se enseñan las cartas y se reparte el bote.</li>
+          </ul>
+        </section>
+        <section><h3 class="gold-text">🎮 Tus Acciones</h3>
+          <div class="action-grid">
+            <div class="action-item"><span class="badge fold">FOLD</span> Retirarte.</div>
+            <div class="action-item"><span class="badge check">CHECK</span> Pasar tu turno.</div>
+            <div class="action-item"><span class="badge call">CALL</span> Igualar la apuesta.</div>
+            <div class="action-item"><span class="badge raise">RAISE</span> Subir la apuesta.</div>
+          </div>
+        </section>
+      </div>
       <div class="modal-buttons">
-        <button class="btn-cancel" (click)="volverAlLobby()" [disabled]="procesando">SALIR</button>
-        <button class="btn-confirm" (click)="sentarse()" [disabled]="procesando">
-          {{ procesando ? 'CARGANDO...' : 'SENTARSE (' + buyIn + '€)' }}
-        </button>
+        <button class="btn-confirm full-width" (click)="cerrarTutorial()">¡ENTENDIDO!</button>
       </div>
     </div>
   </div>
 
-  <div class="admin-panel" *ngIf="soyJugador && (mesa?.fase === 4 || !mesa?.cartasComunitarias?.length)">
-    <button class="admin-button" (click)="iniciarMano()" [disabled]="procesando">
-      <i class="fas fa-play"></i> {{ procesando ? 'REPARTIENDO...' : 'REPARTIR NUEVA MANO' }}
+  <div class="hand-evaluator-widget" *ngIf="soyJugador && miJugador && miJugador.mano.length === 2 && !miJugador.folded">
+    <div class="widget-title">TU JUGADA ACTUAL</div>
+    <ng-container *ngIf="obtenerMejorJugada(miJugador.mano, mesa.cartasComunitarias) as jugada">
+      <div class="widget-value">{{ jugada.texto }}</div>
+      <div class="demo-cards">
+        <ng-container *ngFor="let carta of jugada.cartas; trackBy: trackByIndex">
+          <ng-container *ngIf="obtenerDetallesCarta(carta) as cDet">
+            <div class="playing-card micro" [ngClass]="cDet.color">
+              <div class="card-center suit">{{cDet.palo}}</div>
+              <div class="card-corner top-left"><span>{{cDet.valor}}</span></div>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="showdown-banner" *ngIf="mesa.fase === 4">
+    <h2>FIN DE LA MANO</h2>
+    <p class="winner-text">{{ mesa.ultimoMensaje || 'Repartiendo el bote...' }}</p>
+    <button class="btn-play-again" (click)="iniciarMano()" [disabled]="procesando" *ngIf="soyJugador">
+      REPARTIR NUEVA MANO
     </button>
   </div>
 
@@ -51,34 +136,30 @@
       <div class="table-center">
         <div class="pot-display">
           <span>BOTE CENTRAL</span>
-          <span class="gold-text">{{ mesa?.bote || 0 }} €</span>
+          <span class="gold-text">{{ mesa.bote || 0 }} €</span>
         </div>
         
         <div class="community-cards">
-          <ng-container *ngIf="!mesa?.cartasComunitarias?.length">
+          <ng-container *ngIf="!mesa.cartasComunitarias.length">
             <div class="card-slot empty" *ngFor="let i of [1,2,3,4,5]"></div>
           </ng-container>
 
-          <ng-container *ngFor="let carta of mesa?.cartasComunitarias; let i = index; trackBy: trackByIndex">
+          <ng-container *ngFor="let carta of mesa.cartasComunitarias; let i = index; trackBy: trackByIndex">
             <ng-container *ngIf="obtenerDetallesCarta(carta) as cDet">
               <div class="playing-card animando-entrada" [ngClass]="cDet.color" [style.animation-delay]="(i * 0.1) + 's'">
-                <div class="card-corner top-left">
-                  <span>{{cDet.valor}}</span><span class="suit">{{cDet.palo}}</span>
-                </div>
+                <div class="card-corner top-left"><span>{{cDet.valor}}</span><span class="suit">{{cDet.palo}}</span></div>
                 <div class="card-center suit">{{cDet.palo}}</div>
-                <div class="card-corner bottom-right">
-                  <span>{{cDet.valor}}</span><span class="suit">{{cDet.palo}}</span>
-                </div>
+                <div class="card-corner bottom-right"><span>{{cDet.valor}}</span><span class="suit">{{cDet.palo}}</span></div>
               </div>
             </ng-container>
           </ng-container>
         </div>
       </div>
 
-      <div class="players-container" *ngIf="mesa">
+      <div class="players-container">
         <div class="player-seat" 
              *ngFor="let jugador of jugadoresLista"
-             [class.active-turn]="mesa.turnoActualEmail === jugador.email"
+             [class.active-turn]="mesa.turnoActualEmail === jugador.email && mesa.fase !== 4"
              [class.folded]="jugador.folded"
              [class.is-me]="jugador.email === miEmail">
           
@@ -92,7 +173,6 @@
 
           <div class="player-cards">
             <div class="card-wrapper" *ngFor="let carta of jugador.mano; let i = index; trackBy: trackByIndex" [style.z-index]="i">
-              
               <ng-container *ngIf="jugador.email === miEmail || mesa.fase === 4">
                 <ng-container *ngIf="obtenerDetallesCarta(carta) as cDet">
                   <div class="playing-card mini animando-entrada" [ngClass]="cDet.color" [style.animation-delay]="(i * 0.15) + 's'">
@@ -106,7 +186,6 @@
               <ng-container *ngIf="jugador.email !== miEmail && mesa.fase !== 4">
                 <div class="playing-card mini back animando-entrada" [style.animation-delay]="(i * 0.15) + 's'"></div>
               </ng-container>
-
             </div>
           </div>
         </div>
@@ -114,34 +193,63 @@
     </div>
   </div>
 
-  <div class="action-bar-wrapper" *ngIf="soyJugador && esMiTurno">
+  <div class="action-bar-wrapper">
     <div class="processing-indicator" *ngIf="procesando">
-      <div class="spinner"></div><span>PROCESANDO APUESTA...</span>
+      <div class="spinner"></div><span>PROCESANDO...</span>
     </div>
 
-    <div class="action-panel" [class.is-processing]="procesando">
-      <div class="game-controls">
-        <button class="btn-action btn-fold" [disabled]="procesando" (click)="enviarAccion('fold')">
-          <span>FOLD</span><small>Retirarse</small>
-        </button>
-        <button class="btn-action btn-check" [disabled]="procesando" (click)="enviarAccion('check')">
-          <span>CHECK</span><small>Pasar</small>
-        </button>
-        <button class="btn-action btn-call" [disabled]="procesando" (click)="enviarAccion('call')">
-          <span>CALL</span><small>{{mesa?.apuestaActual || 0}} €</small>
-        </button>
-        
-        <div class="raise-group">
-          <div class="raise-input-wrapper">
-            <button class="raise-adjust" [disabled]="procesando" (click)="disminuirRaise()">-</button>
-            <input type="number" [(ngModel)]="cantidadRaise" min="{{mesa?.apuestaActual || 0}}" [disabled]="procesando">
-            <button class="raise-adjust" [disabled]="procesando" (click)="aumentarRaise()">+</button>
+    <div class="action-panel buy-in-panel" [class.is-processing]="procesando" *ngIf="!soyJugador">
+      <h3 class="gold-text" style="margin: 0 0 15px 0; letter-spacing: 1px;">COMPRA DE FICHAS (BUY-IN)</h3>
+      <div class="game-controls" style="flex-direction: column;">
+        <div class="quick-chips" style="display: flex; gap: 10px; margin-bottom: 12px;">
+          <button class="chip-btn" (click)="buyIn = 100" [class.selected]="buyIn === 100">100 €</button>
+          <button class="chip-btn" (click)="buyIn = 500" [class.selected]="buyIn === 500">500 €</button>
+          <button class="chip-btn" (click)="buyIn = 1000" [class.selected]="buyIn === 1000">1000 €</button>
+        </div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <div class="raise-input-wrapper" style="flex-direction: row; align-items: center; gap: 10px;">
+            <input type="number" [(ngModel)]="buyIn" class="gold-input" style="height: 46px; width: 120px; font-size: 1.3rem; margin: 0;" [disabled]="procesando">
+            <span style="color: #d4af37; font-weight: 900; font-size: 1.3rem;">€</span>
           </div>
-          <button class="btn-action btn-raise" [disabled]="procesando" (click)="enviarAccion('raise')">
-            <span>RAISE</span><small>Subir</small>
+          <button class="btn-action btn-call" [disabled]="procesando || buyIn <= 0" (click)="sentarse()" style="width: auto; height: 46px; padding: 0 30px; background: linear-gradient(145deg, #114226, #072213); border-color: #4ade80; color: #4ade80;">
+            <span>SENTARSE</span>
           </button>
         </div>
       </div>
+    </div>
+
+    <div class="action-panel game-dock-panel" [class.is-processing]="procesando" *ngIf="soyJugador && esMiTurno && mesa.fase !== 4 && miJugador && !miJugador.allIn && !miJugador.folded">
+      <div class="game-controls">
+        <button class="btn-action btn-fold" [disabled]="procesando" (click)="enviarAccion('fold')"><span>FOLD</span><small>Retirarse</small></button>
+        <button class="btn-action btn-check" [disabled]="procesando" (click)="enviarAccion('check')"><span>CHECK</span><small>Pasar</small></button>
+        <button class="btn-action btn-call" [disabled]="procesando" (click)="enviarAccion('call')"><span>CALL</span><small>{{mesa.apuestaActual || 0}} €</small></button>
+        
+        <div class="raise-group">
+          
+          <div class="raise-slider-popover">
+            <div class="slider-header">
+              <input type="number" [(ngModel)]="cantidadRaise" min="{{mesa.apuestaActual || 0}}" [disabled]="procesando" class="raise-num-input">
+              <span class="currency-label">€</span>
+            </div>
+            <div class="slider-body">
+              <button class="raise-adjust-btn" (click)="aumentarRaise()">+</button>
+              <input type="range" class="vertical-range" [min]="mesa.apuestaActual || 0" [max]="miJugador?.saldo || 5000" [(ngModel)]="cantidadRaise" step="10">
+              <button class="raise-adjust-btn" (click)="disminuirRaise()">-</button>
+            </div>
+          </div>
+
+          <button class="btn-action btn-raise" [disabled]="procesando" (click)="enviarAccion('raise')"><span>RAISE</span><small>Subir</small></button>
+          <button class="btn-action btn-allin" [disabled]="procesando" (click)="hacerAllIn()"><span>ALL IN</span><small>Todo</small></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-panel waiting-panel" *ngIf="soyJugador && miJugador && miJugador.allIn && mesa.fase !== 4">
+      <h3 style="color: #cca45a; margin: 15px 20px; text-shadow: 0 0 10px rgba(204,164,90,0.5);">🔥 ¡ESTÁS ALL‑IN! Suerte... 🔥</h3>
+    </div>
+
+    <div class="action-panel waiting-panel" *ngIf="soyJugador && !esMiTurno && mesa.fase !== 4 && miJugador && !miJugador.folded && !miJugador.allIn && miJugador.mano.length > 0">
+      <h3 style="color: #aaa; margin: 15px 20px;">Esperando el turno de los demás...</h3>
     </div>
   </div>
 

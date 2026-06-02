@@ -45,6 +45,7 @@ namespace TrickedDice.Api.Services
                 mesa.Bote = 0;
                 mesa.Fase = PokerFase.Preflop;
                 mesa.ApuestaActual = 0;
+                mesa.UltimoMensaje = "";
 
                 foreach (var jugador in mesa.Jugadores.Values)
                 {
@@ -151,6 +152,7 @@ namespace TrickedDice.Api.Services
             if (resetearRonda || indiceActual == -1) 
                 indiceActual = -1;
 
+            bool encontrado = false;
             for (int i = 1; i <= mesa.OrdenJugadores.Count; i++)
             {
                 int siguienteIndice = (indiceActual + i) % mesa.OrdenJugadores.Count;
@@ -160,7 +162,17 @@ namespace TrickedDice.Api.Services
                 if (!j.Folded && !j.AllIn)
                 {
                     mesa.TurnoActualEmail = siguienteEmail;
+                    encontrado = true;
                     return;
+                }
+            }
+
+            if (!encontrado)
+            {
+                mesa.TurnoActualEmail = "";
+                if (mesa.Fase != PokerFase.Showdown)
+                {
+                    AvanzarTurno(mesa);
                 }
             }
         }
@@ -169,29 +181,70 @@ namespace TrickedDice.Api.Services
         {
             var jugadoresActivos = mesa.Jugadores.Values.Where(j => !j.Folded).ToList();
             
+            if (jugadoresActivos.Count == 0)
+            {
+                mesa.UltimoMensaje = "Te has retirado. Fin de la mano.";
+                mesa.Bote = 0;
+                mesa.TurnoActualEmail = "";
+                return;
+            }
+
+            if (jugadoresActivos.Count == 1)
+            {
+                FinalizarMano(mesa, jugadoresActivos[0].Email);
+                return;
+            }
+            
             long maxScore = -1;
             List<string> ganadores = new();
+            string mejorManoNombre = "";
 
             foreach (var j in jugadoresActivos)
             {
-                var evaluacion = EvaluarManoHoldem(j.Mano, mesa.CartasComunitarias);
-                
-                if (evaluacion.Puntuacion > maxScore)
+                try 
                 {
-                    maxScore = evaluacion.Puntuacion;
-                    ganadores.Clear();
-                    ganadores.Add(j.Email);
+                    var evaluacion = EvaluarManoHoldem(j.Mano, mesa.CartasComunitarias);
+                    if (evaluacion.Puntuacion > maxScore)
+                    {
+                        maxScore = evaluacion.Puntuacion;
+                        ganadores.Clear();
+                        ganadores.Add(j.Email);
+                        mejorManoNombre = evaluacion.NombreMano;
+                    }
+                    else if (evaluacion.Puntuacion == maxScore)
+                    {
+                        ganadores.Add(j.Email);
+                    }
                 }
-                else if (evaluacion.Puntuacion == maxScore)
+                catch (Exception)
                 {
-                    ganadores.Add(j.Email);
                 }
             }
 
-            decimal premioPorGanador = mesa.Bote / ganadores.Count;
-            foreach (var emailGanador in ganadores)
+            if (ganadores.Any())
             {
-                mesa.Jugadores[emailGanador].Saldo += premioPorGanador;
+                decimal premioPorGanador = mesa.Bote / ganadores.Count;
+                List<string> nombresGanadores = new();
+                
+                foreach (var emailGanador in ganadores)
+                {
+                    var ganador = mesa.Jugadores[emailGanador];
+                    ganador.Saldo += premioPorGanador;
+                    nombresGanadores.Add(ganador.NombreUsuario);
+                }
+
+                if (ganadores.Count == 1)
+                {
+                    mesa.UltimoMensaje = $"{nombresGanadores[0]} GANA {mesa.Bote}€ con {mejorManoNombre}";
+                }
+                else
+                {
+                    mesa.UltimoMensaje = $"¡EMPATE! Bote repartido con {mejorManoNombre}";
+                }
+            }
+            else
+            {
+                mesa.UltimoMensaje = "Error en el Showdown. Se devuelve el dinero.";
             }
 
             mesa.Bote = 0;
@@ -210,6 +263,7 @@ namespace TrickedDice.Api.Services
             if (mesa.Jugadores.TryGetValue(emailGanadorPorAbandono, out var ganador))
             {
                 ganador.Saldo += mesa.Bote;
+                mesa.UltimoMensaje = $"{ganador.NombreUsuario} GANA {mesa.Bote}€ (Los demás se retiraron)";
             }
 
             mesa.Bote = 0;
@@ -331,6 +385,7 @@ namespace TrickedDice.Api.Services
         public decimal ApuestaActual { get; set; }
         public PokerFase Fase { get; set; }
         public string TurnoActualEmail { get; set; } = string.Empty;
+        public string UltimoMensaje { get; set; } = string.Empty;
         
         public readonly object LockObj = new object();
     }
