@@ -90,6 +90,14 @@
             </div>
           </div>
 
+          <div class="form-group full-width">
+            <label style="display: flex; justify-content: space-between;">
+              <span>Límite de Jugadores</span>
+              <span style="color: #a742f5; font-weight: bold; font-size: 1.2rem;">{{maxJugadores}} <i class="icon" style="font-size:0.9rem;">👥</i></span>
+            </label>
+            <input type="range" min="2" max="8" [(ngModel)]="maxJugadores" class="casino-slider">
+          </div>
+
           <div class="form-group lock-group full-width">
             <label class="custom-checkbox">
               <input type="checkbox" [(ngModel)]="esPrivada">

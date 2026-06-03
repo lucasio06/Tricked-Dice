@@ -138,6 +138,19 @@ export class RoomComponent implements OnInit, OnDestroy {
         this.scrollToBottom();
       });
     });
+
+    this.signalrService.on('PlayerKicked', (playerName: string, baneado: boolean) => {
+      this.zone.run(() => {
+        if (this.currentUser === playerName) {
+          this.toast.error(baneado ? 'Has sido BANEADO de la sala.' : 'Has sido expulsado de la sala.');
+          this.salirDeSala();
+        } else if (this.room) {
+          this.room.jugadores = this.room.jugadores.filter(j => j.trim().toLowerCase() !== playerName.trim().toLowerCase());
+          this.toast.info(baneado ? `🔨 ${playerName} ha sido baneado permanentemente.` : `👢 ${playerName} ha sido expulsado.`);
+          this.actualizarEsCreador();
+        }
+      });
+    });
   }
 
   async enviarMensaje() {
@@ -292,5 +305,20 @@ export class RoomComponent implements OnInit, OnDestroy {
         this.chatContainer.nativeElement.scrollTop = this.chatContainer.nativeElement.scrollHeight;
       } catch (err) {}
     }, 50);
+  }
+
+  async expulsarJugador(jugador: string, banear: boolean) {
+    if (!this.isCreator || jugador === this.currentUser) return;
+    
+    const accion = banear ? 'BANEAR (no podrá volver a entrar)' : 'EXPULSAR';
+    if (confirm(`¿Estás seguro de que quieres ${accion} a ${jugador}?`)) {
+      try {
+        await this.signalrService.invoke('KickPlayer', this.roomId, jugador, banear);
+      } catch (err: any) {
+        let errorMsg = err?.message || 'Error al expulsar.';
+        if (errorMsg.includes('HubException:')) errorMsg = errorMsg.split('HubException:')[1].trim();
+        this.toast.error(errorMsg);
+      }
+    }
   }
 }

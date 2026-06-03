@@ -15,6 +15,25 @@
       <div class="info-item">👥 Jugadores: <strong>{{ (room.jugadores || []).length }}/{{ room.maxJugadores }}</strong></div>
     </div>
 
+    <div class="players-panel glass-panel">
+      <div class="panel-header">
+        <h3><i class="icon">🧑‍🤝‍🧑</i> Jugadores ({{room.jugadores.length}}/{{room.maxJugadores}})</h3>
+      </div>
+      <div class="players-list scrollable-list">
+        <div class="player-item" *ngFor="let p of room.jugadores">
+          <div class="p-info">
+            <span>{{ p }}</span>
+            <span class="crown-icon" *ngIf="p === room.creador" title="Creador de la Sala">👑</span>
+            <span class="me-tag" *ngIf="p === currentUser">(Tú)</span>
+          </div>
+          <div class="admin-actions" *ngIf="isCreator && p !== currentUser">
+            <button class="action-btn btn-kick" (click)="expulsarJugador(p, false)" title="Expulsar de la sala">👢 Kick</button>
+            <button class="action-btn btn-ban" (click)="expulsarJugador(p, true)" title="Banear permanentemente">🔨 Ban</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="players-section">
       <h2 class="section-title">JUGADORES EN SALA</h2>
       <div class="players-grid">

@@ -23,6 +23,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   juegoSeleccionado: string = 'Ruleta';
   esPrivada: boolean = false;
   passwordCreacion: string = '';
+  maxJugadores: number = 8;
 
   newFriendUsername: string = '';
 
@@ -102,7 +103,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
     this.procesando = true;
     try {
-      const room = await this.signalrService.invoke('CreateRoom', this.nombreMesa, this.juegoSeleccionado, this.esPrivada, this.passwordCreacion || '');
+      const room = await this.signalrService.invoke('CreateRoom', this.nombreMesa, this.juegoSeleccionado, this.esPrivada, this.passwordCreacion || '', this.maxJugadores);
 
       this.zone.run(() => {
         this.toast.success(`Sala "${room.nombre || room.Nombre}" creada.`);

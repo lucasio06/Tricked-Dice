@@ -645,3 +645,32 @@ i.icon {
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
 @keyframes pulse { 50% { opacity: 0.5; } }
+
+.casino-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  outline: none;
+  margin-top: 10px;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: $gold;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba($gold, 0.6);
+    transition: transform 0.2s;
+  }
+  
+  &::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+    background: $neon-purple;
+    box-shadow: 0 0 15px rgba($neon-purple, 0.8);
+  }
+}
