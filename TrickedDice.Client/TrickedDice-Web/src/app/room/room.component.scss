@@ -9,17 +9,18 @@ $text-light: #f0d8a8;
 
 .room-container {
   min-height: 100vh;
-  padding: 120px 20px 60px;
-  background: linear-gradient(135deg, #0f051d 0%, #1a0b2e 50%, #090411 100%);
+  padding: 80px 20px 40px;
+  background: radial-gradient(circle at center top, #240b45 0%, #0f051d 100%);
   font-family: 'Montserrat', sans-serif;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .room-card {
-  max-width: 800px;
   width: 100%;
+  max-width: 800px;
+  margin-top: 20px;
   background: $bg-card;
   border: 2px solid $gold;
   border-radius: 30px;
@@ -214,6 +215,43 @@ $text-light: #f0d8a8;
   border-radius: 40px;
   color: $gold;
   font-size: 0.9rem;
+}
+
+.chat-messages {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-message {
+  font-size: 0.95rem;
+  line-height: 1.4;
+
+  .chat-author {
+    font-weight: 800;
+    color: $neon-purple;
+    margin-right: 6px;
+  }
+
+  .chat-text {
+    color: #e0e0e0;
+  }
+
+  &.is-me {
+    .chat-author {
+      color: $gold;
+    }
+    .chat-text {
+      color: #ffffff;
+    }
+  }
 }
 
 .modal-overlay {

@@ -1,0 +1,19 @@
+{
+  "/api": {
+    "target": "http://localhost:5069",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/hubs": {
+    "target": "http://localhost:5069",
+    "secure": false,
+    "ws": true,
+    "changeOrigin": true
+  },
+  "/pokerHub": {
+    "target": "http://localhost:5069",
+    "secure": false,
+    "ws": true,
+    "changeOrigin": true
+  }
+}

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 
 namespace TrickedDice.Api.Hubs
 {
@@ -26,13 +27,13 @@ namespace TrickedDice.Api.Hubs
             get
             {
                 if (Context.User == null) return null;
-                var name = Context.User.FindFirst(ClaimTypes.Name)?.Value;
+                var name = Context.User.FindFirst("name")?.Value;
                 if (!string.IsNullOrEmpty(name)) return name;
-                name = Context.User.FindFirst("unique_name")?.Value;
+                
+                name = Context.User.FindFirst(ClaimTypes.Name)?.Value;
                 if (!string.IsNullOrEmpty(name)) return name;
+                
                 name = Context.User.FindFirst(ClaimTypes.Email)?.Value;
-                if (!string.IsNullOrEmpty(name)) return name;
-                name = Context.User.FindFirst("email")?.Value;
                 return name ?? Context.ConnectionId;
             }
         }
@@ -112,11 +113,11 @@ namespace TrickedDice.Api.Hubs
             }
         }
 
-        public async Task CreateRoom(string nombreMesa, string juegoSeleccionado, bool esPrivada, string password)
+        public async Task<Room> CreateRoom(string nombreMesa, string juegoSeleccionado, bool esPrivada, string password)
         {
             var room = new Room
             {
-                Id = Guid.NewGuid().ToString(),
+                id = Guid.NewGuid().ToString()[..8].ToUpper(),
                 nombre = nombreMesa,
                 juego = juegoSeleccionado,
                 esPrivada = esPrivada,
@@ -131,41 +132,35 @@ namespace TrickedDice.Api.Hubs
             UserRooms[Context.ConnectionId] = room.Id;
             await Groups.AddToGroupAsync(Context.ConnectionId, $"room_{room.Id}");
             
-            await Clients.Caller.SendAsync("RoomCreated", room);
             await BroadcastRooms();
+            return room;
         }
 
-        public async Task JoinRoom(string roomId, string password)
+        public async Task<Room> JoinRoom(string roomId, string password)
         {
             if (!Rooms.TryGetValue(roomId, out var room))
-            {
-                await Clients.Caller.SendAsync("Error", "La sala no existe.");
-                return;
-            }
-
-            if (room.esPrivada && room.contrasena != password)
-            {
-                await Clients.Caller.SendAsync("Error", "Contraseña incorrecta.");
-                return;
-            }
-
-            if (room.jugadores.Count >= room.maxJugadores)
-            {
-                await Clients.Caller.SendAsync("Error", "La sala está llena.");
-                return;
-            }
+                throw new HubException("La sala no existe.");
 
             var userName = UserName ?? "Anónimo";
-            if (!room.jugadores.Contains(userName))
+            bool alreadyInRoom = room.jugadores.Contains(userName);
+
+            if (!alreadyInRoom && room.esPrivada && room.contrasena != password)
+                throw new HubException("Contraseña incorrecta.");
+
+            if (!alreadyInRoom && room.jugadores.Count >= room.maxJugadores)
+                throw new HubException("La sala está llena.");
+
+            if (!alreadyInRoom)
             {
                 room.jugadores.Add(userName);
+                await Clients.Group($"room_{roomId}").SendAsync("PlayerJoined", userName);
             }
             
             UserRooms[Context.ConnectionId] = roomId;
             await Groups.AddToGroupAsync(Context.ConnectionId, $"room_{roomId}");
-            await Clients.Caller.SendAsync("RoomJoined", room);
-            await Clients.Group($"room_{roomId}").SendAsync("PlayerJoined", userName);
+            
             await BroadcastRooms();
+            return room;
         }
 
         public async Task LeaveRoom(string roomId)
@@ -223,12 +218,12 @@ namespace TrickedDice.Api.Hubs
         {
             var roomsList = Rooms.Values.Select(r => new
             {
-                r.Id,
-                r.nombre,
-                r.juego,
-                r.esPrivada,
-                r.creador,
-                r.maxJugadores,
+                id = r.Id,
+                nombre = r.nombre,
+                juego = r.juego,
+                esPrivada = r.esPrivada,
+                creador = r.creador,
+                maxJugadores = r.maxJugadores,
                 jugadores = r.jugadores
             });
             await Clients.All.SendAsync("RoomsList", roomsList);
@@ -241,6 +236,11 @@ namespace TrickedDice.Api.Hubs
 
             var usersList = OnlineUsers.Values.Distinct().ToList();
             await Clients.All.SendAsync("OnlineUsers", usersList);
+            
+            await BroadcastRooms();
+            await GetPendingRequests();
+            await GetFriendList();
+            
             await base.OnConnectedAsync();
         }
 
@@ -261,14 +261,16 @@ namespace TrickedDice.Api.Hubs
 
     public class Room
     {
-        public string Id { get; set; } = "";
-        public string nombre { get; set; } = "";
-        public string juego { get; set; } = "";
-        public bool esPrivada { get; set; }
-        public string contrasena { get; set; } = "";
-        public string creador { get; set; } = "";
-        public string creadorId { get; set; } = "";
-        public List<string> jugadores { get; set; } = new();
-        public int maxJugadores { get; set; }
+        [JsonPropertyName("id")] public string id { get; set; } = "";
+        [JsonIgnore] public string Id => id;
+        
+        [JsonPropertyName("nombre")] public string nombre { get; set; } = "";
+        [JsonPropertyName("juego")] public string juego { get; set; } = "";
+        [JsonPropertyName("esPrivada")] public bool esPrivada { get; set; }
+        [JsonPropertyName("contrasena")] public string contrasena { get; set; } = "";
+        [JsonPropertyName("creador")] public string creador { get; set; } = "";
+        [JsonPropertyName("creadorId")] public string creadorId { get; set; } = "";
+        [JsonPropertyName("jugadores")] public List<string> jugadores { get; set; } = new();
+        [JsonPropertyName("maxJugadores")] public int maxJugadores { get; set; }
     }
 }

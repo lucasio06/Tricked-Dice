@@ -34,6 +34,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.usuarioSub = this.authService.usuario$.subscribe(usuario => {
       this.usuarioActivo = usuario;
       if (usuario) {
+        if (usuario.dni && usuario.dni.startsWith('TMP')) {
+          this.router.navigate(['/completar-perfil']);
+          return;
+        }
         this.cargarJuegos();
       } else {
         this.juegos = JUEGOS_PUBLICOS;
@@ -49,7 +53,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.api.get<string[]>('/juegos')
       .subscribe({
         next: (res) => this.juegos = res,
-        error: (err) => console.error('Error cargando juegos:', err)
+        error: (err) => console.error(err)
       });
   }
 

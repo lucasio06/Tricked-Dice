@@ -37,7 +37,7 @@ namespace TrickedDice.Api.Repositories
         public async Task<UsuarioPerfilDto?> GetUsuarioPorEmailAsync(string email)
         {
             using var connection = new SqlConnection(_connectionString);
-            var sql = "SELECT ID_USUARIO as IdUsuario, NOMBRE as Nombre, EMAIL as Email, CONTRASENA as Contrasena, SALDO as Saldo, BANEADO as Baneado, ROL as Rol FROM USUARIO WHERE EMAIL = @Email";
+            var sql = "SELECT ID_USUARIO as IdUsuario, NOMBRE as Nombre, EMAIL as Email, CONTRASENA as Contrasena, SALDO as Saldo, BANEADO as Baneado, ROL as Rol, DNI as Dni FROM USUARIO WHERE EMAIL = @Email";
             return await connection.QuerySingleOrDefaultAsync<UsuarioPerfilDto>(sql, new { Email = email });
         }
 

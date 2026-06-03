@@ -10,6 +10,7 @@ export interface UsuarioPerfil {
   email: string;
   saldo: number;
   rol?: string;
+  dni?: string;
 }
 
 export interface RecargarResponse {

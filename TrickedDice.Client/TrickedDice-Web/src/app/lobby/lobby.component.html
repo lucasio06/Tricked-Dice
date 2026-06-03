@@ -1,134 +1,181 @@
 <app-navbar></app-navbar>
 
-<div class="lobby-container">
-  <div class="lobby-grid">
+<div class="global-loading" *ngIf="procesando && !showPasswordModal">
+  <div class="spinner-large"></div>
+  <h2>CARGANDO MESA...</h2>
+</div>
 
+<div class="lobby-container">
+  <div class="lobby-header">
+    <h1 class="glow-text">LOBBY PRINCIPAL</h1>
+    <p>Encuentra una mesa o crea la tuya propia para empezar a apostar.</p>
+  </div>
+
+  <div class="lobby-grid">
     <div class="lobby-sidebar">
-      <div class="card friends-card">
-        <h3>Amigos</h3>
+      <div class="card friends-card glass-panel">
+        <div class="card-header">
+          <h3><i class="icon">👥</i> Mis Amigos</h3>
+        </div>
+        
         <div class="add-friend-section">
-          <input type="text" [(ngModel)]="newFriendUsername" placeholder="Nombre de usuario" class="casino-input">
-          <button class="btn-primary" (click)="sendFriendRequest()">Añadir</button>
+          <input type="text" [(ngModel)]="newFriendUsername" placeholder="Nombre de usuario..." class="casino-input">
+          <button class="btn-primary btn-sm" (click)="sendFriendRequest()">Añadir</button>
         </div>
 
         <div class="requests-list" *ngIf="pendingRequests.length > 0">
-          <h4>Solicitudes Pendientes</h4>
-          <div *ngFor="let req of pendingRequests" class="friend-item">
+          <h4 class="section-subtitle">Solicitudes Pendientes</h4>
+          <div *ngFor="let req of pendingRequests" class="friend-item request-item">
             <span class="friend-name">{{ req }}</span>
             <div class="actions">
-              <button class="btn-accept" (click)="acceptRequest(req)">✓</button>
-              <button class="btn-reject" (click)="rejectRequest(req)">✗</button>
+              <button class="btn-icon btn-accept" (click)="acceptRequest(req)" title="Aceptar">✓</button>
+              <button class="btn-icon btn-reject" (click)="rejectRequest(req)" title="Rechazar">✗</button>
             </div>
           </div>
         </div>
 
         <div class="friends-list">
-          <h4>Mi Lista</h4>
-          <div *ngFor="let friend of friendList" class="friend-item">
-            <div class="friend-info">
-              <span class="status-dot" [ngClass]="isOnline(friend) ? 'online' : 'offline'"></span>
-              <span class="friend-name">{{ friend }}</span>
+          <h4 class="section-subtitle">Conectados</h4>
+          <div class="scrollable-list">
+            <div *ngFor="let friend of friendList" class="friend-item">
+              <div class="friend-info">
+                <span class="status-dot" [ngClass]="isOnline(friend) ? 'online' : 'offline'"></span>
+                <span class="friend-name">{{ friend }}</span>
+              </div>
+            </div>
+            <div *ngIf="friendList.length === 0" class="empty-msg">
+              <p>No tienes amigos añadidos aún.</p>
             </div>
           </div>
-          <p *ngIf="friendList.length === 0" class="empty-text">No tienes amigos añadidos.</p>
         </div>
       </div>
     </div>
 
     <div class="lobby-main">
-      <div class="card create-room-card">
-        <h3>Crear Mesa</h3>
-        <div class="create-room-form">
-          <div class="form-group">
-            <label>Nombre de la mesa</label>
-            <input type="text" [(ngModel)]="nombreMesa" class="casino-input" placeholder="Ej: Mesa de grandes apuestas">
+      
+      <div class="card create-room-card glass-panel highlight-panel">
+        <div class="card-header">
+          <h3><i class="icon">🎲</i> Crear Nueva Mesa</h3>
+        </div>
+        
+        <div class="create-form-grid">
+          
+          <div class="form-group full-width">
+            <label>Nombre de la Sala</label>
+            <input type="text" [(ngModel)]="nombreMesa" placeholder="Ej: Los VIPs de ASIR..." class="casino-input">
           </div>
           
-          <div class="form-group">
-            <label>Juego</label>
-            <select [(ngModel)]="juegoSeleccionado" class="casino-select">
-              <option value="Ruleta">Ruleta</option>
-              <option value="Blackjack">Blackjack</option>
-              <option value="Poker">Poker</option>
-            </select>
+          <div class="form-group full-width">
+            <label>Selecciona el Juego</label>
+            <div class="game-selector">
+              
+              <label class="game-card" [class.active]="juegoSeleccionado === 'Ruleta'">
+                <input type="radio" name="juego" value="Ruleta" [(ngModel)]="juegoSeleccionado">
+                <span class="g-icon">🎰</span>
+                <span class="g-name">Ruleta</span>
+              </label>
+              
+              <label class="game-card" [class.active]="juegoSeleccionado === 'Blackjack'">
+                <input type="radio" name="juego" value="Blackjack" [(ngModel)]="juegoSeleccionado">
+                <span class="g-icon">🃏</span>
+                <span class="g-name">Blackjack</span>
+              </label>
+              
+              <label class="game-card" [class.active]="juegoSeleccionado === 'Poker'">
+                <input type="radio" name="juego" value="Poker" [(ngModel)]="juegoSeleccionado">
+                <span class="g-icon">♠️</span>
+                <span class="g-name">Póker</span>
+              </label>
+
+            </div>
           </div>
 
-          <div class="form-group checkbox-group">
-            <label class="checkbox-container">
+          <div class="form-group lock-group full-width">
+            <label class="custom-checkbox">
               <input type="checkbox" [(ngModel)]="esPrivada">
-              <span class="checkmark"></span>
-              Mesa Privada (con contraseña)
+              <div class="checkmark"></div>
+              <span class="label-text">Mesa Privada (Con clave)</span>
             </label>
+            
+            <div class="password-reveal" [class.show]="esPrivada">
+              <input type="password" *ngIf="esPrivada" [(ngModel)]="passwordCreacion" placeholder="Escribe una contraseña secreta..." class="casino-input">
+            </div>
           </div>
 
-          <div class="form-group" *ngIf="esPrivada">
-            <label>Contraseña</label>
-            <input type="password" [(ngModel)]="passwordCreacion" class="casino-input" placeholder="Contraseña">
+          <div class="form-action full-width">
+            <button class="btn-primary btn-glow" (click)="crearMesa()" [disabled]="procesando">
+              <span class="btn-text">CREAR MESA</span>
+            </button>
           </div>
-
-          <button class="btn-create" (click)="crearMesa()" [disabled]="!nombreMesa">Crear Mesa</button>
+          
         </div>
       </div>
 
-      <div class="card available-rooms-card">
-        <h3>Mesas Disponibles</h3>
-        <div class="rooms-grid">
-          <div *ngFor="let mesa of mesasDisponibles" class="room-item">
-            <div class="room-header">
-              <span class="room-name">{{ mesa.nombre }}</span>
-              <span class="room-badge" [ngClass]="mesa.esPrivada ? 'private' : 'public'">
-                {{ mesa.esPrivada ? '🔒 Privada' : '🔓 Pública' }}
-              </span>
+      <div class="card rooms-card glass-panel">
+        <div class="card-header">
+          <h3><i class="icon">🌍</i> Mesas Disponibles</h3>
+          <span class="room-count">{{ mesasDisponibles.length }} Activas</span>
+        </div>
+        
+        <div class="rooms-list scrollable-list-large">
+          <div *ngFor="let mesa of mesasDisponibles" class="room-item" [ngClass]="{'is-private': mesa.esPrivada}">
+            
+            <div class="room-main-info">
+              <div class="room-title-row">
+                <span class="lock-icon" *ngIf="mesa.esPrivada" title="Sala Privada">🔒</span>
+                <h4 class="room-name">{{ mesa.nombre }}</h4>
+              </div>
+              <span class="room-creator">Creada por: <strong>{{ mesa.creador }}</strong></span>
+            </div>
+
+            <div class="room-badge-container">
+              <span class="game-badge badge-{{mesa.juego.toLowerCase()}}">{{ mesa.juego }}</span>
             </div>
             
-            <div class="room-details">
-              <div class="detail-row">
-                <span>Juego:</span>
-                <strong>{{ mesa.gameType }}</strong>
-              </div>
-              <div class="detail-row">
-                <span>Creador:</span>
-                <strong>{{ mesa.creador }}</strong>
-              </div>
-              <div class="detail-row">
-                <span>Jugadores:</span>
-                <strong>{{ mesa.jugadores?.length || 0 }}/{{ mesa.maxJugadores }}</strong>
+            <div class="room-stats">
+              <div class="stat-pill">
+                <i class="icon">🧑‍🤝‍🧑</i> {{ mesa.jugadores?.length || 0 }}/{{ mesa.maxJugadores || 8 }}
               </div>
             </div>
 
             <div class="room-actions">
-              <button class="btn-join" 
+              <button class="btn-action btn-join" 
                       *ngIf="!estaEnMesa(mesa) && puedeUnirse(mesa)" 
                       (click)="unirseAMesa(mesa)">
-                Unirse
+                ENTRAR
               </button>
-              <button class="btn-leave" 
+              <button class="btn-action btn-leave" 
                       *ngIf="estaEnMesa(mesa)" 
                       (click)="salirDeMesa(mesa)">
-                Salir
+                SALIR
               </button>
-              <span class="full-text" *ngIf="!estaEnMesa(mesa) && !puedeUnirse(mesa)">Mesa Llena</span>
+              <span class="status-full" *ngIf="!estaEnMesa(mesa) && !puedeUnirse(mesa)">COMPLETA</span>
             </div>
           </div>
           
           <div *ngIf="mesasDisponibles.length === 0" class="empty-state">
-            <p>No hay mesas disponibles en este momento.</p>
-            <p>¡Crea la tuya propia!</p>
+            <div class="empty-icon">🏜️</div>
+            <h4>El casino está muy tranquilo...</h4>
+            <p>No hay mesas disponibles en este momento. ¡Sé el primero en crear una!</p>
           </div>
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="showPasswordModal">
-  <div class="modal-content">
-    <h3>🔒 Sala Privada</h3>
-    <p>Introduce la contraseña para unirte a la mesa</p>
-    <input type="password" [(ngModel)]="mesaPassword" class="casino-input" placeholder="Contraseña" (keyup.enter)="joinWithPassword()">
+<div class="modal-overlay" *ngIf="showPasswordModal" (click)="cancelarUnirse()">
+  <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+    <div class="modal-icon">🔐</div>
+    <h3>Sala Privada</h3>
+    <p>Esta mesa requiere contraseña para entrar.</p>
+    <input type="password" [(ngModel)]="mesaPassword" class="casino-input" placeholder="Introduce la clave..." (keyup.enter)="joinWithPassword()">
     <div class="modal-actions">
-      <button class="btn-cancel" (click)="cancelPasswordModal()">Cancelar</button>
-      <button class="btn-primary" (click)="joinWithPassword()">Unirse</button>
+      <button class="btn-secondary" (click)="cancelarUnirse()">Cancelar</button>
+      <button class="btn-primary" (click)="joinWithPassword()" [disabled]="procesando">
+        {{ procesando ? 'Comprobando...' : 'Entrar' }}
+      </button>
     </div>
   </div>
 </div>

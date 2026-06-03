@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -18,129 +18,175 @@ export class LobbyComponent implements OnInit, OnDestroy {
   friendList: string[] = [];
   pendingRequests: string[] = [];
   mesasDisponibles: any[] = [];
-  
+
   nombreMesa: string = '';
   juegoSeleccionado: string = 'Ruleta';
   esPrivada: boolean = false;
   passwordCreacion: string = '';
+
   newFriendUsername: string = '';
+
   mesaPassword: string = '';
   showPasswordModal: boolean = false;
   mesaSeleccionadaParaUnirse: any = null;
+
   currentUserEmail: string = '';
+  procesando: boolean = false;
 
   constructor(
     private signalrService: SignalrService,
     private toast: ToastService,
-    private router: Router
+    private router: Router,
+    private zone: NgZone
   ) {
     const userStr = localStorage.getItem('usuario') || localStorage.getItem('user_cache');
     if (userStr) {
-       const u = JSON.parse(userStr);
-       this.currentUserEmail = u.email || '';
+      try {
+        const parsed = JSON.parse(userStr);
+        this.currentUserEmail = parsed.email || '';
+      } catch (e) {}
     }
   }
 
-  async ngOnInit(): Promise<void> {
-    await this.signalrService.startConnection('/hubs/lobby');
-
-    this.signalrService.on("ForceLogout", (emailBaneado: string) => {
-      if (this.currentUserEmail.toLowerCase() === emailBaneado.toLowerCase()) {
-        localStorage.clear();
-        this.router.navigate(['/']);
-        this.toast.error("HAS SIDO BANEADO DEL SERVIDOR.");
-      }
+  async ngOnInit() {
+    this.signalrService.on('RoomsList', (rooms: any[]) => {
+      this.zone.run(() => { this.mesasDisponibles = rooms; });
     });
 
     this.signalrService.on('OnlineUsers', (users: string[]) => {
-      this.onlineUsers = [...users];
+      this.zone.run(() => { this.onlineUsers = users; });
+    });
+
+    this.signalrService.on('FriendRequestReceived', (fromUser: string) => {
+      this.zone.run(() => {
+        this.toast.info(`Nueva solicitud de amistad de ${fromUser}`);
+        if (!this.pendingRequests.includes(fromUser)) {
+          this.pendingRequests.push(fromUser);
+        }
+      });
     });
 
     this.signalrService.on('FriendList', (friends: string[]) => {
-      this.friendList = friends;
+      this.zone.run(() => { this.friendList = friends; });
     });
 
     this.signalrService.on('PendingRequests', (requests: string[]) => {
-      this.pendingRequests = requests;
-    });
-    
-    this.signalrService.on('FriendRequestReceived', (requester: string) => {
-      this.signalrService.invoke('GetPendingRequests');
-      this.toast.info(`Nueva solicitud de amistad de ${requester}`);
+      this.zone.run(() => { this.pendingRequests = requests; });
     });
 
-    this.signalrService.on('FriendAdded', (amigo: string) => {
-      this.signalrService.invoke('GetFriendList');
-      this.toast.success(`${amigo} añadido a amigos`);
-    });
+    await this.signalrService.startConnection('/hubs/lobby');
 
-    this.signalrService.on('RoomsList', (rooms: any[]) => {
-      this.mesasDisponibles = rooms.map(r => ({
-        id: r.id || r.Id || r.ID,
-        nombre: r.nombre || r.Nombre || r.name,
-        gameType: r.juego || r.Juego || r.gameType,
-        creador: r.creador || r.Creador || r.creator,
-        jugadores: r.jugadores || r.Jugadores || r.players || [],
-        maxJugadores: r.maxJugadores || r.MaxJugadores || 8,
-        esPrivada: r.esPrivada ?? r.EsPrivada ?? r.isPrivate ?? false
-      }));
-    });
-
-    this.signalrService.on('RoomJoined', (room: any) => {
-      localStorage.setItem('mesasActivas', JSON.stringify([room]));
-      this.router.navigate(['/sala', room.id || room.Id]);
-    });
-
-    this.signalrService.on('RoomCreated', (room: any) => {
-      const roomName = room.nombre || room.Nombre;
-      const roomId = room.id || room.Id || room.ID;
-      this.toast.success(`Sala "${roomName}" creada.`);
-      localStorage.setItem('mesasActivas', JSON.stringify([room]));
-      this.router.navigate(['/sala', roomId]);
-    });
-
-    await this.signalrService.invoke('GetOnlineUsers');
-    await this.signalrService.invoke('GetFriendList');
-    await this.signalrService.invoke('GetPendingRequests');
+    setTimeout(async () => {
+      await this.signalrService.invoke('GetFriendList');
+      await this.signalrService.invoke('GetPendingRequests');
+    }, 500);
   }
 
-  ngOnDestroy(): void {
-    this.signalrService.off("ForceLogout");
-    this.signalrService.off("OnlineUsers");
-    this.signalrService.off("FriendList");
-    this.signalrService.off("PendingRequests");
-    this.signalrService.off("FriendRequestReceived");
-    this.signalrService.off("FriendAdded");
-    this.signalrService.off("RoomsList");
-    this.signalrService.off("RoomJoined");
-    this.signalrService.off("RoomCreated");
+  ngOnDestroy() {
+    this.signalrService.off('RoomsList');
+    this.signalrService.off('OnlineUsers');
+    this.signalrService.off('FriendRequestReceived');
+    this.signalrService.off('FriendList');
+    this.signalrService.off('PendingRequests');
   }
 
   async crearMesa() {
-    if (!this.nombreMesa) return;
-    const pwd = this.esPrivada ? this.passwordCreacion : '';
-    await this.signalrService.invoke('CreateRoom', this.nombreMesa, this.juegoSeleccionado, this.esPrivada, pwd);
+    if (!this.nombreMesa) {
+      this.toast.warning('Introduce un nombre para la mesa.');
+      return;
+    }
+    if (this.esPrivada && !this.passwordCreacion) {
+      this.toast.warning('Introduce una contraseña para hacerla privada.');
+      return;
+    }
+
+    this.procesando = true;
+    try {
+      const room = await this.signalrService.invoke('CreateRoom', this.nombreMesa, this.juegoSeleccionado, this.esPrivada, this.passwordCreacion || '');
+
+      this.zone.run(() => {
+        this.toast.success(`Sala "${room.nombre || room.Nombre}" creada.`);
+        localStorage.setItem('mesasActivas', JSON.stringify([room]));
+        this.procesando = false;
+
+        this.nombreMesa = '';
+        this.esPrivada = false;
+        this.passwordCreacion = '';
+
+        this.router.navigate(['/sala', room.id || room.Id]);
+      });
+    } catch (err: any) {
+      this.zone.run(() => {
+        let errorMsg = err?.message || 'Error al crear la mesa.';
+        if (errorMsg.includes('HubException:')) {
+          errorMsg = errorMsg.split('HubException:')[1].trim();
+        }
+        this.toast.error(errorMsg);
+        this.procesando = false;
+      });
+    }
   }
 
   async unirseAMesa(mesa: any) {
     if (mesa.esPrivada) {
       this.mesaSeleccionadaParaUnirse = mesa;
+      this.mesaPassword = '';
       this.showPasswordModal = true;
     } else {
-      await this.signalrService.invoke('JoinRoom', mesa.id, '');
+      this.procesando = true;
+      try {
+        const room = await this.signalrService.invoke('JoinRoom', mesa.id || mesa.Id, '');
+        this.zone.run(() => {
+          localStorage.setItem('mesasActivas', JSON.stringify([room]));
+          this.procesando = false;
+          this.router.navigate(['/sala', room.id || room.Id]);
+        });
+      } catch (err: any) {
+        this.zone.run(() => {
+          let errorMsg = err?.message || 'Error al unirse a la mesa.';
+          if (errorMsg.includes('HubException:')) {
+            errorMsg = errorMsg.split('HubException:')[1].trim();
+          }
+          this.toast.error(errorMsg);
+          this.procesando = false;
+        });
+      }
     }
+  }
+
+  cancelarUnirse() {
+    this.showPasswordModal = false;
+    this.mesaSeleccionadaParaUnirse = null;
+    this.mesaPassword = '';
+    this.procesando = false;
   }
 
   async joinWithPassword() {
-    if (this.mesaSeleccionadaParaUnirse) {
-      await this.signalrService.invoke('JoinRoom', this.mesaSeleccionadaParaUnirse.id, this.mesaPassword);
-      this.cancelPasswordModal();
+    if (!this.mesaPassword) {
+      this.toast.warning('Introduce la contraseña para entrar.');
+      return;
     }
-  }
 
-  cancelPasswordModal() {
-    this.showPasswordModal = false;
-    this.mesaPassword = '';
+    this.procesando = true;
+    try {
+      const room = await this.signalrService.invoke('JoinRoom', this.mesaSeleccionadaParaUnirse.id || this.mesaSeleccionadaParaUnirse.Id, this.mesaPassword);
+      this.zone.run(() => {
+        this.showPasswordModal = false;
+        this.mesaPassword = '';
+        localStorage.setItem('mesasActivas', JSON.stringify([room]));
+        this.procesando = false;
+        this.router.navigate(['/sala', room.id || room.Id]);
+      });
+    } catch (err: any) {
+      this.zone.run(() => {
+        let errorMsg = err?.message || 'Contraseña incorrecta o mesa llena.';
+        if (errorMsg.includes('HubException:')) {
+          errorMsg = errorMsg.split('HubException:')[1].trim();
+        }
+        this.toast.error(errorMsg);
+        this.procesando = false;
+      });
+    }
   }
 
   async sendFriendRequest() {
@@ -153,24 +199,21 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   async acceptRequest(user: string) { await this.signalrService.invoke('AcceptFriendRequest', user); }
   async rejectRequest(user: string) { await this.signalrService.invoke('RejectFriendRequest', user); }
-  async salirDeMesa(mesa: any) { await this.signalrService.invoke('LeaveRoom', mesa.id); }
-  async invitarAmigo(amigo: string, mesa: any) { await this.signalrService.invoke('InviteFriend', amigo, mesa.id); }
+  async salirDeMesa(mesa: any) { await this.signalrService.invoke('LeaveRoom', mesa.id || mesa.Id); }
+  async invitarAmigo(amigo: string, mesa: any) { await this.signalrService.invoke('InviteFriend', amigo, mesa.id || mesa.Id); }
 
   estaEnMesa(mesa: any): boolean { return mesa.jugadores?.includes(this.getCurrentUser()); }
-  esCreador(mesa: any): boolean { return mesa.creador === this.getCurrentUser(); }
+  esCreador(mesa: any): boolean { return mesa.creador === this.getCurrentUser() || mesa.creadorId === this.currentUserEmail; }
   isOnline(user: string): boolean { return this.onlineUsers.includes(user); }
-  puedeUnirse(mesa: any): boolean { return (mesa.jugadores || []).length < mesa.maxJugadores; }
+  puedeUnirse(mesa: any): boolean { return (mesa.jugadores || []).length < (mesa.maxJugadores || 8); }
 
   private getCurrentUser(): string {
-    const user = localStorage.getItem('usuario');
-    if (user) {
-      const parsed = JSON.parse(user);
-      return parsed.nombreUsuario || parsed.nombre || '';
-    }
-    const cached = localStorage.getItem('user_cache');
-    if (cached) {
-      const parsedCached = JSON.parse(cached);
-      return parsedCached.nombre || '';
+    const userStr = localStorage.getItem('usuario') || localStorage.getItem('user_cache');
+    if (userStr) {
+      try {
+        const parsed = JSON.parse(userStr);
+        return parsed.nombreUsuario || parsed.nombre || parsed.email || '';
+      } catch (e) {}
     }
     return '';
   }

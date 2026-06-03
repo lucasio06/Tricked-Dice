@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -47,6 +48,7 @@ namespace TrickedDice.Api.Controllers
 
         [AllowAnonymous]
         [HttpPost("login")]
+        [EnableRateLimiting("LoginRateLimit")]
         public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
             var usuario = await _usuarioRepo.GetUsuarioPorEmailAsync(model.Email);
@@ -78,8 +80,10 @@ namespace TrickedDice.Api.Controllers
                 {
                     if (usuario.Baneado) return Unauthorized("Tu cuenta ha sido baneada. Contacta con soporte.");
                     
+                    bool perfilIncompleto = !string.IsNullOrEmpty(usuario.Dni) && usuario.Dni.StartsWith("TMP");
                     var tokenExistente = GenerarToken(usuario.Nombre, email, usuario.Rol);
-                    return Ok(new { token = tokenExistente, nombre = usuario.Nombre, saldo = usuario.Saldo, rol = usuario.Rol, esNuevo = false });
+                    
+                    return Ok(new { token = tokenExistente, nombre = usuario.Nombre, saldo = usuario.Saldo, rol = usuario.Rol, esNuevo = perfilIncompleto });
                 }
 
                 string dniTemporal = "TMP" + Guid.NewGuid().ToString()[..6].ToUpper();
@@ -120,7 +124,13 @@ namespace TrickedDice.Api.Controllers
             var usuario = await _usuarioRepo.GetUsuarioPorEmailAsync(email);
             if (usuario == null) return NotFound(new { mensaje = "Usuario no encontrado." });
 
-            return Ok(new { nombre = usuario.Nombre, email = usuario.Email, saldo = usuario.Saldo, rol = usuario.Rol });
+            return Ok(new { 
+                nombre = usuario.Nombre, 
+                email = usuario.Email, 
+                saldo = usuario.Saldo, 
+                rol = usuario.Rol, 
+                dni = usuario.Dni 
+            });
         }
 
         [HttpGet("saldo")]
@@ -174,7 +184,13 @@ namespace TrickedDice.Api.Controllers
         private string GenerarToken(string nombre, string email, string rol = "User")
         {
             var credentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)), SecurityAlgorithms.HmacSha256);
-            var claims = new[] { new Claim(ClaimTypes.Name, nombre), new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Role, rol) };
+            var claims = new[] 
+            { 
+                new Claim("name", nombre),
+                new Claim(ClaimTypes.Name, nombre), 
+                new Claim(ClaimTypes.Email, email), 
+                new Claim(ClaimTypes.Role, rol) 
+            };
             var token = new JwtSecurityToken(_config["Jwt:Issuer"], _config["Jwt:Audience"], claims, expires: DateTime.Now.AddMinutes(120), signingCredentials: credentials);
             return new JwtSecurityTokenHandler().WriteToken(token);
         }

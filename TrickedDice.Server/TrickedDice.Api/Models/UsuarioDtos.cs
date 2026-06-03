@@ -15,6 +15,7 @@ namespace TrickedDice.Api.Models
         public decimal Saldo { get; set; }
         public bool Baneado { get; set; }
         public string Rol { get; set; } = string.Empty;
+        public string? Dni { get; set; }
     }
 
     public class TransaccionUsuarioDto

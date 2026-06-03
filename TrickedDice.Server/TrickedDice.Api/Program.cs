@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using TrickedDice.Api.Hubs;
 using TrickedDice.Api.Services;
 using TrickedDice.Api.Middlewares;
@@ -23,9 +25,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSignalR(options =>
-{
-    options.EnableDetailedErrors = true;
+builder.Services.AddSignalR().AddJsonProtocol(options => {
+    options.PayloadSerializerOptions.PropertyNamingPolicy = null;
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -39,7 +40,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            ClockSkew = TimeSpan.Zero
         };
     });
 
@@ -49,6 +51,20 @@ builder.Services.AddSingleton<RuletaService>();
 builder.Services.AddScoped<BlackjackGameService>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("LoginRateLimit", context =>
+    {
+        var remoteIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(remoteIp, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1)
+        });
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 var app = builder.Build();
 
@@ -70,6 +86,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

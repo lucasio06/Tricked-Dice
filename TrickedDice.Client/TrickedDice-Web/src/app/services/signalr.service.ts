@@ -9,6 +9,7 @@ export class SignalrService {
   private hubConnection: signalR.HubConnection | null = null;
   private signalRBase = environment.apiUrl.replace('/api', '');
   private currentHubUrl: string = '';
+  private eventCallbacks: { event: string, callback: (...args: any[]) => void }[] = [];
 
   public async startConnection(hubUrl: string): Promise<boolean> {
     if (this.hubConnection?.state === signalR.HubConnectionState.Connected && this.currentHubUrl === hubUrl) {
@@ -31,6 +32,10 @@ export class SignalrService {
       .withAutomaticReconnect()
       .build();
 
+    this.eventCallbacks.forEach(ec => {
+      this.hubConnection!.on(ec.event, ec.callback);
+    });
+
     try {
       await this.hubConnection.start();
       console.log(`Conectado a: ${hubUrl}`);
@@ -46,12 +51,19 @@ export class SignalrService {
   }
 
   public on(event: string, callback: (...args: any[]) => void) {
+    const exists = this.eventCallbacks.find(ec => ec.event === event && ec.callback === callback);
+    if (!exists) {
+      this.eventCallbacks.push({ event, callback });
+    }
+
     if (this.hubConnection) {
       this.hubConnection.on(event, callback);
     }
   }
 
   public off(event: string) {
+    this.eventCallbacks = this.eventCallbacks.filter(ec => ec.event !== event);
+
     if (this.hubConnection) {
       this.hubConnection.off(event);
     }

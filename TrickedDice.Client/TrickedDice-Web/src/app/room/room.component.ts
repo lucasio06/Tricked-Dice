@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -28,6 +28,8 @@ interface Room {
   styleUrls: ['./room.component.scss']
 })
 export class RoomComponent implements OnInit, OnDestroy {
+  @ViewChild('chatContainer') private chatContainer!: ElementRef;
+
   room: Room | null = null;
   roomId: string = '';
   currentUser: string = '';
@@ -35,7 +37,9 @@ export class RoomComponent implements OnInit, OnDestroy {
   passwordInput: string = '';
   showPasswordModal: boolean = false;
   gameStarted: boolean = false;
+
   private hasLeft: boolean = false;
+  private navigatingToGame: boolean = false;
 
   mensajes: {usuario: string, texto: string}[] = [];
   nuevoMensaje: string = '';
@@ -52,20 +56,22 @@ export class RoomComponent implements OnInit, OnDestroy {
     this.route.params.subscribe(params => {
       if (params['id']) {
         this.roomId = params['id'];
-        const temp = localStorage.getItem('tempRoom');
-        if (temp) {
-          const room = JSON.parse(temp);
-          if (room.id === this.roomId) {
-            this.room = this.normalizarRoom(room);
-            localStorage.removeItem('tempRoom');
-            this.obtenerUsuarioActual();
-            this.actualizarEsCreador();
-          } else {
-            this.unirseASalaPorId();
-          }
-        } else {
-          this.unirseASalaPorId();
+
+        const mesasActivasStr = localStorage.getItem('mesasActivas');
+        if (mesasActivasStr) {
+          try {
+            const mesas = JSON.parse(mesasActivasStr);
+            const roomData = mesas.find((m: any) => (m.id || m.Id || m.ID) === this.roomId);
+            if (roomData) {
+              this.room = this.normalizarRoom(roomData);
+              this.obtenerUsuarioActual();
+              this.actualizarEsCreador();
+              return;
+            }
+          } catch(e) {}
         }
+
+        this.unirseASalaPorId();
       } else {
         this.toast.error('No se pudo cargar la sala');
         this.router.navigate([RUTAS.lobby]);
@@ -102,17 +108,6 @@ export class RoomComponent implements OnInit, OnDestroy {
       });
     });
 
-    this.signalrService.on('RoomJoined', (room: any) => {
-      this.zone.run(() => {
-        const parsedId = room.id || room.Id || room.ID;
-        if (parsedId === this.roomId) {
-          this.room = this.normalizarRoom(room);
-          this.actualizarEsCreador();
-          this.toast.success(`Te has unido a ${this.room.nombre}`);
-        }
-      });
-    });
-
     this.signalrService.on('RoomPrivacyToggled', (esPrivada: boolean) => {
       this.zone.run(() => {
         if (this.room) {
@@ -140,15 +135,7 @@ export class RoomComponent implements OnInit, OnDestroy {
     this.signalrService.on('ReceiveMessage', (usuario: string, texto: string) => {
       this.zone.run(() => {
         this.mensajes.push({ usuario, texto });
-      });
-    });
-
-    this.signalrService.on('Error', (msg: string) => {
-      this.zone.run(() => {
-        this.toast.error(msg);
-        if (msg.toLowerCase().includes('password') || msg.toLowerCase().includes('contrase')) {
-          this.showPasswordModal = true;
-        }
+        this.scrollToBottom();
       });
     });
   }
@@ -190,15 +177,42 @@ export class RoomComponent implements OnInit, OnDestroy {
   async unirseASalaPorId(): Promise<void> {
     this.obtenerUsuarioActual();
     try {
-      await this.signalrService.invoke('JoinRoom', this.roomId, '');
-    } catch (err) {
-      this.toast.error('No se pudo unir a la sala');
-      this.router.navigate([RUTAS.lobby]);
+      const room = await this.signalrService.invoke('JoinRoom', this.roomId, this.passwordInput || '');
+      this.zone.run(() => {
+        this.room = this.normalizarRoom(room);
+        this.actualizarEsCreador();
+        this.showPasswordModal = false;
+        this.passwordInput = '';
+        this.toast.success(`Te has unido a ${this.room.nombre}`);
+      });
+    } catch (err: any) {
+      this.zone.run(() => {
+        let errorMsg = err?.message || 'No se pudo unir a la sala';
+        if (errorMsg.includes('HubException:')) {
+          errorMsg = errorMsg.split('HubException:')[1].trim();
+        }
+        const msgLower = errorMsg.toLowerCase();
+        if (msgLower.includes('contrase') || msgLower.includes('password') || msgLower.includes('incorrecta')) {
+          this.showPasswordModal = true;
+        } else {
+          this.toast.error(errorMsg);
+          this.router.navigate([RUTAS.lobby]);
+        }
+      });
     }
   }
 
+  cancelarUnirse() {
+    this.showPasswordModal = false;
+    this.router.navigate([RUTAS.lobby]);
+  }
+
+  async joinWithPassword(): Promise<void> {
+    await this.unirseASalaPorId();
+  }
+
   ngOnDestroy(): void {
-    if (this.roomId && !this.hasLeft && this.signalrService.isConnected()) {
+    if (this.roomId && !this.hasLeft && !this.navigatingToGame && this.signalrService.isConnected()) {
       this.signalrService.invoke('LeaveRoom', this.roomId);
     }
   }
@@ -255,6 +269,7 @@ export class RoomComponent implements OnInit, OnDestroy {
   }
 
   irAJuego(gameType: string, roomId: string): void {
+    this.navigatingToGame = true;
     if (gameType === 'Blackjack') {
       this.gameStarted = true;
     } else {
@@ -271,9 +286,11 @@ export class RoomComponent implements OnInit, OnDestroy {
     }
   }
 
-  async joinWithPassword(): Promise<void> {
-    await this.signalrService.invoke('JoinRoom', this.roomId, this.passwordInput);
-    this.showPasswordModal = false;
-    this.passwordInput = '';
+  private scrollToBottom(): void {
+    setTimeout(() => {
+      try {
+        this.chatContainer.nativeElement.scrollTop = this.chatContainer.nativeElement.scrollHeight;
+      } catch (err) {}
+    }, 50);
   }
 }

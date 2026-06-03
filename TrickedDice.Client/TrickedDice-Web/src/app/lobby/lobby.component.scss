@@ -6,288 +6,528 @@ $gold: #d4af37;
 $gold-light: #ffd700;
 $neon-purple: #a742f5;
 $text-light: #f0d8a8;
+$text-muted: #a095b5;
 $success: #2ecc71;
 $danger: #e74c3c;
+$ruleta-color: #e74c3c;
+$blackjack-color: #2ecc71;
+$poker-color: #3498db;
+
+i.icon {
+  font-style: normal !important;
+}
 
 .lobby-container {
   min-height: 100vh;
-  padding: 100px 20px 40px;
-  background: linear-gradient(135deg, $bg-dark 0%, #1a0b2e 50%, #090411 100%);
+  padding: 100px 20px 60px;
+  background: radial-gradient(circle at center top, #240b45 0%, $bg-dark 100%);
   font-family: 'Montserrat', sans-serif;
   color: $text-light;
+}
+
+.lobby-header {
+  text-align: center;
+  margin-bottom: 40px;
+
+  .glow-text {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: $gold;
+    text-transform: uppercase;
+    text-shadow: 0 0 15px rgba($gold, 0.4);
+    margin-bottom: 10px;
+  }
+
+  p {
+    color: $text-muted;
+    font-size: 1.1rem;
+  }
 }
 
 .lobby-grid {
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 350px 1fr;
+  grid-template-columns: 320px 1fr;
   gap: 30px;
-}
+  align-items: start;
 
-.card {
-  background: rgba($bg-card, 0.8);
-  border: 1px solid rgba($gold, 0.3);
-  border-radius: 20px;
-  padding: 25px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-
-  h3 {
-    color: $gold;
-    margin-top: 0;
-    margin-bottom: 20px;
-    font-size: 1.4rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-bottom: 1px solid rgba($gold, 0.3);
-    padding-bottom: 10px;
+  @media (max-width: 992px) {
+    grid-template-columns: 1fr;
   }
 }
 
-.friends-card {
-  h4 {
-    color: $gold-light;
-    margin: 20px 0 10px;
-    font-size: 1rem;
-  }
-}
-
-.add-friend-section {
+.lobby-main {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-
-  .casino-input {
-    flex: 1;
-  }
+  flex-direction: column;
+  gap: 35px;
 }
 
-.friend-item {
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.glass-panel {
+  background: rgba($bg-card, 0.6);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba($gold, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  padding: 25px;
+}
+
+.highlight-panel {
+  border: 1px solid rgba($neon-purple, 0.4);
+  box-shadow: 0 8px 32px rgba($neon-purple, 0.1);
+}
+
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 10px;
-  margin-bottom: 8px;
-  transition: all 0.2s;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba($gold, 0.1);
 
-  &:hover {
-    background: rgba($neon-purple, 0.1);
-  }
-
-  .friend-info {
+  h3 {
+    margin: 0;
+    color: $gold;
+    font-size: 1.3rem;
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
-  .status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-
-    &.online {
-      background-color: $success;
-      box-shadow: 0 0 8px $success;
-    }
-
-    &.offline {
-      background-color: $danger;
-      box-shadow: 0 0 8px $danger;
-    }
-  }
-
-  .friend-name {
+  .room-count {
+    background: rgba($neon-purple, 0.2);
+    color: #e0b3ff;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
     font-weight: bold;
-  }
-
-  .actions {
-    display: flex;
-    gap: 5px;
-
-    button {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: white;
-      transition: transform 0.2s;
-
-      &:hover { transform: scale(1.1); }
-      &.btn-accept { background: $success; }
-      &.btn-reject { background: $danger; }
-    }
-  }
-}
-
-.create-room-card {
-  margin-bottom: 30px;
-}
-
-.create-room-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  align-items: end;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  label {
-    color: $text-light;
-    font-size: 0.9rem;
-    font-weight: bold;
+    border: 1px solid rgba($neon-purple, 0.4);
   }
 }
 
 .casino-input, .casino-select {
   width: 100%;
-  padding: 12px 15px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba($gold, 0.5);
-  border-radius: 10px;
+  padding: 14px 18px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba($gold, 0.3);
+  border-radius: 12px;
   color: white;
   font-family: 'Montserrat', sans-serif;
-  transition: all 0.3s;
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+  box-sizing: border-box;
 
   &:focus {
     outline: none;
     border-color: $gold;
-    box-shadow: 0 0 15px rgba($neon-purple, 0.4);
+    box-shadow: 0 0 15px rgba($gold, 0.2);
+    background: rgba(0, 0, 0, 0.7);
   }
 }
 
 .casino-select {
   appearance: none;
   cursor: pointer;
-  option { background: $bg-card; color: white; }
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d4af37%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px top 50%;
+  background-size: 12px auto;
 }
 
-.checkbox-container {
-  display: flex;
+.create-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: end;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    label {
+      font-size: 0.9rem;
+      color: $text-muted;
+      font-weight: 600;
+      padding-left: 5px;
+    }
+  }
+
+  .form-action {
+    margin-top: 10px;
+  }
+}
+
+.game-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-top: 5px;
+
+  .game-card {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba($gold, 0.2);
+    border-radius: 12px;
+    padding: 15px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+
+    input {
+      display: none;
+    }
+
+    .g-icon {
+      display: block;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      transition: transform 0.3s ease;
+    }
+
+    .g-name {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: $text-muted;
+      transition: color 0.3s ease;
+    }
+
+    &:hover {
+      background: rgba($gold, 0.05);
+      border-color: rgba($gold, 0.5);
+      transform: translateY(-3px);
+      
+      .g-icon { transform: scale(1.1); }
+      .g-name { color: white; }
+    }
+
+    &.active {
+      background: linear-gradient(145deg, rgba($neon-purple, 0.2) 0%, rgba($bg-card, 0.8) 100%);
+      border-color: $neon-purple;
+      box-shadow: 0 0 15px rgba($neon-purple, 0.3);
+
+      .g-icon { transform: scale(1.15); }
+      .g-name { color: $gold; font-weight: bold; }
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: $neon-purple;
+        box-shadow: 0 0 10px $neon-purple;
+      }
+    }
+  }
+}
+
+.custom-checkbox {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
+  font-size: 0.95rem;
+  color: $text-light;
   user-select: none;
+  margin-top: 10px;
 
   input {
-    width: 18px;
-    height: 18px;
-    accent-color: $gold;
-    cursor: pointer;
+    display: none;
+  }
+
+  .checkmark {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba($gold, 0.5);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:after {
+      content: "";
+      display: none;
+      width: 6px;
+      height: 12px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      margin-bottom: 2px;
+    }
+  }
+
+  input:checked ~ .checkmark {
+    background-color: $neon-purple;
+    border-color: $neon-purple;
+    box-shadow: 0 0 12px rgba($neon-purple, 0.6);
+
+    &:after {
+      display: block;
+    }
+  }
+
+  .label-text {
+    font-weight: 600;
   }
 }
 
-.btn-create, .btn-primary {
-  background: linear-gradient(to bottom, $gold, color.adjust($gold, $lightness: -20%));
-  color: #130921;
+.password-reveal {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  margin-top: 0;
+  
+  &.show {
+    max-height: 60px;
+    margin-top: 15px;
+  }
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, $gold 0%, #b8860b 100%);
+  color: #111;
   border: none;
-  padding: 12px 25px;
-  border-radius: 10px;
-  font-weight: bold;
+  border-radius: 12px;
+  padding: 14px 24px;
+  font-weight: 800;
   cursor: pointer;
-  text-transform: uppercase;
-  transition: all 0.2s;
-  height: 44px;
-
-  &:hover:not(:disabled) {
+  transition: all 0.3s;
+  width: 100%;
+  
+  &.btn-glow:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba($gold, 0.4);
+    box-shadow: 0 5px 20px rgba($gold, 0.4);
+    background: linear-gradient(135deg, $gold-light 0%, $gold 100%);
   }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  &.btn-sm {
+    padding: 12px 20px;
+    width: auto;
   }
 }
 
-.rooms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-
-.room-item {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba($neon-purple, 0.3);
-  border-radius: 15px;
-  padding: 20px;
+.btn-secondary {
+  background: transparent;
+  color: $text-muted;
+  border: 1px solid rgba($text-muted, 0.3);
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.3s;
 
   &:hover {
-    border-color: $neon-purple;
-    box-shadow: 0 0 20px rgba($neon-purple, 0.2);
-    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
   }
 }
 
-.room-header {
+.scrollable-list {
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+.scrollable-list-large {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba($gold, 0.3);
+  border-radius: 10px;
+  &:hover { background: rgba($gold, 0.6); }
+}
+
+.section-subtitle {
+  color: $text-muted;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 20px 0 10px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-bottom: 5px;
+}
+
+.add-friend-section {
+  display: flex;
+  gap: 10px;
+}
+
+.friend-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: background 0.2s;
 
-  .room-name {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: $gold;
+  &:hover { background: rgba(0, 0, 0, 0.5); }
+
+  .friend-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
-  .room-badge {
-    font-size: 0.75rem;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-weight: bold;
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    &.online { 
+      background: $success; 
+      box-shadow: 0 0 8px rgba($success, 0.6);
+    }
+    &.offline { 
+      background: #555; 
+    }
+  }
 
-    &.public { background: rgba($success, 0.2); color: $success; }
-    &.private { background: rgba($danger, 0.2); color: $danger; }
+  .friend-name { font-weight: 600; }
+}
+
+.btn-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-left: 5px;
+  transition: transform 0.2s;
+
+  &:hover { transform: scale(1.1); }
+  &.btn-accept { background: rgba($success, 0.8); }
+  &.btn-reject { background: rgba($danger, 0.8); }
+}
+
+.rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.room-item {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  align-items: center;
+  background: linear-gradient(90deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 4px solid $gold;
+  border-radius: 12px;
+  padding: 15px 20px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateX(5px);
+    background: linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 100%);
+    border-color: rgba($gold, 0.3);
+  }
+
+  &.is-private {
+    border-left-color: $neon-purple;
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    text-align: center;
   }
 }
 
-.room-details {
+.room-main-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 5px;
 
-  .detail-row {
+  .room-title-row {
     display: flex;
-    justify-content: space-between;
-    font-size: 0.9rem;
-    
-    span { color: #888; }
-    strong { color: $text-light; }
+    align-items: center;
+    gap: 8px;
+
+    .lock-icon { font-size: 0.9rem; }
+    .room-name {
+      margin: 0;
+      font-size: 1.1rem;
+      color: white;
+    }
   }
+
+  .room-creator {
+    font-size: 0.8rem;
+    color: $text-muted;
+    strong { color: $gold; }
+  }
+}
+
+.game-badge {
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  &.badge-ruleta { background: rgba($ruleta-color, 0.2); color: #ff9999; border-color: rgba($ruleta-color, 0.5); }
+  &.badge-blackjack { background: rgba($blackjack-color, 0.2); color: #a3ffc2; border-color: rgba($blackjack-color, 0.5); }
+  &.badge-poker { background: rgba($poker-color, 0.2); color: #99d6ff; border-color: rgba($poker-color, 0.5); }
+}
+
+.stat-pill {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-weight: bold;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .room-actions {
-  text-align: center;
-
-  button {
-    width: 100%;
-    padding: 10px;
+  text-align: right;
+  
+  .btn-action {
+    padding: 10px 25px;
     border-radius: 10px;
-    font-weight: bold;
+    font-weight: 800;
     cursor: pointer;
     border: none;
-    text-transform: uppercase;
-    transition: all 0.2s;
+    transition: all 0.3s;
 
     &.btn-join {
       background: $success;
-      color: white;
-      &:hover { background: color.adjust($success, $lightness: -10%); }
+      color: #000;
+      box-shadow: 0 4px 15px rgba($success, 0.3);
+      &:hover { background: color.adjust($success, $lightness: 10%); transform: scale(1.05); }
     }
 
     &.btn-leave {
@@ -298,60 +538,110 @@ $danger: #e74c3c;
     }
   }
 
-  .full-text {
-    color: #888;
-    font-style: italic;
+  .status-full {
+    color: $danger;
+    font-weight: bold;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    background: rgba($danger, 0.1);
+    padding: 8px 15px;
+    border-radius: 10px;
   }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 50px 20px;
+  color: $text-muted;
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+  }
+
+  h4 {
+    color: white;
+    margin-bottom: 10px;
+  }
+}
+
+.empty-msg {
+  text-align: center;
+  padding: 20px;
+  color: $text-muted;
+  font-style: italic;
+  font-size: 0.9rem;
 }
 
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 2000;
+  z-index: 9999;
 }
 
 .modal-content {
-  background: $bg-card;
-  border: 2px solid $gold;
-  border-radius: 20px;
-  padding: 30px;
-  width: 90%;
-  max-width: 400px;
+  width: 100%;
+  max-width: 420px;
   text-align: center;
+  padding: 40px 30px;
+  animation: modalPop 0.3s ease-out;
 
-  h3 { color: $gold; margin-top: 0; margin-bottom: 10px; }
-  p { margin-bottom: 20px; color: #aaa; }
-  
-  .casino-input { margin-bottom: 20px; }
+  .modal-icon {
+    font-size: 3.5rem;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 0 10px rgba($gold, 0.5));
+  }
+
+  h3 { color: $gold; font-size: 1.8rem; margin: 0 0 10px; }
+  p { margin-bottom: 25px; color: $text-muted; }
 
   .modal-actions {
     display: flex;
     gap: 15px;
-    justify-content: center;
+    margin-top: 25px;
 
-    button {
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-
-      &.btn-cancel {
-        background: transparent;
-        border: 1px solid #888;
-        color: #888;
-        &:hover { background: rgba(255,255,255,0.1); }
-      }
-    }
+    button { flex: 1; }
   }
 }
 
-@media (max-width: 992px) {
-  .lobby-grid { grid-template-columns: 1fr; }
-  .create-room-form { grid-template-columns: 1fr; }
+@keyframes modalPop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
+
+.global-loading {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba($bg-dark, 0.95);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  h2 {
+    color: $gold;
+    margin-top: 20px;
+    letter-spacing: 2px;
+    animation: pulse 1.5s infinite;
+  }
+
+  .spinner-large {
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba($gold, 0.2);
+    border-top-color: $gold;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes pulse { 50% { opacity: 0.5; } }

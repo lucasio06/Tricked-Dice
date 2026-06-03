@@ -233,7 +233,7 @@
             </div>
             <div class="slider-body">
               <button class="raise-adjust-btn" (click)="aumentarRaise()">+</button>
-              <input type="range" class="vertical-range" [min]="mesa.apuestaActual || 0" [max]="miJugador?.saldo || 5000" [(ngModel)]="cantidadRaise" step="10">
+              <input type="range" class="vertical-range" [min]="mesa.apuestaActual || 0" [max]="miJugador.saldo || 5000" [(ngModel)]="cantidadRaise" step="10">
               <button class="raise-adjust-btn" (click)="disminuirRaise()">-</button>
             </div>
           </div>
