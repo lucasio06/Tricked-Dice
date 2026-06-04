@@ -222,7 +222,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 15px 0 10px 0;
+  margin: 110px 0 30px 0;
+  padding: 40px;
 }
 
 .poker-table {
@@ -313,31 +314,40 @@
 }
 
 .table-center {
-  text-align: center;
+  position: absolute;
+  top: -110px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
-  transform: translateY(-40px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
 }
 
 .pot-display {
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  padding: 12px 35px;
-  border-radius: 30px;
-  margin-bottom: 35px;
-  border: 1px solid rgba(212, 175, 55, 0.5);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(212, 175, 55, 0.15);
+  background: rgba(0, 0, 0, 0.85);
+  padding: 15px 50px;
+  border-radius: 40px;
+  margin-bottom: 0;
+  border: 2px solid #4ade80;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 30px rgba(74, 222, 128, 0.3);
   display: inline-flex;
   flex-direction: column;
 
   span:first-child {
-    font-size: 0.8rem;
-    color: #aaa;
-    letter-spacing: 1px;
+    font-size: 0.9rem;
+    color: #4ade80;
+    letter-spacing: 2px;
+    font-weight: 900;
+    margin-bottom: 5px;
   }
   .gold-text {
-    color: #f0d8a8;
+    color: #ffffff !important;
     font-weight: 900;
-    font-size: 1.8rem;
+    font-size: 2.5rem;
+    text-shadow: 0 0 20px rgba(74, 222, 128, 0.8);
   }
 }
 
@@ -345,6 +355,18 @@
   display: flex;
   gap: 15px;
   justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 25px 35px;
+  border-radius: 20px;
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.6);
+  margin-top: 30px;
+  
+  .playing-card, .card-slot.empty {
+    transform: scale(1.3);
+    margin: 0 15px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+  }
 }
 
 .card-slot.empty {
@@ -428,13 +450,15 @@
 .players-container {
   position: absolute;
   width: 100%;
-  height: 100%;
-  top: 0;
+  height: auto;
+  bottom: -40px;
+  top: auto;
   left: 0;
   pointer-events: none;
   display: flex;
+  flex-direction: row;
   justify-content: center;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 30px;
 }
 
@@ -449,6 +473,7 @@
   transition: all 0.3s ease;
   position: relative;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
+  margin-top: 0 !important;
 
   &.active-turn {
     border-color: #d4af37;
@@ -474,61 +499,49 @@
   }
 
   &.is-me {
-    position: absolute !important;
-    bottom: -70px !important;
-    left: 50% !important;
-    transform: translateX(-50%) scale(1.1);
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: scale(1.1) !important;
     border-bottom: 5px solid #d4af37;
     z-index: 50;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9), 0 0 20px rgba(212, 175, 55, 0.2);
   }
 
   .player-info {
+    position: relative;
+    padding: 18px 25px;
+    min-width: 160px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+
     .player-name {
-      margin: 0 0 5px 0;
-      font-size: 1rem;
+      font-size: 1.15rem;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       color: #fff;
       text-transform: uppercase;
     }
+
     .player-balance {
-      margin: 0;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
+      font-weight: 800;
       color: #d4af37;
-      font-weight: bold;
+      margin: 0;
     }
-  }
-
-  .bet-chip {
-    position: absolute;
-    top: -35px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #d4af37;
-    color: #000;
-    font-weight: 900;
-    padding: 6px 12px;
-    border-radius: 15px;
-    font-size: 0.9rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
-    border: 2px dashed #000;
-  }
-
-  .status-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 5px;
-    font-size: 0.8rem;
-    font-weight: 900;
-    margin-top: 8px;
-
-    &.fold { background: #e74c3c; color: white; }
-    &.allin { background: #d4af37; color: black; }
   }
 
   .player-cards {
     display: flex;
     justify-content: center;
-    margin-top: 12px;
+    margin-top: 20px;
     position: relative;
 
     .card-wrapper:nth-child(2) {
@@ -539,12 +552,48 @@
       transform: rotate(-5deg);
     }
   }
+
+  .bet-chip {
+    position: absolute;
+    top: -45px !important;
+    bottom: auto !important;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: #d4af37;
+    font-weight: 900;
+    padding: 8px 15px;
+    border-radius: 15px;
+    font-size: 1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+    border: 2px solid #d4af37;
+    z-index: 10;
+
+    &.pulse-bet {
+      animation: popInBet 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+      border-color: #ffd700;
+      color: #ffd700;
+    }
+  }
 }
 
 @keyframes pulse-ring {
   0% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.08); opacity: 0.4; }
   100% { transform: scale(1); opacity: 1; }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  margin-top: 8px;
+
+  &.fold { background: #e74c3c; color: white; }
+  &.allin { background: #d4af37; color: black; }
 }
 
 .action-bar-wrapper {
@@ -1272,6 +1321,124 @@
     gap: 4px;
     margin-top: 8px;
     justify-content: flex-start;
+  }
+}
+
+.phase-indicator {
+  margin-bottom: 0;
+  animation: fadeInPhase 0.5s ease-out;
+  
+  span {
+    background: linear-gradient(145deg, #2b0b3f, #1a0525);
+    border: 2px solid #a742f5;
+    color: #e0b3ff;
+    padding: 8px 30px;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(167, 66, 245, 0.6);
+  }
+}
+
+@keyframes fadeInPhase {
+  0% { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.role-chips {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.role-chip {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-weight: 900;
+  font-size: 0.7rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  border: 2px solid #111;
+
+  &.dealer { background: white; color: black; }
+  &.sb { background: #3498db; color: white; }
+  &.bb { background: #e74c3c; color: white; }
+}
+
+@keyframes popInBet {
+  0% { transform: translate(-50%, 20px) scale(0.5); opacity: 0; }
+  50% { transform: translate(-50%, -5px) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+.status-badge.busted {
+  background: linear-gradient(145deg, #8a1a1a, #4a0000);
+  color: #ff4d4d;
+  border: 1px solid #ff4d4d;
+  text-decoration: none;
+  box-shadow: 0 0 10px rgba(255, 77, 77, 0.4);
+  animation: pulse-busted 1.5s infinite;
+  letter-spacing: 1px;
+}
+
+@keyframes pulse-busted {
+  0% { box-shadow: 0 0 5px rgba(255, 77, 77, 0.4); }
+  50% { box-shadow: 0 0 15px rgba(255, 77, 77, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(255, 77, 77, 0.4); }
+}
+
+.turn-timer-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 5;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+.timer-fill {
+  height: 100%;
+  width: 100%;
+  animation: afkTimer 60s linear forwards;
+}
+
+@keyframes afkTimer {
+  0%   { width: 100%; background: #2ecc71; }
+  50%  { width: 50%; background: #f1c40f; }
+  80%  { width: 20%; background: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
+  100% { width: 0%; background: #e74c3c; }
+}
+
+.waiting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  padding: 8px 16px;
+  border-radius: 20px;
+  color: #a095b5;
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  .spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(212, 175, 55, 0.2);
+    border-top-color: #d4af37;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
   }
 }
 

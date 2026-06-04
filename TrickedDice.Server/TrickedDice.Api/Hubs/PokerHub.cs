@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using TrickedDice.Api.Services;
 
@@ -9,18 +10,79 @@ namespace TrickedDice.Api.Hubs
     public class PokerHub : Hub
     {
         private readonly PokerService _pokerService;
+        private readonly IHubContext<PokerHub> _hubContext;
+        private static readonly ConcurrentDictionary<string, string> ConexionesMesas = new();
 
-        public PokerHub(PokerService pokerService)
+        public PokerHub(PokerService pokerService, IHubContext<PokerHub> hubContext)
         {
             _pokerService = pokerService;
+            _hubContext = hubContext;
         }
 
         private string? GetEmail() => Context.User?.FindFirst(ClaimTypes.Email)?.Value;
         private string? GetUserName() => Context.User?.FindFirst(ClaimTypes.Name)?.Value ?? Context.User?.FindFirst("unique_name")?.Value ?? GetEmail();
 
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            if (ConexionesMesas.TryGetValue(Context.ConnectionId, out var roomId))
+            {
+                var email = GetEmail();
+                if (!string.IsNullOrEmpty(email))
+                {
+                    bool turnoAvanzado = _pokerService.AutoFoldDesconectado(roomId, email);
+                    var mesa = _pokerService.ObtenerMesa(roomId);
+                    if (mesa != null)
+                    {
+                        mesa.UltimoMensaje = $"{GetUserName()} se ha desconectado.";
+                        if (turnoAvanzado) IniciarTemporizadorTurno(roomId, mesa);
+                        await Clients.Group(roomId).SendAsync("MesaActualizada", mesa);
+                    }
+                }
+                ConexionesMesas.TryRemove(Context.ConnectionId, out _);
+            }
+            await base.OnDisconnectedAsync(exception);
+        }
+
+        private void IniciarTemporizadorTurno(string roomId, MesaPoker mesa)
+        {
+            if (mesa.Fase == PokerFase.Showdown) return;
+
+            mesa.TurnoId = Guid.NewGuid().ToString();
+            string turnoGuardado = mesa.TurnoId;
+            string emailActual = mesa.TurnoActualEmail;
+
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(60000);
+
+                bool seForzoFold = false;
+                lock (mesa.LockObj)
+                {
+                    if (mesa.TurnoId == turnoGuardado && mesa.TurnoActualEmail == emailActual && mesa.Fase != PokerFase.Showdown)
+                    {
+                        if (mesa.Jugadores.TryGetValue(emailActual, out var jugador) && !jugador.Folded && !jugador.AllIn)
+                        {
+                            jugador.Folded = true;
+                            jugador.HaActuado = true;
+                            _pokerService.AvanzarTurno(mesa);
+                            mesa.UltimoMensaje = $"⏳ {jugador.NombreUsuario} se quedó sin tiempo y hace Fold.";
+                            seForzoFold = true;
+                        }
+                    }
+                }
+
+                if (seForzoFold)
+                {
+                    await _hubContext.Clients.Group(roomId).SendAsync("MesaActualizada", mesa);
+                    IniciarTemporizadorTurno(roomId, mesa);
+                }
+            });
+        }
+
         public async Task UnirseMesa(string roomId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
+            ConexionesMesas[Context.ConnectionId] = roomId;
             var mesa = _pokerService.ObtenerOCrearMesa(roomId);
             await Clients.Caller.SendAsync("MesaActualizada", mesa);
         }
@@ -29,22 +91,18 @@ namespace TrickedDice.Api.Hubs
         {
             var email = GetEmail();
             if (string.IsNullOrEmpty(email)) return;
-
             var mesa = _pokerService.ObtenerOCrearMesa(roomId);
-            
             lock (mesa.LockObj)
             {
                 if (!mesa.Jugadores.ContainsKey(email))
                 {
-                    mesa.Jugadores[email] = new JugadorPoker
-                    {
-                        Email = email,
-                        NombreUsuario = GetUserName() ?? "Jugador",
-                        Saldo = buyIn
-                    };
+                    mesa.Jugadores[email] = new JugadorPoker { Email = email, NombreUsuario = GetUserName() ?? "Jugador", Saldo = buyIn };
+                }
+                else if (mesa.Jugadores[email].Saldo == 0 && mesa.Fase == PokerFase.Showdown)
+                {
+                    mesa.Jugadores[email].Saldo = buyIn;
                 }
             }
-            
             await Clients.Group(roomId).SendAsync("MesaActualizada", mesa);
         }
 
@@ -52,9 +110,9 @@ namespace TrickedDice.Api.Hubs
         {
             _pokerService.IniciarMano(roomId);
             var mesa = _pokerService.ObtenerMesa(roomId);
-            
             if (mesa != null)
             {
+                lock(mesa.LockObj) { IniciarTemporizadorTurno(roomId, mesa); }
                 await Clients.Group(roomId).SendAsync("MesaActualizada", mesa);
             }
         }
@@ -63,7 +121,6 @@ namespace TrickedDice.Api.Hubs
         {
             var email = GetEmail();
             if (string.IsNullOrEmpty(email)) return;
-
             var mesa = _pokerService.ObtenerMesa(roomId);
             if (mesa == null) return;
 
@@ -73,63 +130,27 @@ namespace TrickedDice.Api.Hubs
                 if (jugador.Folded || jugador.AllIn || mesa.TurnoActualEmail != email) return;
 
                 jugador.HaActuado = true;
-
                 switch (accion.ToLower())
                 {
-                    case "fold":
-                        jugador.Folded = true;
-                        break;
-
-                    case "check":
-                        if (jugador.ApuestaActual < mesa.ApuestaActual)
-                        {
-                            return;
-                        }
-                        break;
-
+                    case "fold": jugador.Folded = true; break;
+                    case "check": if (jugador.ApuestaActual < mesa.ApuestaActual) return; break;
                     case "call":
-                        decimal diferenciaCall = mesa.ApuestaActual - jugador.ApuestaActual;
-                        if (jugador.Saldo <= diferenciaCall)
-                        {
-                            jugador.ApuestaActual += jugador.Saldo;
-                            jugador.Saldo = 0;
-                            jugador.AllIn = true;
-                        }
-                        else
-                        {
-                            jugador.Saldo -= diferenciaCall;
-                            jugador.ApuestaActual += diferenciaCall;
-                        }
+                        decimal dCall = mesa.ApuestaActual - jugador.ApuestaActual;
+                        if (jugador.Saldo <= dCall) { jugador.ApuestaActual += jugador.Saldo; jugador.Saldo = 0; jugador.AllIn = true; }
+                        else { jugador.Saldo -= dCall; jugador.ApuestaActual += dCall; }
                         break;
-
                     case "raise":
                         if (cantidad <= 0) return;
-                        decimal diferenciaRaise = cantidad - jugador.ApuestaActual;
-                        if (jugador.Saldo <= diferenciaRaise)
-                        {
-                            jugador.ApuestaActual += jugador.Saldo;
-                            jugador.Saldo = 0;
-                            jugador.AllIn = true;
-                        }
-                        else
-                        {
-                            jugador.Saldo -= diferenciaRaise;
-                            jugador.ApuestaActual += diferenciaRaise;
-                        }
+                        decimal dRaise = cantidad - jugador.ApuestaActual;
+                        if (jugador.Saldo <= dRaise) { jugador.ApuestaActual += jugador.Saldo; jugador.Saldo = 0; jugador.AllIn = true; }
+                        else { jugador.Saldo -= dRaise; jugador.ApuestaActual += dRaise; }
                         mesa.ApuestaActual = jugador.ApuestaActual;
-                        foreach (var j in mesa.Jugadores.Values)
-                        {
-                            if (j.Email != email && !j.Folded && !j.AllIn)
-                            {
-                                j.HaActuado = false;
-                            }
-                        }
+                        foreach (var j in mesa.Jugadores.Values) if (j.Email != email && !j.Folded && !j.AllIn) j.HaActuado = false;
                         break;
                 }
-
                 _pokerService.AvanzarTurno(mesa);
+                IniciarTemporizadorTurno(roomId, mesa);
             }
-
             await Clients.Group(roomId).SendAsync("MesaActualizada", mesa);
         }
     }

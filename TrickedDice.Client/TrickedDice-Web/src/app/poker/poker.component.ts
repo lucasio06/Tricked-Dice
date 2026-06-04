@@ -28,6 +28,13 @@ export interface MesaPoker {
   fase: number;
   turnoActualEmail: string;
   ultimoMensaje: string;
+  ordenJugadores?: string[];
+  indiceDealer?: number;
+  ciegaGrandeValor?: number;
+  emailSB: string;
+  emailBB: string;
+  turnoId: string;
+  creadorEmail: string;
 }
 
 @Component({
@@ -282,10 +289,54 @@ export class PokerComponent implements OnInit, OnDestroy {
     this.cantidadRaise = nuevoValor < min ? min : nuevoValor;
   }
 
-  get soyJugador(): boolean { return this.mesa?.jugadores[this.miEmail] !== undefined; }
-  get esMiTurno(): boolean { return this.mesa?.turnoActualEmail === this.miEmail; }
-  get miJugador(): JugadorPoker | null { return this.mesa ? this.mesa.jugadores[this.miEmail] : null; }
-  get jugadoresLista(): JugadorPoker[] { return this.mesa ? Object.values(this.mesa.jugadores) : []; }
+  get soyJugador(): boolean { 
+    return !!this.mesa?.jugadores && this.mesa.jugadores[this.miEmail] !== undefined; 
+  }
+  
+  get esMiTurno(): boolean { 
+    return this.mesa?.turnoActualEmail === this.miEmail; 
+  }
+  
+  get miJugador(): JugadorPoker | null { 
+    return this.mesa?.jugadores ? this.mesa.jugadores[this.miEmail] : null; 
+  }
+  
+  get rivales(): JugadorPoker[] {
+    if (!this.mesa?.jugadores) return [];
+    return Object.values(this.mesa.jugadores).filter(j => (j.email || (j as any).Email) !== this.miEmail);
+  }
+
+  get jugadoresLista(): JugadorPoker[] {
+    if (!this.mesa?.jugadores) return [];
+    return Object.values(this.mesa.jugadores);
+  }
+
+  get nombreFaseActual(): string {
+    if (!this.mesa) return 'ESPERANDO';
+    switch (this.mesa.fase) {
+      case 0: return 'PREFLOP';
+      case 1: return 'THE FLOP';
+      case 2: return 'THE TURN';
+      case 3: return 'THE RIVER';
+      case 4: return 'SHOWDOWN';
+      default: return 'PREPARANDO...';
+    }
+  }
+
+  get dealerEmail(): string {
+    if (!this.mesa || !this.mesa.ordenJugadores || this.mesa.indiceDealer === undefined || this.mesa.indiceDealer === -1) return '';
+    return this.mesa.ordenJugadores[this.mesa.indiceDealer];
+  }
+
+  get boteTotalVisual(): number {
+    if (!this.mesa) return 0;
+    const sumaApuestas = Object.values(this.mesa.jugadores).reduce((acc, j) => acc + j.apuestaActual, 0);
+    return this.mesa.bote + sumaApuestas;
+  }
+
+  get esCreador(): boolean {
+    return this.mesa?.creadorEmail === this.miEmail;
+  }
 
   calcularMinimoRaise() {
     if (this.mesa) {

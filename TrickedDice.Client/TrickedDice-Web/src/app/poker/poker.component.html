@@ -79,8 +79,32 @@
         <button class="close-btn" (click)="cerrarTutorial()">✖</button>
       </div>
       <div class="tutorial-body">
-        <section><h3 class="gold-text">🎯 El Objetivo</h3><p>Formar la <strong>mejor mano de 5 cartas</strong> combinando tus 2 privadas con las 5 comunitarias.</p></section>
-        <section><h3 class="gold-text">⏱️ Las Fases</h3>
+        <section>
+          <h3 class="gold-text">🎯 El Objetivo</h3>
+          <p>Formar la <strong>mejor mano de 5 cartas</strong> combinando tus 2 privadas con las 5 comunitarias.</p>
+        </section>
+
+        <section>
+          <h3 class="gold-text">💸 Las Ciegas (Apuestas Obligatorias)</h3>
+          <p style="font-size: 0.9rem; margin-bottom: 10px;">Para que haya acción, 2 jugadores pagan una entrada automática. Los roles rotan cada mano:</p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="role-chip dealer" style="position: static; flex-shrink: 0;">D</div> 
+              <span style="font-size: 0.85rem;"><strong>Botón (Dealer):</strong> Indica el orden de la mesa. Habla el último.</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="role-chip sb" style="position: static; flex-shrink: 0;">SB</div> 
+              <span style="font-size: 0.85rem;"><strong>Ciega Pequeña (Small Blind):</strong> Paga la mitad de la apuesta.</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="role-chip bb" style="position: static; flex-shrink: 0;">BB</div> 
+              <span style="font-size: 0.85rem;"><strong>Ciega Grande (Big Blind):</strong> Paga la apuesta base entera.</span>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="gold-text">⏱️ Las Fases</h3>
           <ul>
             <li><strong>Preflop:</strong> Recibes 2 cartas. Apuestas.</li>
             <li><strong>Flop:</strong> Se revelan 3 cartas.</li>
@@ -89,7 +113,9 @@
             <li><strong>Showdown:</strong> Se enseñan las cartas y se reparte el bote.</li>
           </ul>
         </section>
-        <section><h3 class="gold-text">🎮 Tus Acciones</h3>
+        
+        <section>
+          <h3 class="gold-text">🎮 Tus Acciones</h3>
           <div class="action-grid">
             <div class="action-item"><span class="badge fold">FOLD</span> Retirarte.</div>
             <div class="action-item"><span class="badge check">CHECK</span> Pasar tu turno.</div>
@@ -124,9 +150,14 @@
   <div class="showdown-banner" *ngIf="mesa.fase === 4">
     <h2>FIN DE LA MANO</h2>
     <p class="winner-text">{{ mesa.ultimoMensaje || 'Repartiendo el bote...' }}</p>
-    <button class="btn-play-again" (click)="iniciarMano()" [disabled]="procesando" *ngIf="soyJugador">
+    
+    <button class="btn-play-again" (click)="iniciarMano()" [disabled]="procesando" *ngIf="soyJugador && miJugador && miJugador.saldo > 0">
       REPARTIR NUEVA MANO
     </button>
+
+    <p *ngIf="soyJugador && miJugador && miJugador.saldo === 0" style="color: #ff4d4d; margin-top: 15px; font-weight: 900; font-size: 1.1rem; text-shadow: 0 0 10px rgba(255,0,0,0.5);">
+      ☠️ ¡TE HAS QUEDADO SIN FICHAS! RECOMPRA PARA SEGUIR JUGANDO.
+    </p>
   </div>
 
   <div class="table-wrapper">
@@ -134,9 +165,14 @@
       <div class="table-inner-ring"></div>
       
       <div class="table-center">
-        <div class="pot-display">
+        
+        <div class="phase-indicator" *ngIf="mesa.fase !== 4 && miJugador?.mano?.length">
+          <span>{{ nombreFaseActual }}</span>
+        </div>
+
+        <div class="pot-display" *ngIf="boteTotalVisual > 0">
           <span>BOTE CENTRAL</span>
-          <span class="gold-text">{{ mesa.bote || 0 }} €</span>
+          <span class="gold-text">{{ boteTotalVisual }} €</span>
         </div>
         
         <div class="community-cards">
@@ -166,9 +202,27 @@
           <div class="player-info">
             <h4 class="player-name">{{ jugador.nombreUsuario }}</h4>
             <p class="player-balance">{{ jugador.saldo }} €</p>
-            <div class="bet-chip" *ngIf="jugador.apuestaActual > 0">{{ jugador.apuestaActual }} €</div>
-            <span class="status-badge fold" *ngIf="jugador.folded">FOLD</span>
-            <span class="status-badge allin" *ngIf="jugador.allIn">ALL IN</span>
+            
+            <div class="role-chips">
+              <div class="role-chip dealer" *ngIf="jugador.email === dealerEmail" title="Dealer (Botón)">D</div>
+              <div class="role-chip sb" *ngIf="jugador.email === mesa.emailSB" title="Ciega Pequeña">SB</div>
+              <div class="role-chip bb" *ngIf="jugador.email === mesa.emailBB" title="Ciega Grande">BB</div>
+            </div>
+
+            <div class="bet-chip" *ngIf="jugador.apuestaActual > 0" 
+                 [class.pulse-bet]="mesa.fase === 0 && (jugador.email === mesa.emailSB || jugador.email === mesa.emailBB)">
+              {{ jugador.apuestaActual }} €
+            </div>
+            
+            <span class="status-badge fold" *ngIf="jugador.folded && jugador.saldo > 0">FOLD</span>
+            <span class="status-badge allin" *ngIf="jugador.allIn && jugador.saldo > 0">ALL IN</span>
+            <span class="status-badge busted" *ngIf="jugador.saldo === 0 && mesa.fase === 4">ELIMINADO</span>
+
+            <ng-container *ngIf="mesa.turnoActualEmail === jugador.email && mesa.fase !== 4">
+              <div class="turn-timer-bar">
+                <div class="timer-fill"></div>
+              </div>
+            </ng-container>
           </div>
 
           <div class="player-cards">
@@ -198,8 +252,10 @@
       <div class="spinner"></div><span>PROCESANDO...</span>
     </div>
 
-    <div class="action-panel buy-in-panel" [class.is-processing]="procesando" *ngIf="!soyJugador">
-      <h3 class="gold-text" style="margin: 0 0 15px 0; letter-spacing: 1px;">COMPRA DE FICHAS (BUY-IN)</h3>
+    <div class="action-panel buy-in-panel" [class.is-processing]="procesando" *ngIf="!soyJugador || (soyJugador && miJugador && miJugador.saldo === 0 && mesa.fase === 4)">
+      <h3 class="gold-text" style="margin: 0 0 15px 0; letter-spacing: 1px;">
+        {{ soyJugador ? 'RECOMPRA DE FICHAS (RE-BUY)' : 'COMPRA DE FICHAS (BUY-IN)' }}
+      </h3>
       <div class="game-controls" style="flex-direction: column;">
         <div class="quick-chips" style="display: flex; gap: 10px; margin-bottom: 12px;">
           <button class="chip-btn" (click)="buyIn = 100" [class.selected]="buyIn === 100">100 €</button>
@@ -212,7 +268,7 @@
             <span style="color: #d4af37; font-weight: 900; font-size: 1.3rem;">€</span>
           </div>
           <button class="btn-action btn-call" [disabled]="procesando || buyIn <= 0" (click)="sentarse()" style="width: auto; height: 46px; padding: 0 30px; background: linear-gradient(145deg, #114226, #072213); border-color: #4ade80; color: #4ade80;">
-            <span>SENTARSE</span>
+            <span>{{ soyJugador ? 'RECOMPRAR' : 'SENTARSE' }}</span>
           </button>
         </div>
       </div>

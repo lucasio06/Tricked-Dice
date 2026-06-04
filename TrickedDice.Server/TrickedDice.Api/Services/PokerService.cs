@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace TrickedDice.Api.Services
 {
@@ -36,32 +37,96 @@ namespace TrickedDice.Api.Services
         public void IniciarMano(string roomId)
         {
             var mesa = ObtenerMesa(roomId);
-            if (mesa == null || mesa.Jugadores.Count < 1) return;
+            if (mesa == null) return;
 
             lock (mesa.LockObj)
             {
+                if (mesa.Fase != PokerFase.Showdown && mesa.Baraja.Count > 0) return;
+
+                var jugadoresConSaldo = mesa.Jugadores.Values.Where(j => j.Saldo > 0).ToList();
+                if (jugadoresConSaldo.Count < 2)
+                {
+                    mesa.UltimoMensaje = "No hay suficientes jugadores con saldo para jugar.";
+                    mesa.Fase = PokerFase.Showdown;
+                    return;
+                }
+
+                mesa.OrdenJugadores = jugadoresConSaldo.Select(j => j.Email).ToList();
+                mesa.IndiceDealer = (mesa.IndiceDealer + 1) % mesa.OrdenJugadores.Count;
+
                 mesa.Baraja = CrearBaraja();
                 mesa.CartasComunitarias.Clear();
                 mesa.Bote = 0;
                 mesa.Fase = PokerFase.Preflop;
-                mesa.ApuestaActual = 0;
                 mesa.UltimoMensaje = "";
 
                 foreach (var jugador in mesa.Jugadores.Values)
                 {
                     jugador.Mano.Clear();
                     jugador.ApuestaActual = 0;
-                    jugador.Folded = false;
+                    jugador.Folded = !mesa.OrdenJugadores.Contains(jugador.Email);
                     jugador.AllIn = false;
                     jugador.HaActuado = false;
                     
-                    jugador.Mano.Add(SacarCarta(mesa.Baraja));
-                    jugador.Mano.Add(SacarCarta(mesa.Baraja));
+                    if (!jugador.Folded)
+                    {
+                        jugador.Mano.Add(SacarCarta(mesa.Baraja));
+                        jugador.Mano.Add(SacarCarta(mesa.Baraja));
+                    }
                 }
-                
-                mesa.TurnoActualEmail = mesa.Jugadores.Keys.FirstOrDefault() ?? "";
-                AvanzarTurno(mesa);
+
+                int indiceSB = (mesa.IndiceDealer + 1) % mesa.OrdenJugadores.Count;
+                int indiceBB = (mesa.IndiceDealer + 2) % mesa.OrdenJugadores.Count;
+                int indiceUTG = (mesa.IndiceDealer + 3) % mesa.OrdenJugadores.Count;
+
+                if (mesa.OrdenJugadores.Count == 2)
+                {
+                    indiceSB = mesa.IndiceDealer;
+                    indiceBB = (mesa.IndiceDealer + 1) % 2;
+                    indiceUTG = mesa.IndiceDealer;
+                }
+
+                var sbJugador = mesa.Jugadores[mesa.OrdenJugadores[indiceSB]];
+                var bbJugador = mesa.Jugadores[mesa.OrdenJugadores[indiceBB]];
+
+                mesa.EmailSB = sbJugador.Email;
+                mesa.EmailBB = bbJugador.Email;
+
+                decimal sbValor = mesa.CiegaGrandeValor / 2;
+                decimal bbValor = mesa.CiegaGrandeValor;
+
+                sbJugador.ApuestaActual = Math.Min(sbValor, sbJugador.Saldo);
+                sbJugador.Saldo -= sbJugador.ApuestaActual;
+                if (sbJugador.Saldo == 0) sbJugador.AllIn = true;
+
+                bbJugador.ApuestaActual = Math.Min(bbValor, bbJugador.Saldo);
+                bbJugador.Saldo -= bbJugador.ApuestaActual;
+                if (bbJugador.Saldo == 0) bbJugador.AllIn = true;
+
+                mesa.ApuestaActual = bbValor;
+                mesa.TurnoActualEmail = mesa.OrdenJugadores[indiceUTG];
             }
+        }
+
+        public bool AutoFoldDesconectado(string roomId, string email)
+        {
+            var mesa = ObtenerMesa(roomId);
+            if (mesa == null) return false;
+
+            lock (mesa.LockObj)
+            {
+                if (mesa.Jugadores.TryGetValue(email, out var jugador))
+                {
+                    if (mesa.TurnoActualEmail == email && !jugador.Folded && mesa.Fase != PokerFase.Showdown)
+                    {
+                        jugador.Folded = true;
+                        jugador.HaActuado = true;
+                        AvanzarTurno(mesa);
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         public void AvanzarTurno(MesaPoker mesa)
@@ -376,30 +441,36 @@ namespace TrickedDice.Api.Services
 
     public class MesaPoker
     {
-        public string RoomId { get; set; } = string.Empty;
-        public List<string> Baraja { get; set; } = new();
-        public List<string> CartasComunitarias { get; set; } = new();
-        public ConcurrentDictionary<string, JugadorPoker> Jugadores { get; set; } = new();
-        public List<string> OrdenJugadores { get; set; } = new();
-        public decimal Bote { get; set; }
-        public decimal ApuestaActual { get; set; }
-        public PokerFase Fase { get; set; }
-        public string TurnoActualEmail { get; set; } = string.Empty;
-        public string UltimoMensaje { get; set; } = string.Empty;
+        [JsonPropertyName("roomId")] public string RoomId { get; set; } = string.Empty;
+        [JsonPropertyName("baraja")] public List<string> Baraja { get; set; } = new();
+        [JsonPropertyName("cartasComunitarias")] public List<string> CartasComunitarias { get; set; } = new();
+        [JsonPropertyName("jugadores")] public ConcurrentDictionary<string, JugadorPoker> Jugadores { get; set; } = new();
+        [JsonPropertyName("ordenJugadores")] public List<string> OrdenJugadores { get; set; } = new();
+        [JsonPropertyName("indiceDealer")] public int IndiceDealer { get; set; } = -1;
+        [JsonPropertyName("ciegaGrandeValor")] public decimal CiegaGrandeValor { get; set; } = 50;
+        [JsonPropertyName("bote")] public decimal Bote { get; set; }
+        [JsonPropertyName("apuestaActual")] public decimal ApuestaActual { get; set; }
+        [JsonPropertyName("fase")] public PokerFase Fase { get; set; }
+        [JsonPropertyName("turnoActualEmail")] public string TurnoActualEmail { get; set; } = string.Empty;
+        [JsonPropertyName("ultimoMensaje")] public string UltimoMensaje { get; set; } = string.Empty;
+        [JsonPropertyName("emailSB")] public string EmailSB { get; set; } = string.Empty;
+        [JsonPropertyName("emailBB")] public string EmailBB { get; set; } = string.Empty;
+        [JsonPropertyName("turnoId")] public string TurnoId { get; set; } = Guid.NewGuid().ToString();
+        [JsonPropertyName("creadorEmail")] public string CreadorEmail { get; set; } = string.Empty;
         
-        public readonly object LockObj = new object();
+        [JsonIgnore] public readonly object LockObj = new object();
     }
 
     public class JugadorPoker
     {
-        public string Email { get; set; } = string.Empty;
-        public string NombreUsuario { get; set; } = string.Empty;
-        public decimal Saldo { get; set; }
-        public List<string> Mano { get; set; } = new();
-        public decimal ApuestaActual { get; set; }
-        public bool Folded { get; set; }
-        public bool AllIn { get; set; }
-        public bool HaActuado { get; set; }
+        [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("nombreUsuario")] public string NombreUsuario { get; set; } = string.Empty;
+        [JsonPropertyName("saldo")] public decimal Saldo { get; set; }
+        [JsonPropertyName("mano")] public List<string> Mano { get; set; } = new();
+        [JsonPropertyName("apuestaActual")] public decimal ApuestaActual { get; set; }
+        [JsonPropertyName("folded")] public bool Folded { get; set; }
+        [JsonPropertyName("allIn")] public bool AllIn { get; set; }
+        [JsonPropertyName("haActuado")] public bool HaActuado { get; set; }
     }
 
     public class CartaPoker
