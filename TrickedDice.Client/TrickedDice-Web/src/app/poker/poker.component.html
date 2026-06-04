@@ -277,7 +277,7 @@
         </div>
         <div style="display: flex; gap: 15px; align-items: center;">
           <div class="raise-input-wrapper" style="flex-direction: row; align-items: center; gap: 10px;">
-            <input type="number" [(ngModel)]="buyIn" class="gold-input" style="height: 46px; width: 120px; font-size: 1.3rem; margin: 0;" [disabled]="procesando">
+            <input type="number" [(ngModel)]="buyIn" class="gold-input" style="height: 46px; width: 120px; font-size: 1.3rem; margin: 0;" [disabled]="procesando" step="1">
             <span style="color: #d4af37; font-weight: 900; font-size: 1.3rem;">€</span>
           </div>
           <button class="btn-action btn-call" [disabled]="procesando || buyIn <= 0" (click)="sentarse()" style="width: auto; height: 46px; padding: 0 30px; background: linear-gradient(145deg, #114226, #072213); border-color: #4ade80; color: #4ade80;">
@@ -297,7 +297,7 @@
           
           <div class="raise-slider-popover">
             <div class="slider-header">
-              <input type="number" [(ngModel)]="cantidadRaise" min="{{mesa.apuestaActual || 0}}" [disabled]="procesando" class="raise-num-input">
+              <input type="number" [(ngModel)]="cantidadRaise" min="{{mesa.apuestaActual || 0}}" [disabled]="procesando" class="raise-num-input" step="1">
               <span class="currency-label">€</span>
             </div>
             <div class="slider-body">

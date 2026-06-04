@@ -252,6 +252,7 @@ export class PokerComponent implements OnInit, OnDestroy {
 
   sentarse() {
     if (this.buyIn <= 0) return;
+    this.buyIn = Math.floor(Number(this.buyIn));
     this.procesando = true;
     this.signalR.invoke('Sentarse', this.roomId, this.buyIn).catch(err => console.error(err));
     setTimeout(() => {
@@ -269,7 +270,7 @@ export class PokerComponent implements OnInit, OnDestroy {
   enviarAccion(accion: string) {
     if (this.procesando) return;
     this.procesando = true;
-    let cantidad = accion === 'raise' ? this.cantidadRaise : 0;
+    let cantidad = accion === 'raise' ? Math.floor(Number(this.cantidadRaise)) : 0;
     this.signalR.invoke('AccionJugador', this.roomId, accion, cantidad).catch(err => console.error(err));
     setTimeout(() => { this.procesando = false; }, 2000);
   }

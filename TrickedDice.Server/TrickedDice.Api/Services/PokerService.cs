@@ -92,8 +92,8 @@ namespace TrickedDice.Api.Services
                 mesa.EmailSB = sbJugador.Email;
                 mesa.EmailBB = bbJugador.Email;
 
-                decimal sbValor = mesa.CiegaGrandeValor / 2;
-                decimal bbValor = mesa.CiegaGrandeValor;
+                decimal sbValor = Math.Round(mesa.CiegaGrandeValor / 2, 2);
+                decimal bbValor = Math.Round(mesa.CiegaGrandeValor, 2);
 
                 sbJugador.ApuestaActual = Math.Min(sbValor, sbJugador.Saldo);
                 sbJugador.Saldo -= sbJugador.ApuestaActual;

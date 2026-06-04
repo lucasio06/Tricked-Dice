@@ -45,36 +45,46 @@ namespace TrickedDice.Api.Hubs
 
         private void IniciarTemporizadorTurno(string roomId, MesaPoker mesa)
         {
-            if (mesa.Fase == PokerFase.Showdown) return;
+            lock (mesa.LockObj)
+            {
+                if (mesa.Fase == PokerFase.Showdown) return;
+                mesa.TurnoId = Guid.NewGuid().ToString();
+            }
 
-            mesa.TurnoId = Guid.NewGuid().ToString();
             string turnoGuardado = mesa.TurnoId;
             string emailActual = mesa.TurnoActualEmail;
 
             _ = Task.Run(async () =>
             {
-                await Task.Delay(60000);
-
-                bool seForzoFold = false;
-                lock (mesa.LockObj)
+                try
                 {
-                    if (mesa.TurnoId == turnoGuardado && mesa.TurnoActualEmail == emailActual && mesa.Fase != PokerFase.Showdown)
+                    await Task.Delay(60000);
+
+                    bool seForzoFold = false;
+                    lock (mesa.LockObj)
                     {
-                        if (mesa.Jugadores.TryGetValue(emailActual, out var jugador) && !jugador.Folded && !jugador.AllIn)
+                        if (mesa.TurnoId == turnoGuardado && mesa.TurnoActualEmail == emailActual && mesa.Fase != PokerFase.Showdown)
                         {
-                            jugador.Folded = true;
-                            jugador.HaActuado = true;
-                            _pokerService.AvanzarTurno(mesa);
-                            mesa.UltimoMensaje = $"⏳ {jugador.NombreUsuario} se quedó sin tiempo y hace Fold.";
-                            seForzoFold = true;
+                            if (mesa.Jugadores.TryGetValue(emailActual, out var jugador) && !jugador.Folded && !jugador.AllIn)
+                            {
+                                jugador.Folded = true;
+                                jugador.HaActuado = true;
+                                _pokerService.AvanzarTurno(mesa);
+                                mesa.UltimoMensaje = $"⏳ {jugador.NombreUsuario} se quedó sin tiempo y hace Fold.";
+                                seForzoFold = true;
+                            }
                         }
                     }
-                }
 
-                if (seForzoFold)
+                    if (seForzoFold)
+                    {
+                        await _hubContext.Clients.Group(roomId).SendAsync("MesaActualizada", mesa);
+                        IniciarTemporizadorTurno(roomId, mesa);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    await _hubContext.Clients.Group(roomId).SendAsync("MesaActualizada", mesa);
-                    IniciarTemporizadorTurno(roomId, mesa);
+                    Console.WriteLine($"[CRÍTICO] Error en temporizador de Poker: {ex.Message}");
                 }
             });
         }
@@ -89,6 +99,7 @@ namespace TrickedDice.Api.Hubs
 
         public async Task Sentarse(string roomId, decimal buyIn)
         {
+            buyIn = Math.Round(buyIn, 2);
             var email = GetEmail();
             if (string.IsNullOrEmpty(email)) return;
             var mesa = _pokerService.ObtenerOCrearMesa(roomId);
@@ -122,6 +133,7 @@ namespace TrickedDice.Api.Hubs
 
         public async Task AccionJugador(string roomId, string accion, decimal cantidad = 0)
         {
+            cantidad = Math.Round(cantidad, 2);
             var email = GetEmail();
             if (string.IsNullOrEmpty(email)) return;
             var mesa = _pokerService.ObtenerMesa(roomId);
