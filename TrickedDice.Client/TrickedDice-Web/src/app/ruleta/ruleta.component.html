@@ -1,9 +1,22 @@
 <app-navbar></app-navbar>
+
 <div class="flash-overlay" *ngIf="mostrarModalGanador"></div>
 <div class="ruleta-container">
+  
+  <div class="top-actions-bar">
+    <div class="left-actions">
+      <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE MESA</button>
+      <button *ngIf="mesaId" class="btn-volver-sala" (click)="volverAlLobby()">💬 VOLVER AL LOBBY</button>
+    </div>
+    <div class="center-actions">
+      <h1 class="casino-title">RULETA</h1>
+    </div>
+    <div class="right-actions">
+      <button class="btn-ayuda-header" (click)="mostrarTutorial = true">❓ CÓMO JUGAR</button>
+    </div>
+  </div>
+
   <div class="ruleta-card">
-    <h1 class="ruleta-title">🎲 RULETA NEON LUXURY 🎲</h1>
-    
     <div class="ruleta-main-grid">
       <div class="ruleta-left">
         <div class="saldo-actual">
@@ -58,7 +71,7 @@
         </div>
 
         <div class="tapete-wrapper">
-          <div *ngIf="modoApuesta === 'rapidas'">
+          <div *ngIf="modoApuesta === 'rapidas'" style="width: 100%;">
             <div class="tapete-real">
               <div class="numeros-con-columnas">
                 <div class="cero-lateral">
@@ -110,14 +123,14 @@
             </div>
           </div>
 
-          <div *ngIf="modoApuesta === 'especiales'">
+          <div *ngIf="modoApuesta === 'especiales'" style="width: 100%;">
             <div class="racetrack-visual">
               <div class="racetrack-container">
                 <div class="racetrack-numbers">
                   <div *ngFor="let num of numerosRuleta; let i = index"
                        class="numero-racetrack"
                        [attr.data-numero]="num"
-                       [style.transform]="'rotate(' + (i * 9.7297) + 'deg) translateY(-160px)'"
+                       [style.transform]="'rotate(' + (i * 9.7297) + 'deg) translateY(-195px)'"
                        [style.position]="'absolute'"
                        [style.top]="'50%'"
                        [style.left]="'50%'">
@@ -183,7 +196,7 @@
           </div>
         </div>
 
-        <div class="tapete-section monto-section">
+        <div class="monto-section">
           <div class="monto-container">
             <label>CANTIDAD POR FICHA</label>
             <div class="fichas-rapidas">
@@ -220,7 +233,6 @@
           <button class="btn-apostar" (click)="apostar()" [disabled]="girando || !apuestaValida()">
             {{ girando ? 'GIRANDO...' : (mesaId ? 'APOSTAR A MESA' : '¡APOSTAR AHORA!') }}
           </button>
-          <button class="btn-volver" (click)="volverAlLobby()">← VOLVER AL LOBBY</button>
         </div>
       </div>
     </div>
@@ -234,4 +246,58 @@
       <button class="btn-cerrar" (click)="cerrarModal()">CONTINUAR</button>
     </div>
   </div>
+
+  <div class="modal-overlay" *ngIf="mostrarConfirmacionSalir">
+    <div class="modal-content exit-modal">
+      <div class="modal-icon">🚪</div>
+      <h3>¿Abandonar la mesa?</h3>
+      <p>Saldrás de la sala y perderás tu apuesta actual si no ha girado.</p>
+      <div class="modal-buttons">
+        <button class="btn-cancel" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
+        <button class="btn-confirm" (click)="confirmarSalir()">SALIR</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarTutorial" (click)="mostrarTutorial = false">
+    <div class="modal-content tutorial-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-icon">🎡</span>
+        <h2>CÓMO JUGAR A LA RULETA</h2>
+        <button class="close-btn" (click)="mostrarTutorial = false">✖</button>
+      </div>
+      
+      <div class="tutorial-body">
+        <section>
+          <h3 class="gold-text">🎯 El Objetivo</h3>
+          <p>Predecir en qué número o color caerá la bola después de que la rueda termine de girar.</p>
+        </section>
+        
+        <section>
+          <h3 class="gold-text">🎲 Tipos de Apuesta Rápida</h3>
+          <ul>
+            <li><strong>Pleno:</strong> Apuestas a un solo número directo. Paga 36 a 1.</li>
+            <li><strong>Caballo / Calle / Cuadro:</strong> Apuestas a varios números juntos tocando las uniones del tapete.</li>
+            <li><strong>Suertes sencillas:</strong> Rojo/Negro, Par/Impar, Falta/Pasa (1-18/19-36). Pagan 2 a 1.</li>
+            <li><strong>Docenas y Columnas:</strong> Pagan 3 a 1.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 class="gold-text">✨ Apuestas Especiales (Racetrack)</h3>
+          <p style="font-size: 0.9rem; margin-bottom: 10px;">Basadas en la disposición real de los números en la rueda física:</p>
+          <ul>
+            <li><strong>Vecinos del 0:</strong> Los 17 números que rodean al 0 en la rueda.</li>
+            <li><strong>Tercio:</strong> Los 12 números ubicados en el lado opuesto al 0.</li>
+            <li><strong>Huérfanos:</strong> Los 8 números restantes que conectan las otras dos zonas.</li>
+          </ul>
+        </section>
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="btn-confirm full-width" (click)="mostrarTutorial = false">¡ENTENDIDO!</button>
+      </div>
+    </div>
+  </div>
 </div>
+<app-footer></app-footer>

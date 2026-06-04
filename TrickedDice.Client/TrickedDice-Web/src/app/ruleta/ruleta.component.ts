@@ -15,6 +15,7 @@ import { AuthService } from "../auth.service";
 import { UsuarioPerfil } from "../models/api-responses";
 import { ToastService } from "../services/toast.service";
 import { NavbarComponent } from "../shared/navbar/navbar.component";
+import { FooterComponent } from "../shared/footer/footer.component";
 import { SignalrService } from "../services/signalr.service";
 import { RUTAS } from "../utils/rutas.const";
 
@@ -32,7 +33,7 @@ interface ApuestaVisual {
 @Component({
   selector: "app-ruleta",
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent],
   templateUrl: "./ruleta.component.html",
   styleUrls: ["./ruleta.component.scss"],
 })
@@ -50,6 +51,10 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   numeroModal: number = 0;
   colorModal: string = "";
   premioModal: number = 0;
+
+  // Variables para los modales nuevos
+  mostrarConfirmacionSalir: boolean = false;
+  mostrarTutorial: boolean = false;
 
   historialTiradas: HistorialTirada[] = [];
   historialResultados: { numero: number, usuario: string, gano: boolean, premio: number }[] = [];
@@ -187,21 +192,23 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.signalrService.on("ApuestaAgregadaMesa", (nombre: string, apuesta: any) => {
-  const current = this.apuestasPendientesPorUsuario.get(nombre) || 0;
-  
-  const montoApostado = apuesta.monto || apuesta.Monto || 0; 
-  
-  this.apuestasPendientesPorUsuario.set(nombre, current + montoApostado);
-  
-  if (this.timeoutApuestas) clearTimeout(this.timeoutApuestas);
-  this.timeoutApuestas = setTimeout(() => {
-    this.apuestasPendientesPorUsuario.forEach((total, usuario) => {
-      this.toast.info(`${usuario} ha apostado un total de ${total}€`);
-    });
-    this.apuestasPendientesPorUsuario.clear();
-    this.timeoutApuestas = null;
-  }, 500);
-});
+        const montoApostado = apuesta.monto || apuesta.Monto || 0;
+        const current = this.apuestasPendientesPorUsuario.get(nombre) || 0;
+        
+        this.apuestasPendientesPorUsuario.set(nombre, current + montoApostado);
+        
+        if (this.timeoutApuestas) clearTimeout(this.timeoutApuestas);
+        
+        this.timeoutApuestas = setTimeout(() => {
+          this.apuestasPendientesPorUsuario.forEach((total, usuario) => {
+            if (usuario !== this.currentUser) {
+              this.toast.info(`${usuario} ha apostado un total de ${total}€`);
+            }
+          });
+          this.apuestasPendientesPorUsuario.clear();
+          this.timeoutApuestas = null;
+        }, 500);
+      });
 
       this.signalrService.on("ResultadoMesa", (data: any) => {
         const numeroGanador = data.numeroGanador;
@@ -1083,6 +1090,12 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.router.navigate(['/']);
     }
+  }
+
+  // Modales
+  confirmarSalir(): void {
+    this.mostrarConfirmacionSalir = false;
+    this.volverAlLobby();
   }
 
   private getAudioContext(): AudioContext {

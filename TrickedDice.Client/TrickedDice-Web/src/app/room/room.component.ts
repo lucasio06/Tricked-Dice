@@ -38,6 +38,9 @@ export class RoomComponent implements OnInit, OnDestroy {
   showPasswordModal: boolean = false;
   gameStarted: boolean = false;
 
+  showSetPasswordModal: boolean = false;
+  newRoomPassword: string = '';
+
   private hasLeft: boolean = false;
   private navigatingToGame: boolean = false;
 
@@ -110,7 +113,7 @@ export class RoomComponent implements OnInit, OnDestroy {
 
     this.signalrService.on('RoomPrivacyToggled', (esPrivada: boolean) => {
       this.zone.run(() => {
-        if (this.room) {
+        if (this.room && this.room.esPrivada !== esPrivada) {
           this.room.esPrivada = esPrivada;
           this.toast.info(esPrivada ? 'La sala ahora es Privada 🔒' : 'La sala ahora es Pública 🌐');
         }
@@ -267,9 +270,32 @@ export class RoomComponent implements OnInit, OnDestroy {
     this.router.navigate([RUTAS.lobby]);
   }
 
-  async togglePrivacy(): Promise<void> {
-    if (!this.isCreator) return;
-    await this.signalrService.invoke('ToggleRoomPrivacy', this.roomId);
+  togglePrivacy(): void {
+    if (!this.isCreator || !this.room) return;
+    
+    if (!this.room.esPrivada) {
+      this.newRoomPassword = '';
+      this.showSetPasswordModal = true;
+    } else {
+      this.ejecutarTogglePrivacy("");
+    }
+  }
+
+  async confirmarSetPassword(): Promise<void> {
+    if (!this.newRoomPassword.trim()) {
+      this.toast.warning('Debes introducir una contraseña para hacer la sala privada.');
+      return;
+    }
+    this.showSetPasswordModal = false;
+    await this.ejecutarTogglePrivacy(this.newRoomPassword.trim());
+  }
+
+  private async ejecutarTogglePrivacy(password: string): Promise<void> {
+    try {
+      await this.signalrService.invoke('ToggleRoomPrivacy', this.roomId, password);
+    } catch (err) {
+      this.toast.error('Error al cambiar la privacidad de la sala.');
+    }
   }
 
   async iniciarJuego(): Promise<void> {

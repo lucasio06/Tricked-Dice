@@ -229,12 +229,16 @@ namespace TrickedDice.Api.Hubs
             }
         }
 
-        public async Task ToggleRoomPrivacy(string roomId)
+        public async Task ToggleRoomPrivacy(string roomId, string newPassword = "")
         {
             if (!Rooms.TryGetValue(roomId, out var room)) return;
             if (room.creadorId != Context.ConnectionId) return;
 
             room.esPrivada = !room.esPrivada;
+            
+
+            room.contrasena = room.esPrivada ? newPassword : "";
+
             await Clients.Group($"room_{roomId}").SendAsync("RoomPrivacyToggled", room.esPrivada);
             await BroadcastRooms();
         }

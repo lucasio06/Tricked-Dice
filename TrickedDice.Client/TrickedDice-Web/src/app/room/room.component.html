@@ -92,3 +92,15 @@
     </div>
   </div>
 </div>
+
+<div class="modal-overlay" *ngIf="showSetPasswordModal">
+  <div class="modal-content">
+    <h3>🔒 Hacer sala privada</h3>
+    <p>Introduce la contraseña que los jugadores necesitarán para entrar:</p>
+    <input type="text" [(ngModel)]="newRoomPassword" placeholder="Nueva contraseña" class="password-input" />
+    <div class="modal-buttons">
+      <button class="btn-cancel" (click)="showSetPasswordModal = false">Cancelar</button>
+      <button class="btn-accept" (click)="confirmarSetPassword()">Hacer Privada</button>
+    </div>
+  </div>
+</div>
