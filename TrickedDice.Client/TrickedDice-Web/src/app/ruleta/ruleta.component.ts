@@ -187,17 +187,21 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.signalrService.on("ApuestaAgregadaMesa", (nombre: string, apuesta: any) => {
-        const current = this.apuestasPendientesPorUsuario.get(nombre) || 0;
-        this.apuestasPendientesPorUsuario.set(nombre, current + apuesta.monto);
-        if (this.timeoutApuestas) clearTimeout(this.timeoutApuestas);
-        this.timeoutApuestas = setTimeout(() => {
-          this.apuestasPendientesPorUsuario.forEach((total, usuario) => {
-            this.toast.info(`${usuario} ha apostado un total de ${total}€`);
-          });
-          this.apuestasPendientesPorUsuario.clear();
-          this.timeoutApuestas = null;
-        }, 500);
-      });
+  const current = this.apuestasPendientesPorUsuario.get(nombre) || 0;
+  
+  const montoApostado = apuesta.monto || apuesta.Monto || 0; 
+  
+  this.apuestasPendientesPorUsuario.set(nombre, current + montoApostado);
+  
+  if (this.timeoutApuestas) clearTimeout(this.timeoutApuestas);
+  this.timeoutApuestas = setTimeout(() => {
+    this.apuestasPendientesPorUsuario.forEach((total, usuario) => {
+      this.toast.info(`${usuario} ha apostado un total de ${total}€`);
+    });
+    this.apuestasPendientesPorUsuario.clear();
+    this.timeoutApuestas = null;
+  }, 500);
+});
 
       this.signalrService.on("ResultadoMesa", (data: any) => {
         const numeroGanador = data.numeroGanador;
