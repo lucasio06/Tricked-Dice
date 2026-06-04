@@ -73,6 +73,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   mostrarConfirmacionSalir: boolean = false;
   esperandoSiguienteRonda: boolean = false;
   bloqueoApuesta: boolean = false;
+  mostrarTutorial: boolean = false;
 
   resultadoModal: { texto: string; premio: number; puntosJugador: number; puntosCrupier: number; monto: number; tipo: 'win' | 'lose' | 'push' } = 
     { texto: '', premio: 0, puntosJugador: 0, puntosCrupier: 0, monto: 0, tipo: 'push' };
@@ -306,6 +307,34 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       else { total += 10; }
     }
     while (total > 21 && ases > 0) { total -= 10; ases--; }
+    return total;
+  }
+
+  getPuntuacionVisual(mano: string[]): string | number {
+    if (!mano || mano.length === 0) return 0;
+    
+    let total = 0;
+    let ases = 0;
+    for (const carta of mano) {
+      let valor = carta.length === 3 ? carta.substring(0, 2) : carta.substring(0, 1);
+      if (['J', 'Q', 'K'].includes(valor)) {
+        total += 10;
+      } else if (valor === 'A') {
+        ases++;
+        total += 11;
+      } else {
+        total += parseInt(valor, 10);
+      }
+    }
+
+    while (total > 21 && ases > 0) {
+      total -= 10;
+      ases--;
+    }
+
+    if (ases > 0 && total !== 21) {
+      return `${total - 10} / ${total}`;
+    }
     return total;
   }
 

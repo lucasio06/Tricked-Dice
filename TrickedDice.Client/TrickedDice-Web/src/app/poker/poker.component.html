@@ -12,19 +12,23 @@
   <div class="top-actions-bar">
     
     <div class="left-actions">
-      <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true" *ngIf="soyJugador">🚪 SALIR DE MESA</button>
-      <button class="btn-salir-header" (click)="volverAlLobby()" *ngIf="!soyJugador">⬅ VOLVER AL LOBBY</button>
+      <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE MESA</button>
     </div>
 
     <div class="center-actions">
       <h1 class="casino-title">TEXAS HOLD'EM</h1>
-      <button class="admin-button" (click)="iniciarMano()" [disabled]="procesando" *ngIf="soyJugador && miJugador?.mano?.length === 0 && mesa.fase !== 4">
-        EMPEZAR PARTIDA
-      </button>
+      <ng-container *ngIf="soyJugador && miJugador?.mano?.length === 0 && mesa.fase !== 4">
+        <button class="admin-button" (click)="iniciarMano()" [disabled]="procesando || numeroJugadoresActivos < 2">
+          EMPEZAR PARTIDA
+        </button>
+        <div *ngIf="numeroJugadoresActivos < 2" style="color: #e74c3c; font-size: 0.85rem; font-weight: 800; margin-top: 8px; text-transform: uppercase;">
+          ⏳ Esperando al menos a 1 jugador más...
+        </div>
+      </ng-container>
     </div>
 
     <div class="right-actions">
-      <button class="btn-ayuda-header" (click)="abrirTutorial()">📖 CÓMO JUGAR</button>
+      <button class="btn-ayuda-header" (click)="abrirTutorial()">❓ CÓMO JUGAR</button>
       <button class="btn-ranking-header" (click)="toggleRanking()">🏆 VALOR DE MANOS</button>
     </div>
 
@@ -64,6 +68,7 @@
     <div class="modal-content exit-modal">
       <div class="modal-icon">🚪</div>
       <h3>¿Abandonar la mesa?</h3>
+      <p>Saldrás de la sala y perderás tu asiento.</p>
       <div class="modal-buttons">
         <button class="btn-cancel" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
         <button class="btn-confirm" (click)="confirmarSalir()">SALIR</button>
@@ -82,6 +87,12 @@
         <section>
           <h3 class="gold-text">🎯 El Objetivo</h3>
           <p>Formar la <strong>mejor mano de 5 cartas</strong> combinando tus 2 privadas con las 5 comunitarias.</p>
+          
+          <div style="background: rgba(231, 76, 60, 0.1); border-left: 4px solid #e74c3c; padding: 10px; margin-top: 15px; border-radius: 4px;">
+            <p style="color: #ff4d4d; font-weight: bold; margin: 0; font-size: 0.95rem;">
+              ⚠️ IMPORTANTE: El póker es un juego multijugador. Se necesitan como mínimo 2 personas en la mesa para poder iniciar la partida.
+            </p>
+          </div>
         </section>
 
         <section>
@@ -164,6 +175,8 @@
     <div class="poker-table">
       <div class="table-inner-ring"></div>
       
+      <div class="poker-deck"></div>
+
       <div class="table-center">
         
         <div class="phase-indicator" *ngIf="mesa.fase !== 4 && miJugador?.mano?.length">

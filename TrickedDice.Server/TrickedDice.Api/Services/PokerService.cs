@@ -34,21 +34,21 @@ namespace TrickedDice.Api.Services
             return mesa;
         }
 
-        public void IniciarMano(string roomId)
+        public bool IniciarMano(string roomId)
         {
             var mesa = ObtenerMesa(roomId);
-            if (mesa == null) return;
+            if (mesa == null) return false;
 
             lock (mesa.LockObj)
             {
-                if (mesa.Fase != PokerFase.Showdown && mesa.Baraja.Count > 0) return;
+                if (mesa.Fase != PokerFase.Showdown && mesa.Baraja.Count > 0) return false;
 
                 var jugadoresConSaldo = mesa.Jugadores.Values.Where(j => j.Saldo > 0).ToList();
                 if (jugadoresConSaldo.Count < 2)
                 {
                     mesa.UltimoMensaje = "No hay suficientes jugadores con saldo para jugar.";
                     mesa.Fase = PokerFase.Showdown;
-                    return;
+                    return false;
                 }
 
                 mesa.OrdenJugadores = jugadoresConSaldo.Select(j => j.Email).ToList();
@@ -105,6 +105,7 @@ namespace TrickedDice.Api.Services
 
                 mesa.ApuestaActual = bbValor;
                 mesa.TurnoActualEmail = mesa.OrdenJugadores[indiceUTG];
+                return true;
             }
         }
 

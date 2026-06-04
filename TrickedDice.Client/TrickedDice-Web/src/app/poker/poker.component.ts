@@ -338,6 +338,11 @@ export class PokerComponent implements OnInit, OnDestroy {
     return this.mesa?.creadorEmail === this.miEmail;
   }
 
+  get numeroJugadoresActivos(): number {
+    if (!this.mesa || !this.mesa.jugadores) return 0;
+    return Object.values(this.mesa.jugadores).filter(j => j.saldo > 0).length;
+  }
+
   calcularMinimoRaise() {
     if (this.mesa) {
       this.cantidadRaise = this.mesa.apuestaActual > 0 ? this.mesa.apuestaActual * 2 : 50;

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json.Serialization;
 
 namespace TrickedDice.Api.Services
 {
@@ -158,19 +159,20 @@ namespace TrickedDice.Api.Services
 
     public class MesaBlackjack
     {
-        public string RoomId { get; set; } = string.Empty;
-        public List<string> ManoCrupier { get; set; } = new();
-        public List<string> Baraja { get; set; } = new();
-        public ConcurrentDictionary<string, PartidaBlackjack> ManosJugadores { get; set; } = new();
-        public readonly object LockObj = new object();
+        [JsonPropertyName("roomId")] public string RoomId { get; set; } = string.Empty;
+        [JsonPropertyName("manoCrupier")] public List<string> ManoCrupier { get; set; } = new();
+        [JsonPropertyName("baraja")] public List<string> Baraja { get; set; } = new();
+        [JsonPropertyName("manosJugadores")] public ConcurrentDictionary<string, PartidaBlackjack> ManosJugadores { get; set; } = new();
+        
+        [JsonIgnore] public readonly object LockObj = new object();
     }
 
     public class PartidaBlackjack
     {
-        public string Email { get; set; } = string.Empty;
-        public string NombreUsuario { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
-        public List<string> ManoJugador { get; set; } = new();
-        public bool Terminada { get; set; }
+        [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("nombreUsuario")] public string NombreUsuario { get; set; } = string.Empty;
+        [JsonPropertyName("monto")] public decimal Monto { get; set; }
+        [JsonPropertyName("manoJugador")] public List<string> ManoJugador { get; set; } = new();
+        [JsonPropertyName("terminada")] public bool Terminada { get; set; }
     }
 }

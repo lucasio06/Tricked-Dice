@@ -22,78 +22,101 @@ $border-wood: #451a03;
   background: linear-gradient(135deg, #0f051d 0%, #1a0b2e 50%, #090411 100%);
   font-family: 'Montserrat', sans-serif;
   color: $text-light;
-  padding: 100px 20px 140px; 
+  padding: 100px 20px 140px;
   box-sizing: border-box;
   position: relative;
 }
 
 .top-actions-bar {
-  display: flex;
-  gap: 15px;
   width: 100%;
   max-width: 1200px;
-  margin-bottom: 15px;
-  z-index: 100;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+
+  .left-actions {
+    justify-self: start;
+    display: flex;
+    gap: 10px;
+  }
+  .right-actions {
+    justify-self: end;
+    display: flex;
+    gap: 10px;
+  }
+  .center-actions {
+    justify-self: center;
+    .casino-title {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: $gold;
+      text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+      letter-spacing: 2px;
+      margin: 0;
+      white-space: nowrap;
+    }
+  }
 
   button {
-    background: rgba(26, 17, 37, 0.6);
-    color: $text-light;
-    border: 1px solid rgba($gold, 0.3);
     padding: 8px 16px;
     border-radius: 8px;
     font-weight: 700;
-    font-size: 0.8rem;
     cursor: pointer;
-    backdrop-filter: blur(5px);
-    transition: all 0.2s;
-
-    &:hover { 
-      background: $bg-card; 
-      color: $gold; 
-      border-color: $gold; 
-      box-shadow: 0 0 10px rgba($neon-purple, 0.5); 
-    }
-    &.btn-salir-header:hover { 
-      background: rgba($danger, 0.2); 
-      border-color: $danger; 
-      color: white; 
-      box-shadow: 0 0 10px rgba($danger, 0.5);
-    }
+    transition: 0.3s;
+    white-space: nowrap;
+  }
+  .btn-salir-header {
+    background: rgba(231, 76, 60, 0.1);
+    color: $danger;
+    border: 1px solid $danger;
+    &:hover { background: $danger; color: white; box-shadow: 0 0 15px rgba($danger, 0.5); }
+  }
+  .btn-volver-sala {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid #fff;
+    &:hover { background: #fff; color: black; }
+  }
+  .btn-ayuda-header {
+    background: rgba(255, 215, 0, 0.1);
+    color: #ffd700;
+    border: 1px solid #ffd700;
+    &:hover { background: #ffd700; color: black; box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
   }
 }
 
 .blackjack-main {
   width: 100%;
   max-width: 1200px;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.table-felt {
+  position: relative;
+  background: radial-gradient(ellipse at 50% 0%, $table-green-light 0%, $table-green 100%);
+  border: 15px solid $border-wood;
+  border-radius: 150px;
+  padding: 40px 40px 20px 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  flex: 1;
-}
-
-.table-felt {
-  width: 100%;
-  flex: 1;
-  min-height: 450px;
-  background: radial-gradient(ellipse at 50% 0%, $table-green-light 0%, $table-green 100%);
-  border: 16px solid $border-wood;
-  border-radius: 400px 400px 150px 150px;
-  box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 80px rgba(0,0,0,0.6), inset 0 0 20px rgba($gold, 0.1);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 30px 50px;
-  box-sizing: border-box;
+  min-height: 420px;
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.6);
 
   &::before {
     content: '';
     position: absolute;
     top: 20px; left: 20px; right: 20px; bottom: 20px;
     border: 2px dashed rgba($gold, 0.25);
-    border-radius: 380px 380px 130px 130px;
+    border-radius: 130px;
     pointer-events: none;
   }
 }
@@ -120,33 +143,38 @@ $border-wood: #451a03;
   }
 }
 
-.dealer-shoe {
+.poker-deck {
   position: absolute;
-  top: -16px;
+  top: 20px;
   right: 15%;
-  width: 80px;
-  height: 110px;
-  background: $bg-card;
-  border: 4px solid $gold;
-  border-radius: 8px;
-  box-shadow: -10px 10px 20px rgba(0,0,0,0.8), 0 0 15px rgba($neon-purple, 0.3);
-  transform: rotate(-15deg);
-  &::after {
-    content: '';
-    position: absolute;
-    top: 10px; left: 10px; right: 10px; bottom: 10px;
-    background: #fff;
-    border-radius: 4px;
-    box-shadow: inset 2px 0 5px rgba(0,0,0,0.5);
-  }
+  width: 70px;
+  height: 100px;
+  background: repeating-linear-gradient(45deg, #a81c1c, #a81c1c 8px, #7a1212 8px, #7a1212 16px);
+  border: 3px solid white;
+  border-radius: 6px;
+  transform: rotate(15deg);
+  z-index: 5;
+  box-shadow:
+    -1px -1px 0 #fff, -1px -1px 1px rgba(0,0,0,0.5),
+    -2px -2px 0 #fff, -2px -2px 1px rgba(0,0,0,0.5),
+    -3px -3px 0 #fff, -3px -3px 1px rgba(0,0,0,0.5),
+    -4px -4px 0 #fff, -4px -4px 1px rgba(0,0,0,0.5),
+    -5px -5px 0 #fff, -5px -5px 1px rgba(0,0,0,0.5),
+    -15px 15px 20px rgba(0,0,0,0.6);
 }
 
 .zona-crupier {
+  background: linear-gradient(145deg, #2b0b10, #140305);
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  min-height: 160px;
   display: flex;
   flex-direction: column;
   align-items: center;
   z-index: 5;
-  margin-top: 10px;
 
   .crupier-badge {
     background: linear-gradient(135deg, #2a1a3a, #1a0a2a);
@@ -160,18 +188,31 @@ $border-wood: #451a03;
     margin-bottom: 15px;
     box-shadow: 0 5px 15px rgba($neon-purple, 0.3);
 
-    .crupier-score { color: $gold-light; margin-left: 5px; font-size: 1rem; text-shadow: 0 0 8px $neon-purple;}
+    .crupier-score { color: $gold-light; margin-left: 5px; font-size: 1rem; text-shadow: 0 0 8px $neon-purple; }
   }
+}
+
+.zona-crupier .mano {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.zona-crupier .mano .playing-card {
+  margin-left: -30px;
+}
+
+.zona-crupier .mano .playing-card:first-child {
+  margin-left: 0;
 }
 
 .multiplayer-section {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: 40px;
+  gap: 20px;
   width: 100%;
-  z-index: 5;
-  padding-bottom: 20px;
+  margin-top: auto;
 
   &.solo-mode-layout {
     .zona-jugador { width: 100%; max-width: 300px; }
@@ -183,94 +224,80 @@ $border-wood: #451a03;
   flex-direction: column;
   align-items: center;
   position: relative;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: rgba(0,0,0,0.2);
+  padding: 15px 10px;
+  border-radius: 16px;
 
   &.is-me .player-badge { border-color: $neon-purple; box-shadow: 0 0 10px rgba($neon-purple, 0.4); }
-  
-  &.active-turn {
-    .turn-ring {
-      position: absolute;
-      top: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba($gold, 0.15) 0%, transparent 70%);
-      border: 1px solid rgba($gold, 0.5);
-      animation: pulse-turn 2s infinite;
-      z-index: 0;
-    }
-    .player-badge { box-shadow: 0 0 20px rgba($gold, 0.4); border-color: $gold; }
-  }
-}
 
-@keyframes pulse-turn {
-  0% { transform: translateX(-50%) scale(0.9); opacity: 0.5; }
-  50% { transform: translateX(-50%) scale(1.1); opacity: 1; }
-  100% { transform: translateX(-50%) scale(0.9); opacity: 0.5; }
-}
-
-.player-info-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 10;
-  margin-bottom: 10px;
-}
-
-.player-badge {
-  background: rgba($bg-card, 0.9);
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba($gold, 0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 110px;
-
-  .name { color: #fff; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
-  .chips-stack {
+  .player-info-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    
-    .chip {
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: conic-gradient($gold 0deg 90deg, #fff 90deg 180deg, $gold 180deg 270deg, #fff 270deg 360deg);
-      border: 2px solid color.adjust($gold, $lightness: -20%);
+    z-index: 10;
+    margin-bottom: 10px;
+  }
+
+  .player-badge {
+    background: rgba($bg-card, 0.9);
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba($gold, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 110px;
+
+    .name { color: #fff; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+    .chips-stack {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      .chip {
+        width: 16px; height: 16px;
+        border-radius: 50%;
+        background: conic-gradient($gold 0deg 90deg, #fff 90deg 180deg, $gold 180deg 270deg, #fff 270deg 360deg);
+        border: 2px solid color.adjust($gold, $lightness: -20%);
+      }
+      .bet { color: $gold; font-weight: 900; font-size: 0.95rem; }
     }
-    .bet { color: $gold; font-weight: 900; font-size: 0.95rem; }
+  }
+
+  .hand-score {
+    background: $bg-dark;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 0.9rem;
+    margin-top: 8px;
+    border: 1px solid rgba($gold, 0.3);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+
+    &.busted-text { color: $danger; border-color: $danger; }
+    .status-icon { margin-left: 5px; }
+  }
+
+  .mano {
+    display: flex;
+    justify-content: center;
+    min-height: 120px;
+    z-index: 10;
+
+    &.cascade {
+      padding-left: 30px;
+      .playing-card { margin-left: -40px; }
+      .playing-card:first-child { margin-left: 0; }
+    }
   }
 }
 
-.hand-score {
-  background: $bg-dark;
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-weight: 900;
-  font-size: 0.9rem;
-  margin-top: 8px;
-  border: 1px solid rgba($gold, 0.3);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-
-  &.busted-text { color: $danger; border-color: $danger; }
-  .status-icon { margin-left: 5px; }
-}
-
-.mano {
-  display: flex;
-  justify-content: center;
-  min-height: 120px;
-  z-index: 10;
-  
-  &.cascade {
-    padding-left: 30px;
-    .playing-card { margin-left: -40px; }
-    .playing-card:first-child { margin-left: 0; }
-  }
+.zona-jugador.active-turn .player-badge {
+  border: 2px solid #4ade80 !important;
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.6);
+  transform: scale(1.1);
+  transition: all 0.3s ease;
 }
 
 .playing-card {
@@ -301,7 +328,7 @@ $border-wood: #451a03;
     line-height: 1;
     .card-val { font-size: 1.1rem; font-weight: 900; letter-spacing: -1px; }
     .card-suit { font-size: 0.9rem; }
-    
+
     &.top-left { top: 6px; left: 6px; }
     &.bottom-right { bottom: 6px; right: 6px; transform: rotate(180deg); }
   }
@@ -351,8 +378,7 @@ $border-wood: #451a03;
   padding: 20px 30px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 10px 20px rgba($neon-purple, 0.05);
   backdrop-filter: blur(10px);
-  margin-top: 25px;
-  margin-bottom: 10px;
+  margin: 15px auto 5px auto;
 }
 
 .fase-apuestas {
@@ -404,7 +430,7 @@ $border-wood: #451a03;
     outline: none;
     -webkit-appearance: none;
     appearance: none;
-    
+
     &::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -475,18 +501,18 @@ $border-wood: #451a03;
       font-size: 1.1rem; font-weight: 900;
       border-radius: 10px; border: none; cursor: pointer;
       display: flex; align-items: center; gap: 10px; transition: 0.2s;
-      
+
       .btn-icon { font-size: 1.4rem; }
 
-      &.btn-hit { 
-        background: #2ecc71; 
-        color: white; 
-        box-shadow: 0 4px 0 color.adjust(#2ecc71, $lightness: -20%), 0 0 15px rgba(#2ecc71, 0.4); 
+      &.btn-hit {
+        background: #2ecc71;
+        color: white;
+        box-shadow: 0 4px 0 color.adjust(#2ecc71, $lightness: -20%), 0 0 15px rgba(#2ecc71, 0.4);
       }
-      &.btn-stand { 
-        background: $neon-purple; 
-        color: white; 
-        box-shadow: 0 4px 0 color.adjust($neon-purple, $lightness: -20%), 0 0 15px rgba($neon-purple, 0.4); 
+      &.btn-stand {
+        background: $neon-purple;
+        color: white;
+        box-shadow: 0 4px 0 color.adjust($neon-purple, $lightness: -20%), 0 0 15px rgba($neon-purple, 0.4);
       }
 
       &:hover { transform: translateY(-3px); filter: brightness(1.1); }
@@ -495,26 +521,26 @@ $border-wood: #451a03;
 }
 
 .historial-container {
-  position: fixed; 
-  top: 110px; 
+  position: fixed;
+  top: 110px;
   right: 20px;
-  background: rgba($bg-card, 0.8); 
+  background: rgba($bg-card, 0.8);
   border: 1px solid rgba($gold, 0.3);
-  padding: 15px; 
-  border-radius: 12px; 
+  padding: 15px;
+  border-radius: 12px;
   width: 200px;
-  backdrop-filter: blur(5px); 
-  z-index: 90; 
+  backdrop-filter: blur(5px);
+  z-index: 90;
 
   .historial-title { color: $gold; font-size: 0.75rem; text-align: center; margin-bottom: 10px; letter-spacing: 1px; }
-  
-  .historial-track { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 6px; 
-    max-height: 150px; 
-    overflow-y: auto; 
-    padding-right: 5px; 
+
+  .historial-track {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+    padding-right: 5px;
 
     &::-webkit-scrollbar {
       width: 5px;
@@ -549,29 +575,29 @@ $border-wood: #451a03;
 
 .modal-content {
   background: $bg-card; padding: 30px; border-radius: 16px; text-align: center; border: 1px solid rgba($gold, 0.3);
-  
+
   &.result-card {
     background: linear-gradient(145deg, #1a0b2e, #090411);
     border-width: 2px;
     min-width: 350px;
-    
+
     &.win { border-color: $success; box-shadow: 0 0 50px rgba($success, 0.3); }
     &.lose { border-color: $danger; box-shadow: 0 0 50px rgba($danger, 0.3); }
     &.push { border-color: $gold; box-shadow: 0 0 50px rgba($gold, 0.3); }
 
     .result-header {
       display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;
-      .score-badge { 
-        background: rgba(255,255,255,0.1); 
-        padding: 6px 15px; 
-        border-radius: 20px; 
-        font-weight: 900; 
-        font-size: 1.1rem; 
+      .score-badge {
+        background: rgba(255,255,255,0.1);
+        padding: 6px 15px;
+        border-radius: 20px;
+        font-weight: 900;
+        font-size: 1.1rem;
         color: white;
       }
-      .dealer-badge { 
-        background: #000; 
-        border: 1px solid $gold; 
+      .dealer-badge {
+        background: #000;
+        border: 1px solid $gold;
       }
       .vs { color: $text-light; font-weight: bold; font-size: 0.9rem; }
     }
@@ -584,15 +610,84 @@ $border-wood: #451a03;
 
 .exit-modal {
   border-color: $gold;
-  box-shadow: 0 0 40px rgba($neon-purple, 0.5);
-  h3 { font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; color: $gold; }
-  p { color: $text-light; margin-bottom: 25px; }
+  box-shadow: 0 0 40px rgba($neon-purple, 0.3);
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+
+  h3 { font-size: 1.4rem; font-weight: 800; color: $gold; margin: 10px 0; }
+  p { color: #ccc; margin-bottom: 25px; }
+
   .modal-buttons {
-    display: flex; gap: 15px; justify-content: center;
-    button { padding: 10px 25px; font-weight: bold; border-radius: 8px; cursor: pointer; border: none; }
-    .btn-cancel { background: transparent; color: $text-light; border: 1px solid rgba($gold, 0.5); }
-    .btn-confirm { background: $danger; color: #fff; box-shadow: 0 4px 0 color.adjust($danger, $lightness: -20%);}
-    .btn-cancel:hover { background: rgba($gold, 0.1); color: $gold; }
-    .btn-confirm:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    display: flex;
+    gap: 15px;
+    .btn-cancel, .btn-confirm { flex: 1; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn-cancel { background: rgba(255,255,255,0.1); color: white; border: none; &:hover { background: rgba(255,255,255,0.2); } }
+    .btn-confirm { background: $danger; color: white; border: none; &:hover { background: #c0392b; transform: translateY(-2px); } }
+  }
+}
+
+.tutorial-modal {
+  max-width: 600px !important;
+  width: 95%;
+  padding: 0 !important;
+  overflow: hidden;
+  text-align: left !important;
+
+  .modal-header {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 25px 30px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    .modal-icon { font-size: 2.5rem; margin: 0; }
+    h2 { margin: 0; font-size: 1.6rem; color: $gold; }
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: transparent;
+      border: none;
+      color: #aaa;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: 0.2s;
+      &:hover { color: $danger; transform: scale(1.1); }
+    }
+  }
+
+  .tutorial-body {
+    padding: 30px;
+    max-height: 60vh;
+    overflow-y: auto;
+    color: #e0e0e0;
+
+    &::-webkit-scrollbar { width: 8px; }
+    &::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    &::-webkit-scrollbar-thumb { background: $gold; border-radius: 4px; }
+
+    section { margin-bottom: 25px; }
+    .gold-text {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      border-bottom: 1px dashed rgba(212, 175, 55, 0.3);
+      padding-bottom: 5px;
+      display: inline-block;
+      color: $gold;
+    }
+    p, li { line-height: 1.6; font-size: 1.05rem; }
+  }
+
+  .modal-buttons {
+    padding: 20px 30px;
+    background: rgba(0, 0, 0, 0.4);
+    border-top: 1px solid rgba(212, 175, 55, 0.3);
+    margin: 0;
+
+    .full-width { width: 100%; padding: 15px; font-size: 1.2rem; background: $gold; color: #000; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; transition: 0.2s; }
+    .full-width:hover { transform: translateY(-2px); box-shadow: 0 0 15px rgba($gold, 0.5); }
   }
 }

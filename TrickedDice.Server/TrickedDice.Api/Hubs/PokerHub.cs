@@ -108,12 +108,15 @@ namespace TrickedDice.Api.Hubs
 
         public async Task IniciarMano(string roomId)
         {
-            _pokerService.IniciarMano(roomId);
-            var mesa = _pokerService.ObtenerMesa(roomId);
-            if (mesa != null)
+            bool manoIniciada = _pokerService.IniciarMano(roomId);
+            if (manoIniciada)
             {
-                lock(mesa.LockObj) { IniciarTemporizadorTurno(roomId, mesa); }
-                await Clients.Group(roomId).SendAsync("MesaActualizada", mesa);
+                var mesa = _pokerService.ObtenerMesa(roomId);
+                if (mesa != null)
+                {
+                    lock(mesa.LockObj) { IniciarTemporizadorTurno(roomId, mesa); }
+                    await Clients.Group(roomId).SendAsync("MesaActualizada", mesa);
+                }
             }
         }
 

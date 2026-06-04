@@ -3,19 +3,27 @@
 <div class="blackjack-container">
   
   <div class="top-actions-bar">
-    <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE MESA</button>
-    <button *ngIf="tableIdInput" class="btn-volver-sala" (click)="volverAlLobby()">💬 VOLVER AL LOBBY</button>
+    <div class="left-actions">
+      <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE MESA</button>
+      <button *ngIf="tableIdInput" class="btn-volver-sala" (click)="volverAlLobby()">💬 VOLVER AL LOBBY</button>
+    </div>
+    <div class="center-actions">
+      <h1 class="casino-title">BLACKJACK</h1>
+    </div>
+    <div class="right-actions">
+      <button class="btn-ayuda-header" (click)="mostrarTutorial = true">❓ CÓMO JUGAR</button>
+    </div>
   </div>
 
   <div class="blackjack-main">
     
     <div class="table-felt">
       <div class="casino-logo">BLACKJACK <span class="logo-accent">PAYS 3 TO 2</span></div>
-      <div class="dealer-shoe"></div>
+      <div class="poker-deck"></div>
 
       <div class="zona-crupier">
         <div class="crupier-badge" *ngIf="mesa?.manoCrupier?.length">
-          BANCA <span class="crupier-score">{{ getValorMano(mesa!.manoCrupier) }}</span>
+          BANCA <span class="crupier-score">{{ getPuntuacionVisual(mesa!.manoCrupier) }}</span>
         </div>
         <div class="mano" *ngIf="mesa?.manoCrupier?.length">
           <ng-container *ngFor="let carta of mesa!.manoCrupier; let i = index; trackBy: trackByIndex">
@@ -47,8 +55,6 @@
              [class.is-me]="j.id === miPartidaId"
              [class.active-turn]="j.id === getTurnoActualId()">
              
-          <div class="turn-ring" *ngIf="j.id === getTurnoActualId()"></div>
-          
           <div class="player-info-container">
             <div class="player-badge">
               <span class="name">{{ j.partida.nombreUsuario }}</span>
@@ -58,7 +64,7 @@
               </div>
             </div>
             <div class="hand-score" [class.busted-text]="getValorMano(j.partida.manoJugador) > 21" *ngIf="j.partida.manoJugador.length > 0">
-              <span class="score-number">{{ getValorMano(j.partida.manoJugador) }}</span>
+              <span class="score-number">{{ getPuntuacionVisual(j.partida.manoJugador) }}</span>
               <span class="status-icon" *ngIf="j.partida.terminada && getValorMano(j.partida.manoJugador) <= 21">✓</span>
               <span class="status-icon" *ngIf="getValorMano(j.partida.manoJugador) > 21">💥</span>
             </div>
@@ -164,5 +170,53 @@
       <span class="score-badge dealer-badge">BANCA: {{ resultadoModal.puntosCrupier }}</span>
     </div>
     <div class="result-message">{{ resultadoModal.texto }}</div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="mostrarTutorial" (click)="mostrarTutorial = false">
+  <div class="modal-content tutorial-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-icon">🃏</span>
+      <h2>CÓMO JUGAR BLACKJACK</h2>
+      <button class="close-btn" (click)="mostrarTutorial = false">✖</button>
+    </div>
+    
+    <div class="tutorial-body">
+      <section>
+        <h3 class="gold-text">🎯 El Objetivo</h3>
+        <p>Sumar más puntos que el crupier sin pasarte de <strong>21</strong>.</p>
+      </section>
+
+      <section>
+        <h3 class="gold-text">🔢 Valor de las Cartas</h3>
+        <ul>
+          <li><strong>Cartas del 2 al 10:</strong> Su valor numérico.</li>
+          <li><strong>Figuras (J, Q, K):</strong> Valen 10.</li>
+          <li><strong>As (A):</strong> Vale 1 u 11, lo que más te beneficie. Una mano con un As flexible se llama <em>Mano Suave</em> (ej: 7 / 17).</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3 class="gold-text">🤖 Reglas del Crupier</h3>
+        <ul>
+          <li>El crupier revela su segunda carta cuando todos los jugadores terminan de hablar.</li>
+          <li>Está <strong>obligado a pedir carta</strong> si tiene 16 o menos.</li>
+          <li>Está <strong>obligado a plantarse</strong> si tiene 17 o más.</li>
+        </ul>
+      </section>
+      
+      <section>
+        <h3 class="gold-text">💸 Pagos</h3>
+        <ul>
+          <li><strong>Victoria normal:</strong> Paga 1 a 1 (Ganas lo mismo que apostaste).</li>
+          <li><strong>Blackjack (21 con dos cartas):</strong> Paga 3 a 2 (Ganas 1.5 veces tu apuesta).</li>
+          <li><strong>Empate (Push):</strong> Recuperas tu apuesta intacta.</li>
+        </ul>
+      </section>
+    </div>
+    
+    <div class="modal-buttons">
+      <button class="btn-confirm full-width" (click)="mostrarTutorial = false">¡ENTENDIDO!</button>
+    </div>
   </div>
 </div>
