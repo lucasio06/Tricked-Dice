@@ -1,85 +1,81 @@
-# 🎲 Tricked Dice - Proyecto Intermodular ASIR 2025-2026
+🎲 Tricked Dice - Proyecto Intermodular ASIR 2025-2026
+1. Título del Proyecto
 
-## 1. Título del Proyecto
-**Tricked Dice:** Plataforma Multijugador de Juegos de Casino en Tiempo Real.
+Tricked Dice: Plataforma de juegos de casino multijugador en tiempo real con arquitectura cliente-servidor.
 
-## 2. 👨‍💻 Autores del proyecto
-* Lucas Moreno Navas
-* Samuel Iván Sánchez Muñoz
-* Raúl Díaz Martín
-* Rubén Manuel Segovia Cantero
+2. 👨‍💻 Autores
+Lucas Moreno Navas
+Samuel Iván Sánchez Muñoz
+Raúl Díaz Martín
+Rubén Manuel Segovia Cantero
+3. 📌 Descripción del Proyecto
 
-## 3. Descripción
-Tricked Dice es una plataforma de casino online multijugador desarrollada bajo una arquitectura cliente-servidor. Permite a los usuarios registrarse, recargar saldo virtual mediante una pasarela de pagos simulada y participar en salas de juego en tiempo real (Póker, Blackjack y Ruleta) interactuando con otros jugadores. El proyecto incluye auditoría de transacciones, copias de seguridad automatizadas y despliegue orquestado mediante contenedores, cubriendo todo el ciclo de vida de administración de sistemas y desarrollo de software.
+Tricked Dice es una plataforma de casino online multijugador desarrollada como proyecto intermodular del ciclo ASIR.
 
-## 4. 🛠️ Tecnologías utilizadas
+El sistema permite el registro de usuarios, autenticación segura mediante JWT, gestión de saldo virtual y participación en juegos multijugador en tiempo real como Ruleta, Blackjack y Póker, utilizando comunicación basada en WebSockets mediante SignalR.
 
-### Backend
-* **Lenguaje:** C#  
-* **Framework:** .NET 10.0 (ASP.NET Core Web API)   
-* **Base de datos:** SQL Server (con Triggers y transacciones)
-* **Tiempo Real:** SignalR (WebSockets)
-* **Seguridad:** JWT, BCrypt, Stripe API
+Además, el proyecto integra:
 
-### Frontend
-* **Lenguaje:** TypeScript  
-* **Framework:** Angular  
-* **Estilos:** CSS / SCSS
+Sistema de pagos con Stripe (recargas de saldo virtual)
+Autenticación externa mediante Google OAuth
+Arquitectura cliente-servidor desacoplada
+Sistema de roles y control de acceso
+Auditoría de transacciones y trazabilidad de operaciones
+Automatización de copias de seguridad de base de datos
+Despliegue mediante contenedores Docker
 
-### Infraestructura y Despliegue
-* **Plataforma:** MonsterASP, Proxmox
-* **Contenedores:** Docker, Docker Compose
-* **Mantenimiento:** Scripts Bash (Automatización de backups)
+El proyecto abarca tanto el desarrollo de software como la administración de sistemas, incluyendo despliegue, seguridad, infraestructura y mantenimiento.
 
-## 5. Esquema de Base de Datos
-*(Pendiente: Subir imagen del diagrama E/R)*
+4. 🛠️ Tecnologías utilizadas
+Backend
+C# (.NET 10 ASP.NET Core Web API)
+SQL Server (procedimientos, triggers y transacciones)
+SignalR (comunicación en tiempo real)
+JWT + BCrypt (seguridad)
+Stripe API (pagos)
+Frontend
+Angular (TypeScript)
+SCSS / CSS
+Infraestructura
+Docker / Docker Compose
+Proxmox (entorno de despliegue)
+Scripts Bash (backups y automatización)
+5. 🗄️ Base de Datos
 
-## 6. Ejecución Local (Guía de Instalación)
-El proyecto puede ejecutarse en modo desarrollo o mediante infraestructura de contenedores.
+📌 Diagrama entidad-relación incluido en la memoria del proyecto.
 
-### Opción A: Modo Desarrollo (Local)
-1. **Levantar el Backend:**
-```bash
-    cd TrickedDice.Server/TrickedDice.Api
-    dotnet run
-```
+6. ⚙️ Ejecución local
+Backend
+cd TrickedDice.Server/TrickedDice.Api
+dotnet run
+Frontend
+cd TrickedDice.Client/TrickedDice-Web
+pnpm install
+pnpm start
+Docker
+cd TrickedDice.Server
+docker-compose up -d
+7. 📸 Capturas de pantalla
 
-2. **Levantar el Frontend:**
+Incluidas en la memoria del proyecto (login, lobby, juegos, panel de administración).
 
-```bash
-    cd TrickedDice.Client/TrickedDice-Web
-    pnpm install
-    pnpm start  # (o ng serve)
-```
+8. 🌐 Despliegue
 
-### Opción B: Despliegue con Docker
-Para desplegar la API y la base de datos de forma contenerizada:
+Entorno de producción desplegado en infraestructura virtualizada (Proxmox + contenedores Docker).
 
-```bash
-    cd TrickedDice.Server
-    docker-compose up -d
-```
+9. 🎥 Vídeo de demostración
 
-## 7. Tutorial de Uso
-(Pendiente: Añadir capturas de pantalla de la interfaz)
+Disponible en plataforma de vídeo (YouTube/Vimeo).
 
-## 8. URL de Producción
-Despliegue (MonsterASP): [URL_AQUI]
+10. 📚 Documentación y referencias
+Documentación oficial de .NET
+Angular Docs
+Stripe API
+SignalR
+SQL Server
+📄 Licencia
 
-## 9. Enlace a Vídeo de Presentación
-(Pendiente: Enlace a YouTube/Vimeo)
+Proyecto desarrollado con fines académicos en el marco del ciclo ASIR.
+Se permite su uso con fines educativos citando a los autores.
 
-## 10. Enlace al Anteproyecto
-(Pendiente: Añadir enlace público al documento del anteproyecto)
-
-## 11. Bibliografía
-Documentación oficial de Microsoft .NET y Dapper.
-
-Documentación oficial de Angular.
-
-Documentación de Stripe API y SignalR.
-
-## 📄 Licencia
-Este proyecto está protegido por derechos de autor. No se permite su uso, copia, modificación, distribución ni creación de obras derivadas sin autorización expresa de los autores.
-
-© 2026. Todos los derechos reservados.
+© 2026 Tricked Dice.
