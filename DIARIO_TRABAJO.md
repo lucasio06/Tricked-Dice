@@ -1,62 +1,89 @@
-# Diario de Trabajo - Tricked Dice
+# Diario de Trabajo - Proyecto Tricked Dice
 
-## Fase 1: Inicio y planificación (11/02/2026 - 14/04/2026)
+## Datos del Proyecto
 
-| Fecha      | Integrante     | Actividad                                                                                  |
-| ---------- | -------------- | ------------------------------------------------------------------------------------------ |
-| 11/02/2026 | Lucas Moreno   | Creación del repositorio Git, estructura inicial del backend y configuración del proyecto. |
-| 11/02/2026 | Rubén Segovia  | Elaboración inicial del README y documentación básica.                                     |
-| 12/02/2026 | Samuel Sánchez | Configuración de .gitignore, iconografía y protección de credenciales.                     |
-| 12/02/2026 | Raúl Díaz      | Actualización de documentación y estructura del proyecto.                                  |
-| 14/04/2026 | Rubén Segovia  | Validación de DNI en frontend y backend.                                                   |
-| 14/04/2026 | Samuel Sánchez | Sistema de notificaciones y componentes visuales de feedback.                              |
+**Ciclo Formativo:** ASIR (Administración de Sistemas Informáticos en Red)
+**Curso Académico:** 2025-2026
+**Proyecto:** Tricked Dice (Plataforma de juegos con autenticación, multijugador y pagos)
 
-## Fase 2: Autenticación y funcionalidades base (15/04/2026 - 30/04/2026)
+---
 
-| Fecha      | Integrante     | Actividad                                                         |
-| ---------- | -------------- | ----------------------------------------------------------------- |
-| 15/04/2026 | Lucas Moreno   | Implementación de autenticación JWT, AuthService e interceptores. |
-| 20/04/2026 | Rubén Segovia  | Sistema de recarga de saldo.                                      |
-| 21/04/2026 | Samuel Sánchez | Desarrollo inicial de la ruleta y gestión de errores.             |
-| 21/04/2026 | Raúl Díaz      | Estructura inicial del Video Poker y navegación dinámica.         |
-| 25/04/2026 | Rubén Segovia  | Desarrollo completo del panel de administración.                  |
-| 27/04/2026 | Rubén Segovia  | Página principal pública responsive.                              |
-| 28/04/2026 | Samuel Sánchez | Animaciones avanzadas y mejoras visuales en juegos.               |
+# FASE 1: Análisis, inicialización y configuración (Febrero - 14/04/2026)
 
-## Fase 3: Multijugador y servicios externos (04/05/2026 - 31/05/2026)
+Durante esta fase se realiza la creación inicial del repositorio, estructura del proyecto y configuración base del entorno de desarrollo.
 
-| Fecha      | Integrante     | Actividad                                                    |
-| ---------- | -------------- | ------------------------------------------------------------ |
-| 04/05/2026 | Samuel Sánchez | Desarrollo de pruebas unitarias y gestión de sesiones.       |
-| 04/05/2026 | Lucas Moreno   | Implementación completa de Blackjack.                        |
-| 10/05/2026 | Lucas Moreno   | Migración a SignalR para comunicaciones en tiempo real.      |
-| 12/05/2026 | Lucas Moreno   | Sistema multiapuesta de ruleta.                              |
-| 12/05/2026 | Samuel Sánchez | Hotspots avanzados para apuestas de ruleta.                  |
-| 16/05/2026 | Lucas Moreno   | Implementación de Ruleta Neon Luxury y salas multijugador.   |
-| 25/05/2026 | Rubén Segovia  | Integración de Stripe Checkout.                              |
-| 25/05/2026 | Samuel Sánchez | Estabilización del sistema multijugador.                     |
-| 29/05/2026 | Rubén Segovia  | Inicio de sesión mediante Google OAuth.                      |
-| 31/05/2026 | Lucas Moreno   | Refactorización visual y estructural de Blackjack y backend. |
+| Fecha      | Integrante     | Actividad                                                                                      |
+| ---------- | -------------- | ---------------------------------------------------------------------------------------------- |
+| 11/02/2026 | Lucas Moreno   | Creación del repositorio, estructura inicial del backend y configuración general del proyecto. |
+| 11/02/2026 | Rubén Segovia  | Redacción inicial del README y documentación básica del proyecto.                              |
+| 12/02/2026 | Samuel Sánchez | Configuración del control de versiones, .gitignore y securización de archivos sensibles.       |
+| 12/02/2026 | Raúl Díaz      | Apoyo en documentación y estructura inicial del proyecto.                                      |
+| 14/04/2026 | Rubén Segovia  | Validación de formularios (DNI) en frontend y backend.                                         |
+| 14/04/2026 | Samuel Sánchez | Implementación de sistema de notificaciones base en la interfaz.                               |
 
-## Fase 4: Infraestructura y despliegue (01/06/2026 - 05/06/2026)
+---
 
-| Fecha      | Integrante     | Actividad                                                        |
-| ---------- | -------------- | ---------------------------------------------------------------- |
-| 01/06/2026 | Lucas Moreno   | Dockerización completa del proyecto.                             |
-| 01/06/2026 | Lucas Moreno   | Scripts de backup y automatización de base de datos.             |
-| 01/06/2026 | Lucas Moreno   | Implementación de patrón repositorio y Dapper.                   |
-| 01/06/2026 | Samuel Sánchez | Correcciones de memoria y estabilidad.                           |
-| 02/06/2026 | Lucas Moreno   | Rediseño UX/UI del Poker.                                        |
-| 03/06/2026 | Lucas Moreno   | Refactorización de Lobby y Salas.                                |
-| 04/06/2026 | Samuel Sánchez | Correcciones finales de ruleta y notificaciones.                 |
-| 05/06/2026 | Lucas Moreno   | Ajustes finales de seguridad, Poker y Ruleta.                    |
-| 05/06/2026 | Lucas Moreno   | Eliminación de credenciales sensibles y securización definitiva. |
+# FASE 2: Autenticación y funcionalidades base (15/04/2026 - 30/04/2026)
 
-## Distribución aproximada del trabajo
+Se desarrolla el sistema de autenticación, estructura principal de la aplicación y primeras funcionalidades del sistema.
 
-| Integrante        | Responsabilidades principales                                                         |
-| ----------------- | ------------------------------------------------------------------------------------- |
-| Lucas Moreno      | Arquitectura, backend, JWT, SignalR, Docker, despliegue, juegos multijugador y DevOps |
-| Samuel Sánchez    | Ruleta, Poker, Blackjack multijugador, pruebas y experiencia de usuario               |
-| Rubén Segovia     | Base de datos, autenticación externa, Stripe, panel de administración y frontend      |
-| Raúl Díaz         | Maquetación, páginas informativas y Video Poker inicial                               |
+| Fecha      | Integrante     | Actividad                                                                          |
+| ---------- | -------------- | ---------------------------------------------------------------------------------- |
+| 15/04/2026 | Lucas Moreno   | Implementación de autenticación JWT, interceptores HTTP y estructura de seguridad. |
+| 20/04/2026 | Rubén Segovia  | Sistema de recarga de saldo de usuario.                                            |
+| 21/04/2026 | Samuel Sánchez | Desarrollo inicial del sistema de ruleta y gestión de errores en UI.               |
+| 21/04/2026 | Raúl Díaz      | Implementación inicial del Video Poker y navegación del lobby.                     |
+| 25/04/2026 | Rubén Segovia  | Desarrollo del panel de administración y gestión de usuarios.                      |
+| 27/04/2026 | Rubén Segovia  | Diseño y desarrollo de la página principal pública responsive.                     |
+| 28/04/2026 | Samuel Sánchez | Mejora de animaciones y experiencia de usuario en juegos.                          |
+
+---
+
+# FASE 3: Multijugador, pagos y comunicación en tiempo real (Mayo 2026)
+
+Se implementan funcionalidades avanzadas como multijugador, comunicación en tiempo real y sistemas de pago.
+
+| Fecha      | Integrante     | Actividad                                                                     |
+| ---------- | -------------- | ----------------------------------------------------------------------------- |
+| 10/05/2026 | Lucas Moreno   | Migración a SignalR para comunicación en tiempo real (lobby, juegos y salas). |
+| 12/05/2026 | Lucas Moreno   | Sistema de apuestas múltiples en ruleta.                                      |
+| 12/05/2026 | Samuel Sánchez | Implementación de elementos interactivos en la ruleta.                        |
+| 16/05/2026 | Lucas Moreno   | Desarrollo completo de la ruleta multijugador.                                |
+| 25/05/2026 | Rubén Segovia  | Integración de sistema de pagos con Stripe Checkout.                          |
+| 25/05/2026 | Samuel Sánchez | Estabilización del sistema multijugador y sincronización de estado.           |
+| 29/05/2026 | Rubén Segovia  | Integración de autenticación con Google OAuth.                                |
+| 31/05/2026 | Lucas Moreno   | Refactorización general del sistema de juegos y mejoras de arquitectura.      |
+
+---
+
+# FASE 4: Infraestructura, despliegue y cierre del proyecto (Junio 2026)
+
+Se realizan tareas finales de optimización, despliegue y securización del sistema.
+
+| Fecha      | Integrante     | Actividad                                                                |
+| ---------- | -------------- | ------------------------------------------------------------------------ |
+| 01/06/2026 | Lucas Moreno   | Dockerización del proyecto y configuración de docker-compose.            |
+| 01/06/2026 | Lucas Moreno   | Implementación de patrón repositorio y mejora de arquitectura backend.   |
+| 01/06/2026 | Lucas Moreno   | Scripts de backup de base de datos y automatización.                     |
+| 01/06/2026 | Samuel Sánchez | Corrección de errores en lobby y optimización de rendimiento.            |
+| 01/06/2026 | Lucas Moreno   | Implementación de middleware global de errores y mejoras de seguridad.   |
+| 01/06/2026 | Lucas Moreno   | Eliminación de credenciales sensibles y configuración de entorno seguro. |
+
+---
+
+# Resumen de dedicación (horas estimadas)
+
+Las siguientes horas son una **estimación basada en la carga de trabajo y la actividad registrada en el repositorio Git**:
+
+* Lucas Moreno: 50–55 horas
+* Rubén Segovia: 30–35 horas
+* Samuel Sánchez: 30–35 horas
+* Raúl Díaz: 8–12 horas
+
+**Total estimado del proyecto:** ~125–135 horas
+
+---
+
+# Nota final
+
+El desarrollo del proyecto ha sido iterativo, con integración continua mediante Git, dividiendo las tareas por módulos funcionales (backend, frontend, multijugador, pagos e infraestructura), lo que ha permitido una evolución progresiva del sistema hasta su versión final.
