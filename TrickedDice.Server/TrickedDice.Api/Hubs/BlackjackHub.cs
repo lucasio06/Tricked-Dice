@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using System.Security.Claims;
 using TrickedDice.Api.Services;
+using TrickedDice.Api.Extensions;
 
 namespace TrickedDice.Api.Hubs
 {
@@ -17,9 +17,6 @@ namespace TrickedDice.Api.Hubs
             _gameService = gameService;
         }
 
-        private string? GetEmail() => Context.User?.FindFirst(ClaimTypes.Email)?.Value;
-        private string? GetUserName() => Context.User?.FindFirst(ClaimTypes.Name)?.Value ?? Context.User?.FindFirst("unique_name")?.Value ?? GetEmail();
-
         public async Task JoinTable(string tableId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, tableId);
@@ -32,7 +29,7 @@ namespace TrickedDice.Api.Hubs
 
         public async Task Repartir(string tableId, decimal monto)
         {
-            var email = GetEmail();
+            var email = Context.User?.GetEmail();
             if (string.IsNullOrEmpty(email)) return;
 
             var validacion = _gameService.ValidarUsuario(email, monto);
@@ -42,7 +39,7 @@ namespace TrickedDice.Api.Hubs
                 return;
             }
 
-            var idPartida = _gameService.IniciarPartida(email, GetUserName() ?? "Anónimo", monto, tableId);
+            var idPartida = _gameService.IniciarPartida(email, Context.User?.GetUserName() ?? "Anónimo", monto, tableId);
             await Clients.Caller.SendAsync("PartidaIniciada", new { idPartida, saldo = validacion.Value.saldoActual - monto });
 
             var mesa = _service.ObtenerMesa(tableId);

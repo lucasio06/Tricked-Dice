@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using TrickedDice.Api.Services;
 
 namespace TrickedDice.Api.Hubs
@@ -12,6 +14,7 @@ namespace TrickedDice.Api.Hubs
         private readonly PokerService _pokerService;
         private readonly IHubContext<PokerHub> _hubContext;
         private static readonly ConcurrentDictionary<string, string> ConexionesMesas = new();
+        private static readonly ConcurrentDictionary<string, CancellationTokenSource> _turnTimers = new();
 
         public PokerHub(PokerService pokerService, IHubContext<PokerHub> hubContext)
         {
@@ -54,15 +57,27 @@ namespace TrickedDice.Api.Hubs
             string turnoGuardado = mesa.TurnoId;
             string emailActual = mesa.TurnoActualEmail;
 
+            if (_turnTimers.TryRemove(roomId, out var oldCts))
+            {
+                oldCts.Cancel();
+                oldCts.Dispose();
+            }
+
+            var cts = new CancellationTokenSource();
+            _turnTimers[roomId] = cts;
+            var token = cts.Token;
+
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay(60000);
+                    await Task.Delay(60000, token);
 
                     bool seForzoFold = false;
                     lock (mesa.LockObj)
                     {
+                        if (token.IsCancellationRequested) return;
+
                         if (mesa.TurnoId == turnoGuardado && mesa.TurnoActualEmail == emailActual && mesa.Fase != PokerFase.Showdown)
                         {
                             if (mesa.Jugadores.TryGetValue(emailActual, out var jugador) && !jugador.Folded && !jugador.AllIn)
@@ -82,11 +97,15 @@ namespace TrickedDice.Api.Hubs
                         IniciarTemporizadorTurno(roomId, mesa);
                     }
                 }
+                catch (TaskCanceledException)
+                {
+                    
+                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[CRÍTICO] Error en temporizador de Poker: {ex.Message}");
                 }
-            });
+            }, token);
         }
 
         public async Task UnirseMesa(string roomId)

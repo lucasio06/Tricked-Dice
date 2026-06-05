@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
-using System.Security.Claims;
 using System.Text.Json.Serialization;
+using TrickedDice.Api.Extensions;
 
 namespace TrickedDice.Api.Hubs
 {
@@ -22,19 +22,7 @@ namespace TrickedDice.Api.Hubs
             _logger = logger;
         }
 
-        private string? UserName
-        {
-            get
-            {
-                if (Context.User == null) return null;
-                var name = Context.User.FindFirst("name")?.Value;
-                if (!string.IsNullOrEmpty(name)) return name;
-                name = Context.User.FindFirst(ClaimTypes.Name)?.Value;
-                if (!string.IsNullOrEmpty(name)) return name;
-                name = Context.User.FindFirst(ClaimTypes.Email)?.Value;
-                return name ?? Context.ConnectionId;
-            }
-        }
+        private string? UserName => Context.User == null ? null : (Context.User.GetUserName() ?? Context.ConnectionId);
 
         public async Task GetOnlineUsers() => await Clients.Caller.SendAsync("OnlineUsers", OnlineUsers.Values.Distinct().ToList());
 
@@ -235,8 +223,6 @@ namespace TrickedDice.Api.Hubs
             if (room.creadorId != Context.ConnectionId) return;
 
             room.esPrivada = !room.esPrivada;
-            
-
             room.contrasena = room.esPrivada ? newPassword : "";
 
             await Clients.Group($"room_{roomId}").SendAsync("RoomPrivacyToggled", room.esPrivada);

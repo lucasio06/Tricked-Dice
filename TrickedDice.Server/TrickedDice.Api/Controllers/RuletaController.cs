@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using System.Security.Claims;
 using TrickedDice.Api.Services;
+using TrickedDice.Api.Extensions;
 
 namespace TrickedDice.Api.Controllers
 {
@@ -33,10 +33,7 @@ namespace TrickedDice.Api.Controllers
             if (apuesta.Monto <= 0)
                 return BadRequest(new { mensaje = "El monto de la apuesta debe ser mayor a 0." });
 
-            var email = User.FindFirst(ClaimTypes.Email)?.Value
-                        ?? User.FindFirst("email")?.Value
-                        ?? User.FindFirst(ClaimTypes.Name)?.Value
-                        ?? User.FindFirst("unique_name")?.Value;
+            var email = User.GetEmail();
 
             if (string.IsNullOrEmpty(email))
                 return Unauthorized(new { mensaje = "No se pudo determinar el email del usuario." });
@@ -70,10 +67,7 @@ namespace TrickedDice.Api.Controllers
         [HttpGet("saldo")]
         public IActionResult GetSaldo()
         {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value
-                        ?? User.FindFirst("email")?.Value
-                        ?? User.FindFirst(ClaimTypes.Name)?.Value
-                        ?? User.FindFirst("unique_name")?.Value;
+            var email = User.GetEmail();
 
             if (string.IsNullOrEmpty(email))
                 return Unauthorized(new { mensaje = "No se pudo determinar el email del usuario." });
