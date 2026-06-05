@@ -115,12 +115,6 @@
                 <div class="columnas-placeholder"></div>
               </div>
             </div>
-            <div class="hotspots-layer">
-              <div *ngFor="let h of hotspotsCaballo" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCaballo(h.num1, h.num2)"></div>
-              <div *ngFor="let h of hotspotsCalle" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCalle(h.num1, h.num2, h.num3)"></div>
-              <div *ngFor="let h of hotspotsCuadro" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaCuadro(h.num1, h.num2, h.num3, h.num4)"></div>
-              <div *ngFor="let h of hotspotsSeisena" class="hotspot" [style.left.%]="h.posX" [style.top.%]="h.posY" (click)="agregarApuestaSeisena(h.num1, h.num2, h.num3, h.num4, h.num5, h.num6)"></div>
-            </div>
           </div>
 
           <div *ngIf="modoApuesta === 'especiales'" style="width: 100%;">
@@ -169,15 +163,16 @@
             </div>
             <div class="apuesta-col" style="margin-top: 10px;">
               <label class="apuesta-label">Finales (último dígito)</label>
-              <select class="casino-select" [(ngModel)]="valorApuestaFinal">
-                <option *ngFor="let f of finales" [value]="f">{{ f }}</option>
-              </select>
-              <button class="apuesta-btn" (click)="seleccionarFinal()">Apostar a este final</button>
+              <div class="finales-grid">
+                <button *ngFor="let f of finales" class="apuesta-btn especial" (click)="seleccionarFinal(f, $event)">
+                  {{ f }}
+                </button>
+              </div>
             </div>
           </div>
 
           <div class="fichas-layer">
-            <div *ngFor="let apuesta of apuestasActuales"
+            <div *ngFor="let apuesta of apuestasVisiblesActuales"
                  class="ficha-visual"
                  [class.win]="apuesta.estado === 'win'"
                  [class.lose]="apuesta.estado === 'lose'"
@@ -185,7 +180,7 @@
                  [style.top.%]="apuesta.posY">
               {{ apuesta.monto }}€
             </div>
-            <div *ngFor="let apuesta of apuestasConfirmadas"
+            <div *ngFor="let apuesta of apuestasVisiblesConfirmadas"
                  class="ficha-visual"
                  [class.win]="apuesta.estado === 'win'"
                  [class.lose]="apuesta.estado === 'lose'"
@@ -277,7 +272,6 @@
           <h3 class="gold-text">🎲 Tipos de Apuesta Rápida</h3>
           <ul>
             <li><strong>Pleno:</strong> Apuestas a un solo número directo. Paga 36 a 1.</li>
-            <li><strong>Caballo / Calle / Cuadro:</strong> Apuestas a varios números juntos tocando las uniones del tapete.</li>
             <li><strong>Suertes sencillas:</strong> Rojo/Negro, Par/Impar, Falta/Pasa (1-18/19-36). Pagan 2 a 1.</li>
             <li><strong>Docenas y Columnas:</strong> Pagan 3 a 1.</li>
           </ul>
@@ -290,6 +284,8 @@
             <li><strong>Vecinos del 0:</strong> Los 17 números que rodean al 0 en la rueda.</li>
             <li><strong>Tercio:</strong> Los 12 números ubicados en el lado opuesto al 0.</li>
             <li><strong>Huérfanos:</strong> Los 8 números restantes que conectan las otras dos zonas.</li>
+            <li><strong>Juego al 0:</strong> Los 7 números más cercanos al 0 (12, 35, 3, 26, 0, 32, 15).</li>
+            <li><strong>Finales:</strong> Cubre todos los números que terminan en el dígito elegido (ej. Final 4 cubre 4, 14, 24, 34).</li>
           </ul>
         </section>
       </div>

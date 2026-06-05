@@ -27,6 +27,7 @@ interface ApuestaVisual {
   monto: number;
   posX: number;
   posY: number;
+  modo: 'rapidas' | 'especiales';
   estado?: 'win' | 'lose';
 }
 
@@ -52,7 +53,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   colorModal: string = "";
   premioModal: number = 0;
 
-  // Variables para los modales nuevos
   mostrarConfirmacionSalir: boolean = false;
   mostrarTutorial: boolean = false;
 
@@ -74,18 +74,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   modoApuesta: 'rapidas' | 'especiales' = 'rapidas';
 
-  hotspotsCaballo: { posX: number; posY: number; num1: number; num2: number }[] = [];
-  hotspotsCalle: { posX: number; posY: number; num1: number; num2: number; num3: number }[] = [];
-  hotspotsCuadro: { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number }[] = [];
-  hotspotsSeisena: { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number; num5: number; num6: number }[] = [];
-
   cantidadesFijas: number[] = [1, 5, 10, 30, 50, 100, 250, 500, 1000];
-
-  valorApuestaSeisena: string = "1-6";
-  valorApuestaCuadro: string = "0,1,2,3";
-  valorApuestaCalle: string = "1,2,3";
-  valorApuestaCaballo: string = "0,1";
-  valorApuestaFinal: string = "0";
 
   numerosRuletaVisual: { numero: number; grupo: string }[] = [];
   numerosRuleta: number[] = [
@@ -117,11 +106,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   columnas = ["1ª Columna", "2ª Columna", "3ª Columna"];
   finales = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
-  seisenas: string[] = [];
-  cuadros: string[] = [];
-  calles: string[] = [];
-  caballos: string[] = [];
-
   private usuarioSub: Subscription | null = null;
   private audioContext: AudioContext | null = null;
 
@@ -146,7 +130,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     private ngZone: NgZone,
   ) {
     this.inicializarColores();
-    this.generarApuestasMultiples();
     this.inicializarNumerosVisuales();
   }
 
@@ -179,7 +162,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.usuarioActivo = usuario;
       if (usuario) this.saldo = usuario.saldo;
     });
-    this.cargarHistorial();
 
     this.signalrService.on("Error", (mensaje: string) => {
       this.girando = false;
@@ -249,7 +231,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       numero: num,
       angulo: this.calcularAnguloParaSector(i) + this.anguloPorSector / 2
     }));
-    this.calcularHotspots();
   }
 
   ngOnDestroy(): void {
@@ -261,23 +242,16 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.signalrService.stopConnection();
   }
 
-  cambiarModo(modo: 'rapidas' | 'especiales'): void {
-    this.modoApuesta = modo;
-    if (modo === 'rapidas') {
-      this.calcularHotspots();
-    }
+  get apuestasVisiblesActuales(): ApuestaVisual[] {
+    return this.apuestasActuales.filter(a => a.modo === this.modoApuesta);
   }
 
-  calcularHotspots(): void {
-    setTimeout(() => {
-      const tapete = document.querySelector('.tapete-real');
-      if (tapete) {
-        this.hotspotsCaballo = this.obtenerHotspotsCaballo();
-        this.hotspotsCalle = this.obtenerHotspotsCalle();
-        this.hotspotsCuadro = this.obtenerHotspotsCuadro();
-        this.hotspotsSeisena = this.obtenerHotspotsSeisena();
-      }
-    }, 50);
+  get apuestasVisiblesConfirmadas(): ApuestaVisual[] {
+    return this.apuestasConfirmadas.filter(a => a.modo === this.modoApuesta);
+  }
+
+  cambiarModo(modo: 'rapidas' | 'especiales'): void {
+    this.modoApuesta = modo;
   }
 
   private inicializarColores(): void {
@@ -303,31 +277,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       else if (juego0.includes(i)) grupo = "juego0";
       this.numerosRuletaVisual.push({ numero: i, grupo });
     }
-  }
-
-  private generarApuestasMultiples(): void {
-    for (let i = 1; i <= 31; i += 3) this.seisenas.push(`${i}-${i + 5}`);
-    this.cuadros = [
-      "0,1,2,3", "1,2,4,5", "2,3,5,6", "4,5,7,8", "5,6,8,9", "7,8,10,11",
-      "8,9,11,12", "10,11,13,14", "11,12,14,15", "13,14,16,17", "14,15,17,18",
-      "16,17,19,20", "17,18,20,21", "19,20,22,23", "20,21,23,24", "22,23,25,26",
-      "23,24,26,27", "25,26,28,29", "26,27,29,30", "28,29,31,32", "29,30,32,33",
-      "31,32,34,35", "32,33,35,36",
-    ];
-    for (let i = 1; i <= 34; i += 3) this.calles.push(`${i},${i + 1},${i + 2}`);
-    this.caballos = [
-      "0,1", "0,2", "0,3", "1,2", "2,3", "4,5", "5,6", "7,8", "8,9", "10,11",
-      "11,12", "13,14", "14,15", "16,17", "17,18", "19,20", "20,21", "22,23",
-      "23,24", "25,26", "26,27", "28,29", "29,30", "31,32", "32,33", "34,35",
-      "35,36", "1,4", "2,5", "3,6", "4,7", "5,8", "6,9", "7,10", "8,11", "9,12",
-      "10,13", "11,14", "12,15", "13,16", "14,17", "15,18", "16,19", "17,20",
-      "18,21", "19,22", "20,23", "21,24", "22,25", "23,26", "24,27", "25,28",
-      "26,29", "27,30", "28,31", "29,32", "30,33", "31,34", "32,35", "33,36",
-    ];
-  }
-
-  private cargarHistorial(): void {
-    this.historialTiradas = [];
   }
 
   private calcularAnguloParaSector(indice: number): number {
@@ -399,6 +348,19 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     ctx.shadowBlur = 0;
   }
 
+  private getPosicionExacta(elemento: Element): { x: number; y: number } {
+    const contenedor = document.querySelector('.tapete-wrapper') as HTMLElement;
+    if (elemento && contenedor) {
+      const rect = elemento.getBoundingClientRect();
+      const contRect = contenedor.getBoundingClientRect();
+      return {
+        x: ((rect.left + rect.width / 2 - contRect.left) / contRect.width) * 100,
+        y: ((rect.top + rect.height / 2 - contRect.top) / contRect.height) * 100,
+      };
+    }
+    return { x: 50, y: 50 };
+  }
+
   private getPosicionNumero(numero: number): { x: number; y: number } {
     let elemento: Element | null = null;
     if (numero === 0) {
@@ -406,37 +368,12 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       elemento = document.querySelector(`.numero-casilla[data-numero="${numero}"]`);
     }
-    if (elemento) {
-      const rect = elemento.getBoundingClientRect();
-      const contenedor = document.querySelector('.tapete-real') as HTMLElement;
-      if (contenedor) {
-        const contRect = contenedor.getBoundingClientRect();
-        return {
-          x: ((rect.left + rect.width / 2 - contRect.left) / contRect.width) * 100,
-          y: ((rect.top + rect.height / 2 - contRect.top) / contRect.height) * 100,
-        };
-      }
-    }
-    return { x: 50, y: 50 };
+    return this.getPosicionExacta(elemento!);
   }
 
-  private getPosicionEntreNumeros(num1: number, num2: number): { x: number; y: number } {
-    const pos1 = this.getPosicionNumero(num1);
-    const pos2 = this.getPosicionNumero(num2);
-    return {
-      x: (pos1.x + pos2.x) / 2,
-      y: (pos1.y + pos2.y) / 2,
-    };
-  }
-
-  private getPosicionExterna(evento: MouseEvent): { x: number; y: number } {
-    const contenedor = document.querySelector('.tapete-wrapper') as HTMLElement;
-    if (!contenedor) return { x: 50, y: 50 };
-    const contRect = contenedor.getBoundingClientRect();
-    return {
-      x: ((evento.clientX - contRect.left) / contRect.width) * 100,
-      y: ((evento.clientY - contRect.top) / contRect.height) * 100,
-    };
+  private getPosicionCentradaEvento(evento: Event): { x: number; y: number } {
+    const elemento = (evento.currentTarget || evento.target) as Element;
+    return this.getPosicionExacta(elemento);
   }
 
   private guardarEstadoHistorial(): void {
@@ -481,7 +418,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     posY: number
   ): void {
     const existente = this.apuestasActuales.find(
-      a => a.tipo === tipo && JSON.stringify(a.numeros) === JSON.stringify(numeros)
+      a => a.tipo === tipo && JSON.stringify(a.numeros) === JSON.stringify(numeros) && a.modo === this.modoApuesta
     );
     if (existente) {
       existente.monto += this.montoApuesta;
@@ -493,6 +430,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
         monto: this.montoApuesta,
         posX,
         posY,
+        modo: this.modoApuesta
       });
     }
     this.sonidoSeleccion();
@@ -504,28 +442,8 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.agregarApuestaAcumulada('pleno', [num], pos.x, pos.y);
   }
 
-  agregarApuestaCaballo(num1: number, num2: number): void {
-    const pos = this.getPosicionEntreNumeros(num1, num2);
-    this.agregarApuestaAcumulada('caballo', [num1, num2], pos.x, pos.y);
-  }
-
-  agregarApuestaCalle(num1: number, num2: number, num3: number): void {
-    const pos = this.getPosicionEntreNumeros(num1, num3);
-    this.agregarApuestaAcumulada('calle', [num1, num2, num3], pos.x, pos.y);
-  }
-
-  agregarApuestaCuadro(num1: number, num2: number, num3: number, num4: number): void {
-    const pos = this.getPosicionEntreNumeros(num1, num4);
-    this.agregarApuestaAcumulada('cuadro', [num1, num2, num3, num4], pos.x, pos.y);
-  }
-
-  agregarApuestaSeisena(num1: number, num2: number, num3: number, num4: number, num5: number, num6: number): void {
-    const pos = this.getPosicionEntreNumeros(num1, num6);
-    this.agregarApuestaAcumulada('seisena', [num1, num2, num3, num4, num5, num6], pos.x, pos.y);
-  }
-
-  agregarApuestaExterna(tipo: ApuestaVisual['tipo'], numeros: number[], evento: MouseEvent): void {
-    const pos = this.getPosicionExterna(evento);
+  agregarApuestaExterna(tipo: ApuestaVisual['tipo'], numeros: number[], evento: Event): void {
+    const pos = this.getPosicionCentradaEvento(evento);
     this.agregarApuestaAcumulada(tipo, numeros, pos.x, pos.y);
   }
 
@@ -580,34 +498,34 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     const numeros = color === 'rojo'
       ? [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]
       : [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
-    this.agregarApuestaExterna('color', numeros, window.event as MouseEvent);
+    this.agregarApuestaExterna('color', numeros, window.event!);
   }
 
   seleccionarParidad(par: string): void {
     const numeros = par === 'par'
       ? Array.from({length: 18}, (_, i) => (i+1)*2)
       : Array.from({length: 18}, (_, i) => (i*2)+1);
-    this.agregarApuestaExterna('paridad', numeros, window.event as MouseEvent);
+    this.agregarApuestaExterna('paridad', numeros, window.event!);
   }
 
   seleccionarMitad(mitad: string): void {
     const numeros = mitad === '1-18'
       ? Array.from({length: 18}, (_, i) => i+1)
       : Array.from({length: 18}, (_, i) => i+19);
-    this.agregarApuestaExterna('mitad', numeros, window.event as MouseEvent);
+    this.agregarApuestaExterna('mitad', numeros, window.event!);
   }
 
   seleccionarDocena(doc: string): void {
     const base = (parseInt(doc)-1)*12;
     const numeros = Array.from({length: 12}, (_, i) => base + i + 1);
-    this.agregarApuestaExterna('docena', numeros, window.event as MouseEvent);
+    this.agregarApuestaExterna('docena', numeros, window.event!);
   }
 
   seleccionarColumna(col: string): void {
     const inicio = parseInt(col);
     const numeros: number[] = [];
     for (let i = inicio; i <= 36; i += 3) numeros.push(i);
-    this.agregarApuestaExterna('columna', numeros, window.event as MouseEvent);
+    this.agregarApuestaExterna('columna', numeros, window.event!);
   }
 
   esRojo(num: number): boolean {
@@ -635,7 +553,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
         break;
     }
     if (numeros.length > 0) {
-      this.agregarApuestaExterna(tipo as ApuestaVisual['tipo'], numeros, window.event as MouseEvent);
+      this.agregarApuestaExterna(tipo as ApuestaVisual['tipo'], numeros, window.event!);
     }
   }
 
@@ -643,15 +561,13 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resaltarGrupo(tipo);
   }
 
-  seleccionarFinal(): void {
-    const digito = parseInt(this.valorApuestaFinal);
+  seleccionarFinal(f: string, evento: Event): void {
+    const digito = parseInt(f);
     const numeros = [];
     for (let i = digito; i <= 36; i += 10) {
-      if (i !== 0) numeros.push(i);
+      numeros.push(i);
     }
-    if (digito === 0) numeros.push(0, 10, 20, 30);
-    else numeros.push(digito, digito+10, digito+20, digito+30);
-    this.agregarApuestaExterna('finales', numeros, window.event as MouseEvent);
+    this.agregarApuestaExterna('finales', numeros, evento);
   }
 
   apuestaValida(): boolean {
@@ -787,91 +703,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     return [1,4,7,10,13,16,19,22,25,28,31,34];
   }
 
-  obtenerHotspotsCaballo(): { posX: number; posY: number; num1: number; num2: number }[] {
-    const hotspots: { posX: number; posY: number; num1: number; num2: number }[] = [];
-    for (let fila = 0; fila < 3; fila++) {
-      const numerosFila = this.getFilaVisual(fila);
-      for (let col = 0; col < 11; col++) {
-        hotspots.push({ posX: 0, posY: 0, num1: numerosFila[col], num2: numerosFila[col + 1] });
-      }
-    }
-    for (let fila = 0; fila < 3; fila++) {
-      const numerosFila = this.getFilaVisual(fila);
-      if (fila === 0) {
-        for (let i = 0; i < 12; i++) {
-          hotspots.push({ posX: 0, posY: 0, num1: 0, num2: numerosFila[i] });
-        }
-      }
-      if (fila < 2) {
-        const numerosFilaSiguiente = this.getFilaVisual(fila + 1);
-        for (let col = 0; col < 12; col++) {
-          hotspots.push({ posX: 0, posY: 0, num1: numerosFila[col], num2: numerosFilaSiguiente[col] });
-        }
-      }
-    }
-    hotspots.forEach(h => {
-      const pos = this.getPosicionEntreNumeros(h.num1, h.num2);
-      h.posX = pos.x;
-      h.posY = pos.y;
-    });
-    return hotspots;
-  }
-
-  obtenerHotspotsCalle(): { posX: number; posY: number; num1: number; num2: number; num3: number }[] {
-    const hotspots: { posX: number; posY: number; num1: number; num2: number; num3: number }[] = [];
-    for (let fila = 0; fila < 3; fila++) {
-      const numerosFila = this.getFilaVisual(fila);
-      for (let col = 0; col < 10; col++) {
-        hotspots.push({ posX: 0, posY: 0, num1: numerosFila[col], num2: numerosFila[col + 1], num3: numerosFila[col + 2] });
-      }
-    }
-    hotspots.push({ posX: 0, posY: 0, num1: 0, num2: 1, num3: 2 });
-    hotspots.push({ posX: 0, posY: 0, num1: 0, num2: 2, num3: 3 });
-    hotspots.forEach(h => {
-      const pos = this.getPosicionEntreNumeros(h.num1, h.num3);
-      h.posX = pos.x;
-      h.posY = pos.y;
-    });
-    return hotspots;
-  }
-
-  obtenerHotspotsCuadro(): { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number }[] {
-    const hotspots: { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number }[] = [];
-    for (let fila = 0; fila < 2; fila++) {
-      const filaActual = this.getFilaVisual(fila);
-      const filaSiguiente = this.getFilaVisual(fila + 1);
-      for (let col = 0; col < 11; col++) {
-        hotspots.push({ posX: 0, posY: 0, num1: filaActual[col], num2: filaActual[col + 1], num3: filaSiguiente[col], num4: filaSiguiente[col + 1] });
-      }
-    }
-    const primeraFila = this.getFilaVisual(0);
-    hotspots.push({ posX: 0, posY: 0, num1: 0, num2: primeraFila[0], num3: 1, num4: primeraFila[1] });
-    hotspots.push({ posX: 0, posY: 0, num1: 0, num2: primeraFila[1], num3: 2, num4: primeraFila[2] });
-    hotspots.forEach(h => {
-      const pos = this.getPosicionEntreNumeros(h.num1, h.num4);
-      h.posX = pos.x;
-      h.posY = pos.y;
-    });
-    return hotspots;
-  }
-
-  obtenerHotspotsSeisena(): { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number; num5: number; num6: number }[] {
-    const hotspots: { posX: number; posY: number; num1: number; num2: number; num3: number; num4: number; num5: number; num6: number }[] = [];
-    for (let fila = 0; fila < 2; fila++) {
-      const filaActual = this.getFilaVisual(fila);
-      const filaSiguiente = this.getFilaVisual(fila + 1);
-      for (let col = 0; col < 10; col++) {
-        hotspots.push({ posX: 0, posY: 0, num1: filaActual[col], num2: filaActual[col + 1], num3: filaActual[col + 2], num4: filaSiguiente[col], num5: filaSiguiente[col + 1], num6: filaSiguiente[col + 2] });
-      }
-    }
-    hotspots.forEach(h => {
-      const pos = this.getPosicionEntreNumeros(h.num1, h.num6);
-      h.posX = pos.x;
-      h.posY = pos.y;
-    });
-    return hotspots;
-  }
-
   resaltarGrupo(tipo: string): void {
     const numeros = this.gruposEspeciales[tipo];
     if (!numeros) return;
@@ -901,10 +732,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     tipo = tipo.toLowerCase();
     switch (tipo) {
       case 'pleno': return numerosApuesta[0] === numeroGanador ? 36 : 0;
-      case 'caballo': return numerosApuesta.includes(numeroGanador) ? 18 : 0;
-      case 'calle': return numerosApuesta.includes(numeroGanador) ? 12 : 0;
-      case 'cuadro': return numerosApuesta.includes(numeroGanador) ? 9 : 0;
-      case 'seisena': return numerosApuesta.includes(numeroGanador) ? 6 : 0;
       case 'color': {
         const rojos = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
         const colorGanador = numeroGanador === 0 ? 'verde' : rojos.includes(numeroGanador) ? 'rojo' : 'negro';
@@ -1092,7 +919,6 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // Modales
   confirmarSalir(): void {
     this.mostrarConfirmacionSalir = false;
     this.volverAlLobby();

@@ -119,7 +119,9 @@ $success: #2ecc71;
 }
 
 .tapete-right {
-  display: flex; flex-direction: column; gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .tapete-wrapper {
@@ -292,11 +294,19 @@ $success: #2ecc71;
   label { display: block; color: $gold; font-size: 1.2rem; margin-bottom: 15px; font-weight: bold; letter-spacing: 1px; }
 }
 
-.fichas-rapidas { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 15px; }
+.fichas-rapidas { 
+  display: flex; 
+  justify-content: space-between; 
+  gap: 10px; 
+  margin-bottom: 20px; 
+  width: 100%; 
+}
 
 .ficha-rapida {
+  flex: 1;
+  text-align: center;
   background: linear-gradient(135deg, #2a1a3a, #1a0a2a); border: 1px solid $gold; color: $gold;
-  padding: 6px 12px; border-radius: 30px; font-weight: bold; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+  padding: 8px 5px; border-radius: 30px; font-weight: bold; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   
   &:hover { transform: translateY(-2px); background: linear-gradient(135deg, #3a2a4a, #2a1a3a); box-shadow: 0 0 10px $neon-purple; border-color: $gold-light; }
@@ -377,9 +387,19 @@ $success: #2ecc71;
 .hotspots-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 .hotspot { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: transparent; pointer-events: auto; transform: translate(-50%, -50%); cursor: pointer; &:hover { background: rgba($gold, 0.4); } }
 
-.botones-acciones { display: flex; gap: 10px; margin: 10px 0; justify-content: center; }
+.botones-acciones { 
+  display: flex; 
+  gap: 15px; 
+  margin: 20px 0; 
+  justify-content: space-between; 
+  width: 100%; 
+}
+
 .btn-accion {
-  background: linear-gradient(135deg, #2a1a3a, #1a0a2a); border: 1px solid $gold; color: $gold; padding: 8px 16px; border-radius: 30px; font-weight: bold; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
+  flex: 1;
+  text-align: center;
+  background: linear-gradient(135deg, #2a1a3a, #1a0a2a); border: 1px solid $gold; color: $gold; padding: 10px 5px; border-radius: 30px; font-weight: bold; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
+  
   &:hover:not(:disabled) { transform: translateY(-2px); background: linear-gradient(135deg, #3a2a4a, #2a1a3a); box-shadow: 0 0 10px $neon-purple; border-color: $gold-light; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
@@ -405,7 +425,6 @@ $success: #2ecc71;
 }
 
 .numero-ganador { font-size: 10rem; font-weight: 900; line-height: 1; margin-bottom: 20px; text-shadow: 0 0 40px currentColor; &.rojo { color: #e74c3c; } &.negro { color: #ecf0f1; } &.verde { color: #2ecc71; } }
-.modal-mensaje { font-size: 2rem; color: $text-light; margin-bottom: 40px; text-transform: uppercase; letter-spacing: 3px; }
 .modal-premio { font-size: 1.5rem; font-weight: bold; margin: 15px 0; color: $gold; text-shadow: 0 0 10px $neon-purple; }
 .btn-cerrar { background: linear-gradient(to bottom, $gold, color.adjust($gold, $lightness: -20%)); border: none; padding: 15px 50px; border-radius: 50px; font-weight: bold; font-size: 1.3rem; color: #130921; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; box-shadow: 0 6px 0 color.adjust($gold, $lightness: -30%); &:hover { transform: scale(1.05); box-shadow: 0 8px 0 color.adjust($gold, $lightness: -30%), 0 0 30px $gold-light; } }
 
@@ -448,47 +467,45 @@ $success: #2ecc71;
   }
 }
 
-@media (max-width: 768px) {
-  .ruleta-main-grid { grid-template-columns: 1fr; }
-  .ruleta-left { position: static; }
-  .top-actions-bar {
-    grid-template-columns: 1fr;
-    gap: 15px;
-    .center-actions { order: -1; margin-bottom: 10px; }
-    .left-actions, .right-actions { justify-self: center; }
+.finales-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  width: 100%;
+
+  .apuesta-btn {
+    padding: 10px 0;
+    font-size: 1.1rem;
+    text-align: center;
+    width: 100%;
   }
-  .ruleta-title { font-size: 1.8rem; margin-bottom: 15px; }
-  .tapete-wrapper { padding: 15px 10px; border-width: 4px; }
-  .monto-section { padding: 15px; }
-  .saldo-actual strong { font-size: 1.8rem; }
-  .ruleta-canvas { width: 280px; height: 280px; }
-  .numero-casilla { font-size: 0.85rem; }
-  .apuesta-btn { padding: 10px; font-size: 0.85rem; }
-  .apuestas-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .apuestas-grid-2col { grid-template-columns: 1fr; gap: 10px; }
-  .casino-select { padding: 10px; font-size: 0.9rem; }
-  .monto-container label { font-size: 1rem; }
-  .monto-valor { font-size: 1.5rem; }
-  .btn-apostar { font-size: 1.1rem; padding: 14px; }
-  .btn-volver { font-size: 1rem; padding: 12px; }
-  .modal-content { min-width: auto; padding: 30px 20px; }
-  .numero-ganador { font-size: 6rem; }
-  .modal-mensaje { font-size: 1.5rem; }
-  .cero-lateral .numero-casilla.cero { width: 50px; min-height: 120px; font-size: 1.4rem; }
-  .columnas-apuesta .columna-btn { font-size: 0.8rem; padding: 3px; }
-  .cero-placeholder { width: 50px; }
-  .columnas-placeholder { width: 40px; }
-  .docenas-fila .docena-btn { padding: 8px; font-size: 0.8rem; }
-  .apuestas-simples-fila .apuesta-simple-btn { padding: 8px 4px; font-size: 0.75rem; }
-  .ficha-visual { width: 28px; height: 28px; font-size: 0.6rem; }
-  .tab-btn { font-size: 0.8rem; padding: 8px 12px; }
-  .modal-premio { font-size: 1.2rem; }
-  .fichas-rapidas { gap: 5px; }
-  .ficha-rapida { padding: 4px 8px; font-size: 0.7rem; }
-  .racetrack-container { width: 260px; height: 260px; }
-  .numero-racetrack { width: 24px; height: 24px; margin-left: -12px; margin-top: -12px; font-size: 0.6rem; }
-  .racetrack-inner { width: 140px; height: 140px; gap: 8px; }
-  .zona-especial { font-size: 0.6rem; padding: 4px 0; }
-  .btn-accion { padding: 6px 12px; font-size: 0.7rem; }
-  .botones-acciones { gap: 6px; }
+}
+
+.tapete-right {
+  min-width: max-content !important;
+}
+
+.tapete-wrapper,
+.monto-section {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.fichas-rapidas, 
+.botones-acciones {
+  display: flex !important;
+  width: 100% !important;
+  gap: 10px !important;
+}
+
+.ficha-rapida, 
+.btn-accion {
+  flex: 1 !important;
+  text-align: center !important;
+}
+
+.btn-apostar {
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
