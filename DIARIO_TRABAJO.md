@@ -1,80 +1,62 @@
-# Diario de Trabajo - Proyecto Tricked Dice
+# Diario de Trabajo - Tricked Dice
 
-**Autores:**
-* **Lucas Moreno Navas** (Líder de Proyecto / Infraestructura / DevOps)
-* **Samuel Iván Sánchez Muñoz** (Backend / Concurrencia Multihilo / UI)
-* **Raúl Díaz Martín** (Frontend / Maquetación / Páginas Estáticas)
-* **Rubén Manuel Segovia Cantero** (Base de Datos / Autenticación / Frontend)
+## Fase 1: Inicio y planificación (11/02/2026 - 14/04/2026)
 
-**Ciclo Formativo:** ASIR (Administración de Sistemas Informáticos en Red)
-**Curso Académico:** 2025-2026
+| Fecha      | Integrante     | Actividad                                                                                  |
+| ---------- | -------------- | ------------------------------------------------------------------------------------------ |
+| 11/02/2026 | Lucas Moreno   | Creación del repositorio Git, estructura inicial del backend y configuración del proyecto. |
+| 11/02/2026 | Rubén Segovia  | Elaboración inicial del README y documentación básica.                                     |
+| 12/02/2026 | Samuel Sánchez | Configuración de .gitignore, iconografía y protección de credenciales.                     |
+| 12/02/2026 | Raúl Díaz      | Actualización de documentación y estructura del proyecto.                                  |
+| 14/04/2026 | Rubén Segovia  | Validación de DNI en frontend y backend.                                                   |
+| 14/04/2026 | Samuel Sánchez | Sistema de notificaciones y componentes visuales de feedback.                              |
 
----
+## Fase 2: Autenticación y funcionalidades base (15/04/2026 - 30/04/2026)
 
-## FASE 1: Inicialización y Setup del Proyecto (Febrero)
+| Fecha      | Integrante     | Actividad                                                         |
+| ---------- | -------------- | ----------------------------------------------------------------- |
+| 15/04/2026 | Lucas Moreno   | Implementación de autenticación JWT, AuthService e interceptores. |
+| 20/04/2026 | Rubén Segovia  | Sistema de recarga de saldo.                                      |
+| 21/04/2026 | Samuel Sánchez | Desarrollo inicial de la ruleta y gestión de errores.             |
+| 21/04/2026 | Raúl Díaz      | Estructura inicial del Video Poker y navegación dinámica.         |
+| 25/04/2026 | Rubén Segovia  | Desarrollo completo del panel de administración.                  |
+| 27/04/2026 | Rubén Segovia  | Página principal pública responsive.                              |
+| 28/04/2026 | Samuel Sánchez | Animaciones avanzadas y mejoras visuales en juegos.               |
 
-| Fecha | Miembro | Horas | Tarea Realizada | Módulos Implicados |
-| :--- | :--- | :---: | :--- | :--- |
-| 11/02/2026 | Lucas Moreno | 2 | Creación del repositorio, estructura base y primer commit. | SRI |
-| 11/02/2026 | Rubén Manuel | 1 | Redacción de datos básicos en el README.md. | Generales |
-| 12/02/2026 | Samuel Iván | 2 | Configuración de `.gitignore`, iconos y securización de `appsettings.json`. | SRI, Seguridad |
-| 12/02/2026 | Raúl Díaz | 1 | Actualización de documentación en README. | Generales |
+## Fase 3: Multijugador y servicios externos (04/05/2026 - 31/05/2026)
 
-*(Nota: Pausa en el desarrollo durante marzo y principios de abril por coincidencia con el periodo de prácticas en empresa, Semana Blanca y festivos de Semana Santa).*
+| Fecha      | Integrante     | Actividad                                                    |
+| ---------- | -------------- | ------------------------------------------------------------ |
+| 04/05/2026 | Samuel Sánchez | Desarrollo de pruebas unitarias y gestión de sesiones.       |
+| 04/05/2026 | Lucas Moreno   | Implementación completa de Blackjack.                        |
+| 10/05/2026 | Lucas Moreno   | Migración a SignalR para comunicaciones en tiempo real.      |
+| 12/05/2026 | Lucas Moreno   | Sistema multiapuesta de ruleta.                              |
+| 12/05/2026 | Samuel Sánchez | Hotspots avanzados para apuestas de ruleta.                  |
+| 16/05/2026 | Lucas Moreno   | Implementación de Ruleta Neon Luxury y salas multijugador.   |
+| 25/05/2026 | Rubén Segovia  | Integración de Stripe Checkout.                              |
+| 25/05/2026 | Samuel Sánchez | Estabilización del sistema multijugador.                     |
+| 29/05/2026 | Rubén Segovia  | Inicio de sesión mediante Google OAuth.                      |
+| 31/05/2026 | Lucas Moreno   | Refactorización visual y estructural de Blackjack y backend. |
 
-## FASE 2: Autenticación, Base de Datos y Maquetación Base (Mediados de Abril)
+## Fase 4: Infraestructura y despliegue (01/06/2026 - 05/06/2026)
 
-| Fecha | Miembro | Horas | Tarea Realizada | Módulos Implicados |
-| :--- | :--- | :---: | :--- | :--- |
-| 14/04/2026 | Rubén Manuel | 4 | Lógica de validación de DNI (Front/Back) y estilos del login. | IAW, LMGSI |
-| 14/04/2026 | Samuel Iván | 2 | Sistema de notificaciones / Toasts en la UI. | LMGSI |
-| 15/04/2026 | Lucas Moreno | 5 | Implementación de JWT, User Secrets, interceptores HTTP y Auth Service. | Seguridad, IAW |
-| 20/04/2026 | Lucas Moreno | 3 | Refactorización de Auth, Guards en Angular y transacciones base. | Seguridad, LMGSI |
-| 20/04/2026 | Rubén Manuel | 3 | Desarrollo del esqueleto de recarga de saldo. | IAW |
-| 21/04/2026 | Raúl Díaz | 4 | Rutas dinámicas del lobby, esqueleto de Video Poker y lógica inicial. | LMGSI, Programación |
-| 21/04/2026 | Samuel Iván | 3 | Desarrollo minijuego ruleta inicial e interceptores de errores. | Programación, LMGSI |
-| 21/04/2026 | Rubén Manuel | 2 | Implementación de Navbar persistente. | LMGSI |
-| 23/04/2026 | Lucas Moreno | 3 | Centralización de API, tipado fuerte y mejoras de arquitectura. | IAW |
-| 25/04/2026 | Rubén Manuel | 5 | Panel de Administración completo (estadísticas, baneo) y fixes de scroll/rutas. | IAW, LMGSI |
-| 27/04/2026 | Rubén Manuel | 3 | Página Home pública responsive y redirección condicional. | LMGSI |
-| 28/04/2026 | Samuel Iván | 5 | Animaciones avanzadas (flash, 3D), tooltips y sonidos sintetizados en Ruleta y Poker. | LMGSI |
+| Fecha      | Integrante     | Actividad                                                        |
+| ---------- | -------------- | ---------------------------------------------------------------- |
+| 01/06/2026 | Lucas Moreno   | Dockerización completa del proyecto.                             |
+| 01/06/2026 | Lucas Moreno   | Scripts de backup y automatización de base de datos.             |
+| 01/06/2026 | Lucas Moreno   | Implementación de patrón repositorio y Dapper.                   |
+| 01/06/2026 | Samuel Sánchez | Correcciones de memoria y estabilidad.                           |
+| 02/06/2026 | Lucas Moreno   | Rediseño UX/UI del Poker.                                        |
+| 03/06/2026 | Lucas Moreno   | Refactorización de Lobby y Salas.                                |
+| 04/06/2026 | Samuel Sánchez | Correcciones finales de ruleta y notificaciones.                 |
+| 05/06/2026 | Lucas Moreno   | Ajustes finales de seguridad, Poker y Ruleta.                    |
+| 05/06/2026 | Lucas Moreno   | Eliminación de credenciales sensibles y securización definitiva. |
 
-## FASE 3: Multihilo, WebSockets (SignalR) y Pasarela de Pagos (Mayo)
+## Distribución aproximada del trabajo
 
-| Fecha | Miembro | Horas | Tarea Realizada | Módulos Implicados |
-| :--- | :--- | :---: | :--- | :--- |
-| 04/05/2026 | Samuel Iván | 3 | Desarrollo de pruebas unitarias (28 tests) y control de sesiones. | Programación |
-| 04/05/2026 | Lucas Moreno | 4 | Implementación de Blackjack con overlay de resultados y mejoras visuales. | Programación, LMGSI |
-| 05/05/2026 | Rubén Manuel | 2 | Desarrollo del Footer y esqueleto de páginas legales. | LMGSI |
-| 07/05/2026 | Raúl Díaz | 3 | Redacción y maquetación de Política de Privacidad, Sobre Nosotros y Soporte. | LMGSI, Digitalización |
-| 10/05/2026 | Lucas Moreno | 6 | Migración masiva a SignalR: WebSockets para lobby, amigos y juegos. | SRI, Programación |
-| 12/05/2026 | Lucas Moreno | 4 | Sistema multi-apuesta de ruleta y adaptación del backend. | IAW |
-| 12/05/2026 | Samuel Iván | 3 | Desarrollo de hotspots invisibles en tapete de ruleta (caballo, calle, etc.). | LMGSI |
-| 16/05/2026 | Lucas Moreno | 5 | Implementación completa de Ruleta Neon Luxury y salas multijugador. | Programación, LMGSI |
-| 25/05/2026 | Rubén Manuel | 6 | Integración de Stripe Checkout (Recarga de fichas) y prevención de duplicados. | Seguridad, IAW |
-| 25/05/2026 | Samuel Iván | 5 | Estabilización del Lobby multijugador, sistema de amigos y contadores sincronizados. | Programación |
-| 27/05/2026 | Lucas Moreno | 5 | Refactorización de salas, control de empates en Blackjack y lógica de descarte en Poker. | Programación |
-| 28/05/2026 | Samuel Iván | 4 | Gestión de turnos concurrente en Blackjack multijugador. | Programación |
-| 29/05/2026 | Rubén Manuel | 4 | Integración de inicio de sesión con Google (OAuth) y validaciones estrictas. | Seguridad, IAW |
-| 31/05/2026 | Lucas Moreno | 5 | Reconstrucción visual de Blackjack solitario, HUD de apuestas y MVC en backend. | IAW, LMGSI |
-
-## FASE 4: Infraestructura, DevOps y Cierre Final (1 de Junio)
-
-| Fecha | Miembro | Horas | Tarea Realizada | Módulos Implicados |
-| :--- | :--- | :---: | :--- | :--- |
-| 01/06/2026 | Samuel Iván | 3 | Corrección de fugas de memoria en el Lobby y fixes en premios de la ruleta. | Programación |
-| 01/06/2026 | Lucas Moreno | 3 | Implementación del patrón Repositorio y Dapper en controladores (Auth/Admin). | IAW, GBD |
-| 01/06/2026 | Lucas Moreno | 2 | Blindaje de concurrencia en juegos y middleware global de excepciones. | Programación |
-| 01/06/2026 | Lucas Moreno | 2 | Script Bash de copias de seguridad (`backup_db.sh`) y retención. | ASO |
-| 01/06/2026 | Lucas Moreno | 2 | Orquestación con `Dockerfile` y `docker-compose` para despliegue. | SRI |
-| 01/06/2026 | Lucas Moreno | 2 | Script de esquema SQL (`01_Init_Db.sql`) y Trigger de auditoría. | ASGBD, GBD |
-| 01/06/2026 | Lucas Moreno | 1 | Actualización final del `README.md` y configuración CORS. | Generales, Seguridad |
-
----
-
-### Resumen de Horas por Integrante
-* **Lucas Moreno Navas:** 52 horas
-* **Rubén Manuel Segovia:** 33 horas
-* **Samuel Iván Sánchez:** 34 horas
-* **Raúl Díaz Martín:** 9 horas
-* **TOTAL PROYECTO:** 128 horas
+| Integrante        | Responsabilidades principales                                                         |
+| ----------------- | ------------------------------------------------------------------------------------- |
+| Lucas Moreno      | Arquitectura, backend, JWT, SignalR, Docker, despliegue, juegos multijugador y DevOps |
+| Samuel Sánchez    | Ruleta, Poker, Blackjack multijugador, pruebas y experiencia de usuario               |
+| Rubén Segovia     | Base de datos, autenticación externa, Stripe, panel de administración y frontend      |
+| Raúl Díaz         | Maquetación, páginas informativas y Video Poker inicial                               |

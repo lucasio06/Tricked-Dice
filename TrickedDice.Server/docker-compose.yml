@@ -9,8 +9,7 @@ services:
       - "5069:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      # En producción, la cadena de conexión apuntaría al contenedor 'sql-server'
-      # - ConnectionStrings__DefaultConnection="Server=sql-server;Database=db41007;User Id=sa;Password=SuperSecretPass123!;TrustServerCertificate=True;"
+      - ConnectionStrings__DefaultConnection="Server=sql-server;Database=db41007;User Id=sa;Password=SuperSecretPass123!;TrustServerCertificate=True;"
     depends_on:
       - sql-server
     restart: unless-stopped
