@@ -55,7 +55,15 @@ export class LobbyComponent implements OnInit, OnDestroy {
     });
 
     this.signalrService.on('OnlineUsers', (users: string[]) => {
-      this.zone.run(() => { this.onlineUsers = users; });
+      this.zone.run(() => {
+        const recienConectados = users.filter(u => !this.onlineUsers.includes(u));
+        this.onlineUsers = users;
+        recienConectados.forEach(nuevoUsuario => {
+          if (this.friendList.includes(nuevoUsuario)) {
+            this.toast.success(`🎮 Tu amigo ${nuevoUsuario} se ha conectado.`);
+          }
+        });
+      });
     });
 
     this.signalrService.on('FriendRequestReceived', (fromUser: string) => {

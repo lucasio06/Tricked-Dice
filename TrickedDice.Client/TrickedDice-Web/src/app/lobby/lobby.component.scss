@@ -398,12 +398,19 @@ i.icon {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    &.online { 
-      background: $success; 
+    display: inline-block;
+    transition: all 0.3s ease;
+    
+    &.online {
+      background-color: $success;
       box-shadow: 0 0 8px rgba($success, 0.6);
+      animation: pulse-green 2s infinite;
     }
-    &.offline { 
-      background: #555; 
+    
+    &.offline {
+      background-color: #555;
+      box-shadow: none;
+      animation: none;
     }
   }
 
@@ -673,4 +680,10 @@ i.icon {
     background: $neon-purple;
     box-shadow: 0 0 15px rgba($neon-purple, 0.8);
   }
+}
+
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba($success, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba($success, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba($success, 0); }
 }

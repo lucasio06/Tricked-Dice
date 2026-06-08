@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using System.Text.Json.Serialization;
 using TrickedDice.Api.Extensions;
+using TrickedDice.Api.Repositories.Interfaces;
 
 namespace TrickedDice.Api.Hubs
 {
@@ -12,261 +13,182 @@ namespace TrickedDice.Api.Hubs
         private static readonly ConcurrentDictionary<string, Room> Rooms = new();
         private static readonly ConcurrentDictionary<string, string> UserRooms = new();
         private static readonly ConcurrentDictionary<string, string> OnlineUsers = new();
-        private static readonly ConcurrentDictionary<string, HashSet<string>> UserFriends = new(StringComparer.OrdinalIgnoreCase);
-        private static readonly ConcurrentDictionary<string, HashSet<string>> PendingRequests = new(StringComparer.OrdinalIgnoreCase);
 
         private readonly ILogger<LobbyHub> _logger;
+        private readonly IUsuarioRepository _usuarioRepo;
 
-        public LobbyHub(ILogger<LobbyHub> logger)
+        public LobbyHub(ILogger<LobbyHub> logger, IUsuarioRepository usuarioRepo)
         {
             _logger = logger;
+            _usuarioRepo = usuarioRepo;
         }
 
-        private string? UserName => Context.User == null ? null : (Context.User.GetUserName() ?? Context.ConnectionId);
+        private string? UserName 
+        {
+            get 
+            {
+                if (OnlineUsers.TryGetValue(Context.ConnectionId, out var username)) return username;
+                return Context.User?.GetUserName() ?? Context.ConnectionId;
+            }
+        }
 
         public async Task GetOnlineUsers() => await Clients.Caller.SendAsync("OnlineUsers", OnlineUsers.Values.Distinct().ToList());
 
         public async Task GetFriendList()
         {
-            var myName = UserName;
-            if (myName == null) return;
-            UserFriends.TryGetValue(myName, out var friends);
-            await Clients.Caller.SendAsync("FriendList", friends?.ToList() ?? new List<string>());
+            var email = Context.User?.GetEmail();
+            if (email == null) return;
+            
+            var user = await _usuarioRepo.GetUsuarioPorEmailAsync(email);
+            if (user == null) return;
+
+            var relaciones = await _usuarioRepo.GetAmigosYPendientesAsync(user.IdUsuario);
+
+            var amigos = relaciones.Where(r => r.Estado == "Aceptado").Select(r => r.NombreUsuario).ToList();
+            var pendientes = relaciones.Where(r => r.Estado == "Pendiente" && !r.EsSolicitante).Select(r => r.NombreUsuario).ToList();
+
+            await Clients.Caller.SendAsync("FriendList", amigos);
+            await Clients.Caller.SendAsync("PendingRequests", pendientes);
         }
 
-        public async Task GetPendingRequests()
+        public async Task SendFriendRequest(string targetUsername)
         {
-            var myName = UserName;
-            if (myName == null) return;
-            PendingRequests.TryGetValue(myName, out var requests);
-            await Clients.Caller.SendAsync("PendingRequests", requests?.ToList() ?? new List<string>());
-        }
+            var email = Context.User?.GetEmail();
+            if (email == null) return;
+            
+            var sender = await _usuarioRepo.GetUsuarioPorEmailAsync(email);
+            var target = await _usuarioRepo.GetUsuarioPorNombreAsync(targetUsername);
 
-        public async Task SendFriendRequest(string userName)
-        {
-            var myName = UserName;
-            if (myName == null || string.IsNullOrEmpty(userName) || myName.Equals(userName, StringComparison.OrdinalIgnoreCase)) return;
+            if (sender == null || target == null || sender.IdUsuario == target.IdUsuario) return;
 
-            PendingRequests.AddOrUpdate(userName, new HashSet<string> { myName }, (k, v) => { v.Add(myName); return v; });
-
-            var targetConnections = OnlineUsers.Where(x => string.Equals(x.Value, userName, StringComparison.OrdinalIgnoreCase)).Select(x => x.Key).ToList();
-            foreach (var conn in targetConnections)
-                await Clients.Client(conn).SendAsync("FriendRequestReceived", myName);
-        }
-
-        public async Task AcceptFriendRequest(string userName)
-        {
-            var myName = UserName;
-            if (myName == null) return;
-
-            PendingRequests.AddOrUpdate(myName, new HashSet<string>(), (k, v) => { v.Remove(userName); return v; });
-            UserFriends.AddOrUpdate(myName, new HashSet<string> { userName }, (k, v) => { v.Add(userName); return v; });
-            UserFriends.AddOrUpdate(userName, new HashSet<string> { myName }, (k, v) => { v.Add(myName); return v; });
-
-            var targetConnections = OnlineUsers.Where(x => string.Equals(x.Value, userName, StringComparison.OrdinalIgnoreCase)).Select(x => x.Key).ToList();
-            foreach (var conn in targetConnections)
-                await Clients.Client(conn).SendAsync("FriendAdded", myName);
-
-            await Clients.Caller.SendAsync("FriendAdded", userName);
-            await GetFriendList();
-            await GetPendingRequests();
-        }
-
-        public async Task RejectFriendRequest(string userName)
-        {
-            var myName = UserName;
-            if (myName == null) return;
-            PendingRequests.AddOrUpdate(myName, new HashSet<string>(), (k, v) => { v.Remove(userName); return v; });
-            await GetPendingRequests();
-        }
-
-        public async Task InviteFriend(string friendName, string roomId)
-        {
-            if (!Rooms.TryGetValue(roomId, out var room)) return;
-            var targetConnections = OnlineUsers.Where(x => string.Equals(x.Value, friendName, StringComparison.OrdinalIgnoreCase)).Select(x => x.Key).ToList();
-            foreach (var conn in targetConnections)
-                await Clients.Client(conn).SendAsync("FriendInvitation", UserName, room);
-        }
-
-        public async Task<Room> CreateRoom(string nombreMesa, string juegoSeleccionado, bool esPrivada, string password, int maxJugadores)
-        {
-            var room = new Room
+            var exito = await _usuarioRepo.EnviarSolicitudAmistadAsync(sender.IdUsuario, target.IdUsuario);
+            
+            if (exito)
             {
-                id = Guid.NewGuid().ToString()[..8].ToUpper(),
-                nombre = nombreMesa,
-                juego = juegoSeleccionado,
-                esPrivada = esPrivada,
-                contrasena = password,
-                creador = UserName ?? "Anónimo",
-                creadorId = Context.ConnectionId,
-                jugadores = new List<string> { UserName ?? "Anónimo" },
-                maxJugadores = Math.Clamp(maxJugadores, 2, 8)
-            };
-
-            Rooms[room.Id] = room;
-            UserRooms[Context.ConnectionId] = room.Id;
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"room_{room.Id}");
-
-            await BroadcastRooms();
-            return room;
-        }
-
-        public async Task<Room> JoinRoom(string roomId, string password)
-        {
-            if (!Rooms.TryGetValue(roomId, out var room))
-                throw new HubException("La sala no existe.");
-
-            var userName = UserName ?? "Anónimo";
-            bool isNewPlayer = false;
-
-            lock (room)
-            {
-                if (room.baneados.Contains(userName))
-                    throw new HubException("El creador te ha prohibido la entrada a esta sala.");
-
-                bool alreadyInRoom = room.jugadores.Contains(userName);
-
-                if (!alreadyInRoom && room.esPrivada && room.contrasena != password)
-                    throw new HubException("Contraseña incorrecta.");
-
-                if (!alreadyInRoom && room.jugadores.Count >= room.maxJugadores)
-                    throw new HubException("La sala está llena.");
-
-                if (!alreadyInRoom)
+                await GetFriendList();
+                
+                var targetConnectionId = OnlineUsers.FirstOrDefault(x => x.Value == targetUsername).Key;
+                if (targetConnectionId != null)
                 {
-                    room.jugadores.Add(userName);
-                    isNewPlayer = true;
+                    var relaciones = await _usuarioRepo.GetAmigosYPendientesAsync(target.IdUsuario);
+                    var pendientes = relaciones.Where(r => r.Estado == "Pendiente" && !r.EsSolicitante).Select(r => r.NombreUsuario).ToList();
+                    await Clients.Client(targetConnectionId).SendAsync("PendingRequests", pendientes);
+                    await Clients.Client(targetConnectionId).SendAsync("ReceiveFriendRequest", sender.NombreUsuario);
                 }
             }
+        }
 
-            if (isNewPlayer)
-                await Clients.Group($"room_{roomId}").SendAsync("PlayerJoined", userName);
+        public async Task AcceptFriendRequest(string senderUsername)
+        {
+            await ResponderSolicitud(senderUsername, "Aceptado");
+        }
 
-            UserRooms[Context.ConnectionId] = roomId;
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"room_{roomId}");
+        public async Task RejectFriendRequest(string senderUsername)
+        {
+            await ResponderSolicitud(senderUsername, "Rechazado");
+        }
 
-            await BroadcastRooms();
-            return room;
+        private async Task ResponderSolicitud(string senderUsername, string respuesta)
+        {
+            var email = Context.User?.GetEmail();
+            if (email == null) return;
+            
+            var receiver = await _usuarioRepo.GetUsuarioPorEmailAsync(email);
+            var sender = await _usuarioRepo.GetUsuarioPorNombreAsync(senderUsername);
+
+            if (receiver == null || sender == null) return;
+
+            var exito = await _usuarioRepo.ResponderSolicitudAmistadAsync(sender.IdUsuario, receiver.IdUsuario, respuesta);
+
+            if (exito)
+            {
+                await GetFriendList();
+                
+                var senderConnectionId = OnlineUsers.FirstOrDefault(x => x.Value == senderUsername).Key;
+                if (senderConnectionId != null)
+                {
+                    var relaciones = await _usuarioRepo.GetAmigosYPendientesAsync(sender.IdUsuario);
+                    var amigos = relaciones.Where(r => r.Estado == "Aceptado").Select(r => r.NombreUsuario).ToList();
+                    await Clients.Client(senderConnectionId).SendAsync("FriendList", amigos);
+                }
+            }
+        }
+
+        public async Task InviteFriend(string friendUsername, string roomId)
+        {
+            var targetConnectionId = OnlineUsers.FirstOrDefault(x => x.Value == friendUsername).Key;
+            if (targetConnectionId != null && UserName != null)
+            {
+                await Clients.Client(targetConnectionId).SendAsync("ReceiveInvitation", UserName, roomId);
+            }
+        }
+
+        public async Task CreateRoom(string nombre, string juego, bool esPrivada, string contrasena, int maxJugadores)
+        {
+            var roomId = Guid.NewGuid().ToString()[..8];
+            var room = new Room
+            {
+                id = roomId,
+                nombre = nombre,
+                juego = juego,
+                esPrivada = esPrivada,
+                contrasena = contrasena,
+                creador = UserName ?? "Desconocido",
+                creadorId = Context.User?.GetEmail() ?? "",
+                maxJugadores = maxJugadores
+            };
+
+            Rooms.TryAdd(roomId, room);
+            await Clients.All.SendAsync("UpdateRooms", Rooms.Values.ToList());
+        }
+
+        public async Task JoinRoom(string roomId, string contrasena)
+        {
+            if (Rooms.TryGetValue(roomId, out var room))
+            {
+                if (room.baneados.Contains(UserName ?? "")) return;
+                if (room.esPrivada && room.contrasena != contrasena) return;
+                if (room.jugadores.Count >= room.maxJugadores) return;
+
+                room.jugadores.Add(UserName ?? "Desconocido");
+                UserRooms.AddOrUpdate(Context.ConnectionId, roomId, (k, v) => roomId);
+
+                await Clients.All.SendAsync("UpdateRooms", Rooms.Values.ToList());
+                await Clients.Caller.SendAsync("JoinSuccess", roomId);
+            }
         }
 
         public async Task LeaveRoom(string roomId)
         {
-            if (!Rooms.TryGetValue(roomId, out var room)) return;
-
-            var userName = UserName ?? "Anónimo";
-            bool wasRemoved = false;
-            bool creatorChanged = false;
-
-            lock (room)
+            if (Rooms.TryGetValue(roomId, out var room))
             {
-                if (room.jugadores.Contains(userName))
-                {
-                    room.jugadores.Remove(userName);
-                    wasRemoved = true;
-                }
+                room.jugadores.Remove(UserName ?? "");
+                UserRooms.TryRemove(Context.ConnectionId, out _);
 
                 if (room.jugadores.Count == 0)
                 {
                     Rooms.TryRemove(roomId, out _);
                 }
-                else if (room.creador == userName && room.jugadores.Any())
-                {
-                    room.creador = room.jugadores.First();
-                    creatorChanged = true;
-                }
+
+                await Clients.All.SendAsync("UpdateRooms", Rooms.Values.ToList());
             }
-
-            if (wasRemoved)
-                await Clients.Group($"room_{roomId}").SendAsync("PlayerLeft", userName);
-
-            UserRooms.TryRemove(Context.ConnectionId, out _);
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"room_{roomId}");
-
-            if (creatorChanged)
-                await Clients.Group($"room_{roomId}").SendAsync("RoomUpdated", room);
-
-            await BroadcastRooms();
-        }
-
-        public async Task KickPlayer(string roomId, string playerName, bool banear)
-        {
-            if (!Rooms.TryGetValue(roomId, out var room)) return;
-
-            var myName = UserName;
-            if (room.creador != myName)
-                throw new HubException("Solo el creador puede expulsar jugadores.");
-            if (myName == playerName)
-                throw new HubException("No puedes expulsarte a ti mismo.");
-
-            bool wasRemoved = false;
-            lock (room)
-            {
-                if (room.jugadores.Contains(playerName))
-                {
-                    room.jugadores.Remove(playerName);
-                    if (banear)
-                        room.baneados.Add(playerName);
-                    wasRemoved = true;
-                }
-            }
-
-            if (wasRemoved)
-            {
-                await Clients.Group($"room_{roomId}").SendAsync("PlayerKicked", playerName, banear);
-                await BroadcastRooms();
-            }
-        }
-
-        public async Task ToggleRoomPrivacy(string roomId, string newPassword = "")
-        {
-            if (!Rooms.TryGetValue(roomId, out var room)) return;
-            if (room.creadorId != Context.ConnectionId) return;
-
-            room.esPrivada = !room.esPrivada;
-            room.contrasena = room.esPrivada ? newPassword : "";
-
-            await Clients.Group($"room_{roomId}").SendAsync("RoomPrivacyToggled", room.esPrivada);
-            await BroadcastRooms();
-        }
-
-        public async Task StartGame(string roomId)
-        {
-            if (!Rooms.TryGetValue(roomId, out var room)) return;
-            if (room.creadorId != Context.ConnectionId) return;
-            await Clients.Group($"room_{roomId}").SendAsync("GameStarted", room.juego, roomId);
-        }
-
-        public async Task SendMessage(string roomId, string message)
-        {
-            var userName = UserName ?? "Anónimo";
-            await Clients.Group($"room_{roomId}").SendAsync("ReceiveMessage", userName, message);
-        }
-
-        private async Task BroadcastRooms()
-        {
-            var roomsList = Rooms.Values.Select(r => new
-            {
-                id = r.Id,
-                nombre = r.nombre,
-                juego = r.juego,
-                esPrivada = r.esPrivada,
-                creador = r.creador,
-                maxJugadores = r.maxJugadores,
-                jugadores = r.jugadores
-            });
-            await Clients.All.SendAsync("RoomsList", roomsList);
         }
 
         public override async Task OnConnectedAsync()
         {
-            var userName = UserName ?? Context.ConnectionId;
-            OnlineUsers[Context.ConnectionId] = userName;
+            var email = Context.User?.GetEmail();
+            if (email != null)
+            {
+                var user = await _usuarioRepo.GetUsuarioPorEmailAsync(email);
+                if (user != null)
+                {
+                    OnlineUsers.AddOrUpdate(Context.ConnectionId, user.NombreUsuario, (k, v) => user.NombreUsuario);
+                    var usersList = OnlineUsers.Values.Distinct().ToList();
+                    await Clients.All.SendAsync("OnlineUsers", usersList);
+                }
+            }
 
-            var usersList = OnlineUsers.Values.Distinct().ToList();
-            await Clients.All.SendAsync("OnlineUsers", usersList);
-
-            await BroadcastRooms();
-            await GetPendingRequests();
+            await Clients.Caller.SendAsync("UpdateRooms", Rooms.Values.ToList());
             await GetFriendList();
 
             await base.OnConnectedAsync();
@@ -298,6 +220,6 @@ namespace TrickedDice.Api.Hubs
         [JsonPropertyName("creadorId")] public string creadorId { get; set; } = "";
         [JsonPropertyName("jugadores")] public List<string> jugadores { get; set; } = new();
         [JsonPropertyName("baneados")] public HashSet<string> baneados { get; set; } = new();
-        [JsonPropertyName("maxJugadores")] public int maxJugadores { get; set; }
+        [JsonPropertyName("maxJugadores")] public int maxJugadores { get; set; } = 8;
     }
 }

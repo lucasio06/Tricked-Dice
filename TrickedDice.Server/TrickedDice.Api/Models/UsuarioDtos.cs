@@ -9,6 +9,7 @@ namespace TrickedDice.Api.Models
     public class UsuarioPerfilDto
     {
         public int IdUsuario { get; set; }
+        public string NombreUsuario { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Contrasena { get; set; } = string.Empty;
@@ -23,5 +24,14 @@ namespace TrickedDice.Api.Models
         public DateTime Fecha { get; set; }
         public decimal Cantidad { get; set; }
         public string Tipo { get; set; } = string.Empty;
+    }
+
+    public class AmigoDto
+    {
+        public int IdUsuario { get; set; }
+        public string NombreUsuario { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Estado { get; set; } = string.Empty;
+        public bool EsSolicitante { get; set; }
     }
 }
