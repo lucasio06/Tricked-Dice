@@ -6,7 +6,6 @@ import { SignalrService } from '../services/signalr.service';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { RUTAS } from '../utils/rutas.const';
-import { BlackjackComponent } from '../blackjack/blackjack.component';
 
 interface Room {
   id: string;
@@ -23,7 +22,7 @@ interface Room {
 @Component({
   selector: 'app-room',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, BlackjackComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent], // <-- Eliminado BlackjackComponent de aquí
   templateUrl: './room.component.html',
   styleUrls: ['./room.component.scss']
 })
@@ -100,7 +99,7 @@ export class RoomComponent implements OnInit, OnDestroy {
       this.zone.run(() => {
         if (this.room) {
           this.room.jugadores = this.room.jugadores.filter(j => j.trim().toLowerCase() !== playerName.trim().toLowerCase());
-          this.toast.info(`🏃 ${playerName} ha abandonado la sala.`);
+          this.toast.info(`👋 ${playerName} ha abandonado la sala.`);
           this.actualizarEsCreador();
         }
       });
@@ -120,7 +119,7 @@ export class RoomComponent implements OnInit, OnDestroy {
       this.zone.run(() => {
         if (this.room && this.room.esPrivada !== esPrivada) {
           this.room.esPrivada = esPrivada;
-          this.toast.info(esPrivada ? 'La sala ahora es Privada 🔒' : 'La sala ahora es Pública 🌐');
+          this.toast.info(esPrivada ? 'La sala ahora es Privada 🔒' : 'La sala ahora es Pública 🌍');
         }
       });
     });
