@@ -1,7 +1,4 @@
 #!/bin/bash
-#Este script está pensado para ejecutarse en un entorno Linux (como un servidor Ubuntu o mediante un Cron Job)
-#que tenga instaladas las mssql-tools (donde viene el comando sqlcmd).
-#A nivel académico, tener este código documentado y en el repositorio justifica la competencia exigida.
 
 DB_NAME="db41007"
 DB_USER="db41007"

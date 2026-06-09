@@ -61,9 +61,11 @@ export class RegistroComponent implements OnInit {
         localStorage.setItem('token', res.token); 
 
         const perfilConstruido = {
+          nombreUsuario: res.nombreUsuario || res.nombre,
           nombre: res.nombre,
           email: res.email || '',
-          saldo: res.saldo
+          saldo: res.saldo,
+          rol: res.rol || 'User'
         };
         
         this.authService['cacheUser'](perfilConstruido);
@@ -113,9 +115,6 @@ export class RegistroComponent implements OnInit {
   validarContrasena(): boolean {
     const password = this.usuarioData.password || '';
     
-    // Corregida la expresión regular para incluir el caracter '!'
-    // Se asegura de que haya al menos una minúscula, una mayúscula, un dígito, 
-    // y al menos uno de los siguientes caracteres especiales: @ $ ! % * ? & #
     const patron = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
     
     this.contrasenaInvalida = !patron.test(password);

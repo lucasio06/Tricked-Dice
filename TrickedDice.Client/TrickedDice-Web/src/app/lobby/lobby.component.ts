@@ -41,21 +41,29 @@ export class LobbyComponent implements OnInit, OnDestroy {
     private zone: NgZone
   ) {
     const userStr = localStorage.getItem('usuario') || localStorage.getItem('user_cache');
-    if (userStr) {
+    if (userStr && userStr !== 'null') {
       try {
         const parsed = JSON.parse(userStr);
-        this.currentUserEmail = parsed.email || '';
+        this.currentUserEmail = parsed?.email || '';
       } catch (e) {}
     }
   }
 
   async ngOnInit() {
-    this.signalrService.on('RoomsList', (rooms: any[]) => {
+    this.signalrService.on('UpdateRooms', (rooms: any[]) => {
       this.zone.run(() => { this.mesasDisponibles = rooms; });
     });
 
     this.signalrService.on('OnlineUsers', (users: string[]) => {
-      this.zone.run(() => { this.onlineUsers = users; });
+      this.zone.run(() => {
+        const recienConectados = users.filter(u => !this.onlineUsers.includes(u));
+        this.onlineUsers = users;
+        recienConectados.forEach(nuevoUsuario => {
+          if (this.friendList.includes(nuevoUsuario)) {
+            this.toast.success(`🎮 Tu amigo ${nuevoUsuario} se ha conectado.`);
+          }
+        });
+      });
     });
 
     this.signalrService.on('FriendRequestReceived', (fromUser: string) => {
@@ -78,13 +86,14 @@ export class LobbyComponent implements OnInit, OnDestroy {
     await this.signalrService.startConnection('/hubs/lobby');
 
     setTimeout(async () => {
+      await this.signalrService.invoke('GetRooms');
       await this.signalrService.invoke('GetFriendList');
       await this.signalrService.invoke('GetPendingRequests');
     }, 500);
   }
 
   ngOnDestroy() {
-    this.signalrService.off('RoomsList');
+    this.signalrService.off('UpdateRooms');
     this.signalrService.off('OnlineUsers');
     this.signalrService.off('FriendRequestReceived');
     this.signalrService.off('FriendList');
@@ -210,10 +219,10 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   private getCurrentUser(): string {
     const userStr = localStorage.getItem('usuario') || localStorage.getItem('user_cache');
-    if (userStr) {
+    if (userStr && userStr !== 'null') {
       try {
         const parsed = JSON.parse(userStr);
-        return parsed.nombreUsuario || parsed.nombre || parsed.email || '';
+        return parsed?.nombreUsuario || parsed?.nombre || parsed?.email || '';
       } catch (e) {}
     }
     return '';

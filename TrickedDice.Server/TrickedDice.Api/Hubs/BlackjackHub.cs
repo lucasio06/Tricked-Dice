@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using System.Collections.Concurrent;
 using TrickedDice.Api.Services;
 using TrickedDice.Api.Extensions;
 
@@ -10,6 +11,7 @@ namespace TrickedDice.Api.Hubs
     {
         private readonly BlackjackService _service;
         private readonly BlackjackGameService _gameService;
+        private static readonly ConcurrentDictionary<string, string> ConexionesMesas = new();
 
         public BlackjackHub(BlackjackService service, BlackjackGameService gameService)
         {
@@ -20,11 +22,36 @@ namespace TrickedDice.Api.Hubs
         public async Task JoinTable(string tableId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, tableId);
+            ConexionesMesas[Context.ConnectionId] = tableId;
             var mesa = _service.ObtenerMesa(tableId);
             if (mesa != null)
             {
                 await Clients.Caller.SendAsync("MesaActualizada", mesa);
             }
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            if (ConexionesMesas.TryGetValue(Context.ConnectionId, out var tableId))
+            {
+                var email = Context.User?.GetEmail();
+                if (!string.IsNullOrEmpty(email))
+                {
+                    var mesa = _service.ObtenerMesa(tableId);
+                    if (mesa != null)
+                    {
+                        var partidaKvp = mesa.ManosJugadores.FirstOrDefault(p => p.Value.Email == email && !p.Value.Terminada);
+                        
+                        if (partidaKvp.Key != null) 
+                        {
+                            _service.Plantarse(partidaKvp.Key);
+                            await CheckMesaFinalizada(tableId);
+                        }
+                    }
+                }
+                ConexionesMesas.TryRemove(Context.ConnectionId, out _);
+            }
+            await base.OnDisconnectedAsync(exception);
         }
 
         public async Task Repartir(string tableId, decimal monto)

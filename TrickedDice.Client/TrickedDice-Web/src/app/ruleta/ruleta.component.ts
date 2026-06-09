@@ -54,6 +54,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   premioModal: number = 0;
 
   mostrarConfirmacionSalir: boolean = false;
+  mostrarConfirmacionLobby: boolean = false;
   mostrarTutorial: boolean = false;
 
   historialTiradas: HistorialTirada[] = [];
@@ -121,6 +122,8 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   private apuestasPendientesPorUsuario: Map<string, number> = new Map();
   private timeoutApuestas: any = null;
 
+  jugadoresEnMesa: { nombre: string; apostado: boolean }[] = [];
+
   constructor(
     private signalrService: SignalrService,
     private authService: AuthService,
@@ -152,6 +155,17 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.route.queryParams.subscribe(params => {
       this.mesaId = params['mesa'] || '';
       if (this.mesaId) {
+        try {
+          const mesasActivas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
+          const mesaActual = mesasActivas.find((m: any) => (m.id || m.Id || m.ID) === this.mesaId);
+          
+          if (mesaActual && mesaActual.jugadores && Array.isArray(mesaActual.jugadores)) {
+            this.jugadoresEnMesa = mesaActual.jugadores.map((nombre: string) => ({ nombre, apostado: false }));
+          } else if (this.currentUser) {
+            this.jugadoresEnMesa = [{ nombre: this.currentUser, apostado: false }];
+          }
+        } catch (e) {}
+        
         this.grupoRuleta = `ruleta_${this.mesaId}`;
         this.unirseMesaRuleta();
         this.obtenerInfoMesa();
@@ -174,6 +188,13 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.signalrService.on("ApuestaAgregadaMesa", (nombre: string, apuesta: any) => {
+        const player = this.jugadoresEnMesa.find(j => j.nombre === nombre);
+        if (player) {
+          player.apostado = true;
+        } else {
+          this.jugadoresEnMesa.push({ nombre, apostado: true });
+        }
+
         const montoApostado = apuesta.monto || apuesta.Monto || 0;
         const current = this.apuestasPendientesPorUsuario.get(nombre) || 0;
         
@@ -190,6 +211,20 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
           this.apuestasPendientesPorUsuario.clear();
           this.timeoutApuestas = null;
         }, 500);
+      });
+
+      this.signalrService.on("PlayerJoined", (playerName: string) => {
+        this.ngZone.run(() => {
+          if (!this.jugadoresEnMesa.find(j => j.nombre === playerName)) {
+            this.jugadoresEnMesa.push({ nombre: playerName, apostado: false });
+          }
+        });
+      });
+
+      this.signalrService.on("PlayerLeft", (playerName: string) => {
+        this.ngZone.run(() => {
+          this.jugadoresEnMesa = this.jugadoresEnMesa.filter(j => j.nombre !== playerName);
+        });
       });
 
       this.signalrService.on("ResultadoMesa", (data: any) => {
@@ -215,6 +250,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
           this.intervaloContador = null;
           this.tiempoRestante = 0;
         }
+        this.jugadoresEnMesa.forEach(j => j.apostado = false);
       });
     } else {
       this.signalrService.on("ResultadoGiro", (res: any) => {
@@ -909,8 +945,13 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   volverAlLobby(): void {
+    this.mostrarConfirmacionLobby = true;
+  }
+
+  confirmarVolverLobby(): void {
+    this.mostrarConfirmacionLobby = false;
     if (this.mesaId) {
-      const mesas = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
+      const mesas: any[] = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
       const actualizadas = mesas.filter((m: any) => m.id !== this.mesaId);
       localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
       this.router.navigate([RUTAS.lobby]);
@@ -921,7 +962,7 @@ export class RuletaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   confirmarSalir(): void {
     this.mostrarConfirmacionSalir = false;
-    this.volverAlLobby();
+    this.router.navigate(['/']);
   }
 
   private getAudioContext(): AudioContext {

@@ -53,6 +53,7 @@ export class PokerComponent implements OnInit, OnDestroy {
 
   procesando: boolean = false;
   mostrarConfirmacionSalir: boolean = false;
+  mostrarConfirmacionLobby: boolean = false;
   mostrarTutorial: boolean = false;
   mostrarRanking: boolean = false;
 
@@ -247,8 +248,24 @@ export class PokerComponent implements OnInit, OnDestroy {
   abrirTutorial() { this.mostrarTutorial = true; }
   cerrarTutorial() { this.mostrarTutorial = false; }
   toggleRanking() { this.mostrarRanking = !this.mostrarRanking; }
-  volverAlLobby() { this.router.navigate(['/juegos']); }
-  confirmarSalir() { this.mostrarConfirmacionSalir = false; this.volverAlLobby(); }
+  
+  volverAlLobby(): void {
+    if (this.roomId) this.mostrarConfirmacionLobby = true;
+    else this.router.navigate(['/']);
+  }
+
+  confirmarVolverLobby(): void {
+    this.mostrarConfirmacionLobby = false;
+    const mesas: any[] = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
+    const actualizadas = mesas.filter((m: any) => m.id !== this.roomId);
+    localStorage.setItem('mesasActivas', JSON.stringify(actualizadas));
+    this.router.navigate(['/lobby']);
+  }
+
+  confirmarSalir(): void {
+    this.mostrarConfirmacionSalir = false;
+    this.router.navigate(['/']);
+  }
 
   sentarse() {
     if (this.buyIn <= 0) return;

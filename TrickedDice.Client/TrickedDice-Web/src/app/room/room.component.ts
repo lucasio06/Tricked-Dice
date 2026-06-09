@@ -6,7 +6,6 @@ import { SignalrService } from '../services/signalr.service';
 import { ToastService } from '../services/toast.service';
 import { NavbarComponent } from '../shared/navbar/navbar.component';
 import { RUTAS } from '../utils/rutas.const';
-import { BlackjackComponent } from '../blackjack/blackjack.component';
 
 interface Room {
   id: string;
@@ -23,7 +22,7 @@ interface Room {
 @Component({
   selector: 'app-room',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, BlackjackComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent], // <-- Eliminado BlackjackComponent de aquí
   templateUrl: './room.component.html',
   styleUrls: ['./room.component.scss']
 })
@@ -40,6 +39,11 @@ export class RoomComponent implements OnInit, OnDestroy {
 
   showSetPasswordModal: boolean = false;
   newRoomPassword: string = '';
+
+  showLeaveModal: boolean = false;
+  showKickBanModal: boolean = false;
+  playerToAction: string = '';
+  isBanAction: boolean = false;
 
   private hasLeft: boolean = false;
   private navigatingToGame: boolean = false;
@@ -95,7 +99,7 @@ export class RoomComponent implements OnInit, OnDestroy {
       this.zone.run(() => {
         if (this.room) {
           this.room.jugadores = this.room.jugadores.filter(j => j.trim().toLowerCase() !== playerName.trim().toLowerCase());
-          this.toast.info(`🏃 ${playerName} ha abandonado la sala.`);
+          this.toast.info(`👋 ${playerName} ha abandonado la sala.`);
           this.actualizarEsCreador();
         }
       });
@@ -115,7 +119,7 @@ export class RoomComponent implements OnInit, OnDestroy {
       this.zone.run(() => {
         if (this.room && this.room.esPrivada !== esPrivada) {
           this.room.esPrivada = esPrivada;
-          this.toast.info(esPrivada ? 'La sala ahora es Privada 🔒' : 'La sala ahora es Pública 🌐');
+          this.toast.info(esPrivada ? 'La sala ahora es Privada 🔒' : 'La sala ahora es Pública 🌍');
         }
       });
     });
@@ -144,9 +148,13 @@ export class RoomComponent implements OnInit, OnDestroy {
 
     this.signalrService.on('PlayerKicked', (playerName: string, baneado: boolean) => {
       this.zone.run(() => {
-        if (this.currentUser === playerName) {
+        if (this.esYo(playerName)) {
           this.toast.error(baneado ? 'Has sido BANEADO de la sala.' : 'Has sido expulsado de la sala.');
-          this.salirDeSala();
+          
+          localStorage.removeItem('mesasActivas');
+          this.hasLeft = true;
+          this.router.navigate([RUTAS.lobby]);
+          
         } else if (this.room) {
           this.room.jugadores = this.room.jugadores.filter(j => j.trim().toLowerCase() !== playerName.trim().toLowerCase());
           this.toast.info(baneado ? `🔨 ${playerName} ha sido baneado permanentemente.` : `👢 ${playerName} ha sido expulsado.`);
@@ -182,12 +190,64 @@ export class RoomComponent implements OnInit, OnDestroy {
     };
   }
 
-  private actualizarEsCreador(): void {
-    if (this.room && this.currentUser) {
-      this.isCreator = this.normalizarString(this.room.creador) === this.normalizarString(this.currentUser);
-    } else {
-      this.isCreator = false;
+  obtenerUsuarioActual(): void {
+    const userStr = localStorage.getItem('user_cache') || localStorage.getItem('usuario');
+    if (userStr && userStr !== 'null') {
+      try {
+        const parsed = JSON.parse(userStr);
+        this.currentUser = parsed?.nombreUsuario || parsed?.nombre || '';
+        if (this.currentUser) return;
+      } catch(e) {}
     }
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
+        this.currentUser = payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || payload.unique_name || payload.name || 'Usuario';
+      } catch (e) {
+        this.currentUser = 'Usuario';
+      }
+    } else {
+      this.currentUser = 'Usuario';
+    }
+  }
+
+  private actualizarEsCreador(): void {
+    if (!this.room) {
+      this.isCreator = false;
+      return;
+    }
+
+    let esCreadorPorNombre = false;
+    if (this.currentUser) {
+      esCreadorPorNombre = this.normalizarString(this.room.creador) === this.normalizarString(this.currentUser);
+    }
+
+    let esCreadorPorEmail = false;
+    const userStr = localStorage.getItem('user_cache') || localStorage.getItem('usuario');
+    if (userStr && userStr !== 'null') {
+      try {
+        const emailGuardado = JSON.parse(userStr).email || '';
+        if (emailGuardado && this.room.creadorId && emailGuardado === this.room.creadorId) {
+          esCreadorPorEmail = true;
+        }
+      } catch(e) {}
+    }
+
+    this.isCreator = esCreadorPorNombre || esCreadorPorEmail;
+  }
+
+  esYo(jugador: string): boolean {
+    if (!this.currentUser || !jugador) return false;
+    
+    if (this.isCreator && this.room && this.normalizarString(jugador) === this.normalizarString(this.room.creador)) {
+      return true;
+    }
+
+    return this.normalizarString(jugador) === this.normalizarString(this.currentUser);
   }
 
   async unirseASalaPorId(): Promise<void> {
@@ -233,40 +293,23 @@ export class RoomComponent implements OnInit, OnDestroy {
     }
   }
 
-  obtenerUsuarioActual(): void {
-    const usuario = localStorage.getItem('usuario');
-    if (usuario) {
-      try {
-        const userObj = JSON.parse(usuario);
-        this.currentUser = userObj.nombreUsuario || userObj.nombre || '';
-        if (this.currentUser) return;
-      } catch(e) {}
-    }
-
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
-        this.currentUser = payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || payload.unique_name || payload.name || 'Usuario';
-      } catch (e) {
-        this.currentUser = 'Usuario';
-      }
-    } else {
-      this.currentUser = 'Usuario';
-    }
-  }
-
   normalizarString(str: string): string {
     return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
-  async salirDeSala(): Promise<void> {
+  salirDeSala(): void {
+    this.showLeaveModal = true;
+  }
+
+  async confirmarSalirDeSala(): Promise<void> {
+    this.showLeaveModal = false;
+    localStorage.removeItem('mesasActivas');
     this.hasLeft = true;
+
     if (this.signalrService.isConnected()) {
       await this.signalrService.invoke('LeaveRoom', this.roomId);
     }
+    
     this.router.navigate([RUTAS.lobby]);
   }
 
@@ -309,19 +352,18 @@ export class RoomComponent implements OnInit, OnDestroy {
 
   irAJuego(gameType: string, roomId: string): void {
     this.navigatingToGame = true;
-    if (gameType === 'Blackjack') {
-      this.gameStarted = true;
-    } else {
-      switch (gameType) {
-        case 'Ruleta':
-          this.router.navigate([RUTAS.ruleta], { queryParams: { mesa: roomId } });
-          break;
-        case 'Poker':
-          this.router.navigate([RUTAS.videoPoker], { queryParams: { mesa: roomId } });
-          break;
-        default:
-          this.router.navigate([RUTAS.home]);
-      }
+    switch (gameType) {
+      case 'Blackjack':
+        this.router.navigate([RUTAS.blackjack || '/blackjack'], { queryParams: { mesa: roomId } });
+        break;
+      case 'Ruleta':
+        this.router.navigate([RUTAS.ruleta], { queryParams: { mesa: roomId } });
+        break;
+      case 'Poker':
+        this.router.navigate([RUTAS.videoPoker], { queryParams: { mesa: roomId } });
+        break;
+      default:
+        this.router.navigate([RUTAS.home]);
     }
   }
 
@@ -333,18 +375,21 @@ export class RoomComponent implements OnInit, OnDestroy {
     }, 50);
   }
 
-  async expulsarJugador(jugador: string, banear: boolean) {
-    if (!this.isCreator || jugador === this.currentUser) return;
-    
-    const accion = banear ? 'BANEAR (no podrá volver a entrar)' : 'EXPULSAR';
-    if (confirm(`¿Estás seguro de que quieres ${accion} a ${jugador}?`)) {
-      try {
-        await this.signalrService.invoke('KickPlayer', this.roomId, jugador, banear);
-      } catch (err: any) {
-        let errorMsg = err?.message || 'Error al expulsar.';
-        if (errorMsg.includes('HubException:')) errorMsg = errorMsg.split('HubException:')[1].trim();
-        this.toast.error(errorMsg);
-      }
+  expulsarJugador(jugador: string, banear: boolean): void {
+    if (!this.isCreator || this.esYo(jugador)) return;
+    this.playerToAction = jugador;
+    this.isBanAction = banear;
+    this.showKickBanModal = true;
+  }
+
+  async confirmarExpulsion(): Promise<void> {
+    this.showKickBanModal = false;
+    try {
+      await this.signalrService.invoke('KickPlayer', this.roomId, this.playerToAction, this.isBanAction);
+    } catch (err: any) {
+      let errorMsg = err?.message || 'Error al expulsar.';
+      if (errorMsg.includes('HubException:')) errorMsg = errorMsg.split('HubException:')[1].trim();
+      this.toast.error(errorMsg);
     }
   }
 }

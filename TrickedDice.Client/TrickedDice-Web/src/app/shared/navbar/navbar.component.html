@@ -21,6 +21,7 @@
     <div class="user-actions">
       <span class="user-nickname">{{ usuarioActivo.nombre }}</span>
       <div class="action-buttons">
+        <button class="btn-movimientos" routerLink="/perfil">👤 PERFIL</button>
         <button class="btn-movimientos" routerLink="/mis-movimientos">📋 MOVIMIENTOS</button>
         <button *ngIf="esAdmin()" class="btn-admin" routerLink="/admin">🔧 ADMIN</button>
         <button class="btn-movimientos" (click)="irALobby()">LOBBY</button>
@@ -33,3 +34,15 @@
     LOGIN / REGISTRO
   </button>
 </nav>
+
+<div class="modal-overlay" *ngIf="showLeaveModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(5px);">
+  <div class="modal-content" style="background: rgba(20, 20, 35, 0.95); border: 1px solid rgba(167, 66, 245, 0.5); padding: 30px; border-radius: 16px; min-width: 350px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);">
+    <div style="font-size: 3.5rem; text-align: center; margin-bottom: 10px;">🚪</div>
+    <h3 style="text-align: center; color: white; margin-top: 0; font-size: 1.5rem;">¿Abandonar la sala?</h3>
+    <p style="text-align: center; color: #ccc; margin-bottom: 25px;">Saldrás al vestíbulo principal. Podrás volver a entrar más tarde.</p>
+    <div style="display: flex; gap: 15px;">
+      <button style="flex: 1; padding: 12px; background: transparent; border: 1px solid #666; color: #ccc; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'" (click)="cancelarLobby()">CANCELAR</button>
+      <button style="flex: 1; padding: 12px; background: linear-gradient(135deg, #ff416c, #ff4b2b); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'" (click)="confirmarLobby()">SALIR</button>
+    </div>
+  </div>
+</div>

@@ -6,6 +6,7 @@ export interface LoginResponse {
 }
 
 export interface UsuarioPerfil {
+  nombreUsuario: string;
   nombre: string;
   email: string;
   saldo: number;

@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './auth.guard';
-import { AdminGuard } from './admin.guard'; // <--- FALTA ESTA IMPORTACIÓN
+import { AdminGuard } from './admin.guard';
 import { HomeComponent } from './home/home.component';
 import { RecargarSaldoComponent } from './recargar-saldo/recargar-saldo.component';
 import { RecargarExitoComponent } from './recargar-saldo/recargar-exito.component';
@@ -17,6 +17,7 @@ import { SoporteComponent } from './soporte/soporte.component';
 import { LobbyComponent } from './lobby/lobby.component';
 import { RoomComponent } from './room/room.component';
 import { CompletarPerfilComponent } from './completar-perfil/completar-perfil.component';
+import { PerfilComponent } from './perfil/perfil.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -27,6 +28,7 @@ export const routes: Routes = [
   { path: 'poker', component: PokerComponent, canActivate: [AuthGuard] },
   { path: 'blackjack', component: BlackjackComponent, canActivate: [AuthGuard] },
   { path: 'mis-movimientos', component: MisMovimientosComponent, canActivate: [AuthGuard] },
+  { path: 'perfil', component: PerfilComponent, canActivate: [AuthGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegistroComponent },
   { path: 'completar-perfil', component: CompletarPerfilComponent, canActivate: [AuthGuard] },

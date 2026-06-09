@@ -59,8 +59,15 @@ namespace TrickedDice.Api.Controllers
             if (usuario.Baneado)
                 return Unauthorized(new { mensaje = "Tu cuenta ha sido baneada. Contacta con soporte." });
 
-            var token = GenerarToken(usuario.Nombre, usuario.Email, usuario.Rol);
-            return Ok(new { token = token, nombre = usuario.Nombre, saldo = usuario.Saldo, rol = usuario.Rol });
+            var token = GenerarToken(usuario.NombreUsuario, usuario.Email, usuario.Rol);
+            
+            return Ok(new { 
+                token = token, 
+                nombreUsuario = usuario.NombreUsuario, 
+                nombre = usuario.Nombre, 
+                saldo = usuario.Saldo, 
+                rol = usuario.Rol 
+            });
         }
 
         [AllowAnonymous]
@@ -81,16 +88,33 @@ namespace TrickedDice.Api.Controllers
                     if (usuario.Baneado) return Unauthorized("Tu cuenta ha sido baneada. Contacta con soporte.");
                     
                     bool perfilIncompleto = !string.IsNullOrEmpty(usuario.Dni) && usuario.Dni.StartsWith("TMP");
-                    var tokenExistente = GenerarToken(usuario.Nombre, email, usuario.Rol);
                     
-                    return Ok(new { token = tokenExistente, nombre = usuario.Nombre, saldo = usuario.Saldo, rol = usuario.Rol, esNuevo = perfilIncompleto });
+                    var tokenExistente = GenerarToken(usuario.NombreUsuario, email, usuario.Rol);
+                    
+                    return Ok(new { 
+                        token = tokenExistente, 
+                        nombreUsuario = usuario.NombreUsuario,
+                        nombre = usuario.Nombre, 
+                        saldo = usuario.Saldo, 
+                        rol = usuario.Rol, 
+                        esNuevo = perfilIncompleto 
+                    });
                 }
 
+                string usernameGoogle = email.Split('@')[0];
                 string dniTemporal = "TMP" + Guid.NewGuid().ToString()[..6].ToUpper();
-                await _usuarioRepo.RegistrarGoogleUsuarioAsync(email, nombre, apellido, email.Split('@')[0], dniTemporal);
+                await _usuarioRepo.RegistrarGoogleUsuarioAsync(email, nombre, apellido, usernameGoogle, dniTemporal);
                 
-                var tokenNuevo = GenerarToken(nombre, email, "User");
-                return Ok(new { token = tokenNuevo, nombre = nombre, saldo = 0m, rol = "User", esNuevo = true });
+                var tokenNuevo = GenerarToken(usernameGoogle, email, "User");
+                
+                return Ok(new { 
+                    token = tokenNuevo, 
+                    nombreUsuario = usernameGoogle,
+                    nombre = nombre, 
+                    saldo = 0m, 
+                    rol = "User", 
+                    esNuevo = true 
+                });
             }
             catch (InvalidJwtException)
             {
@@ -125,6 +149,7 @@ namespace TrickedDice.Api.Controllers
             if (usuario == null) return NotFound(new { mensaje = "Usuario no encontrado." });
 
             return Ok(new { 
+                nombreUsuario = usuario.NombreUsuario,
                 nombre = usuario.Nombre, 
                 email = usuario.Email, 
                 saldo = usuario.Saldo, 
@@ -181,13 +206,13 @@ namespace TrickedDice.Api.Controllers
             return letras[numeros % 23] == char.ToUpper(dni[8]);
         }
 
-        private string GenerarToken(string nombre, string email, string rol = "User")
+        private string GenerarToken(string nombreUsuario, string email, string rol = "User")
         {
             var credentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)), SecurityAlgorithms.HmacSha256);
             var claims = new[] 
             { 
-                new Claim("name", nombre),
-                new Claim(ClaimTypes.Name, nombre), 
+                new Claim("name", nombreUsuario),
+                new Claim(ClaimTypes.Name, nombreUsuario), 
                 new Claim(ClaimTypes.Email, email), 
                 new Claim(ClaimTypes.Role, rol) 
             };

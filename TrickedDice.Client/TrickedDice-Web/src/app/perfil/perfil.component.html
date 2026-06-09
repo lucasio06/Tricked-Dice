@@ -1,0 +1,42 @@
+<app-navbar></app-navbar>
+<div class="perfil-page-container fade-in">
+  <div class="perfil-card">
+    <div class="perfil-section avatar-section">
+      <div class="avatar-circle">
+        <span class="avatar-text">{{ getIniciales() }}</span>
+      </div>
+      <div class="user-titles">
+        <h1 class="username text-glow-gold">{{ usuarioActivo?.nombreUsuario ?? 'Cargando...' }}</h1>
+        <span class="real-name">{{ usuarioActivo?.nombre ?? '---' }}</span>
+        <div class="role-badge">
+          <span class="badge" [ngClass]="usuarioActivo?.rol === 'Admin' ? 'admin-badge' : 'user-badge'">
+            {{ usuarioActivo?.rol === 'Admin' ? '👑 ADMIN' : '🎮 JUGADOR VIP' }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="perfil-section details-section">
+      <h3 class="section-title">Detalles de la Cuenta</h3>
+      <div class="detail-row">
+        <span class="detail-label">Correo:</span>
+        <span class="detail-value text-white">{{ usuarioActivo?.email ?? '---' }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Identidad:</span>
+        <span class="detail-value" [ngClass]="(usuarioActivo?.dni && !usuarioActivo?.dni?.startsWith('TMP')) ? 'text-success' : 'text-danger'">
+          {{ (usuarioActivo?.dni && !usuarioActivo?.dni?.startsWith('TMP')) ? '✅ Verificado (' + usuarioActivo?.dni + ')' : '⚠️ Pendiente (Temporal)' }}
+        </span>
+      </div>
+    </div>
+    <div class="perfil-section balance-section">
+      <div class="balance-box">
+        <span class="balance-label">Fondos Disponibles</span>
+        <div class="balance-amount">
+          {{ usuarioActivo?.saldo ?? 0 | number:'1.2-2' }} <span class="currency">€</span>
+        </div>
+        <button class="btn-premium" routerLink="/recargar-saldo">RECARGAR SALDO</button>
+      </div>
+    </div>
+  </div>
+</div>
+<app-footer></app-footer>

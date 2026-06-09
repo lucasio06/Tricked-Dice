@@ -52,9 +52,11 @@ export class LoginComponent implements OnInit{
         localStorage.setItem('token', res.token); 
 
         const perfilUsuario = {
+          nombreUsuario: res.nombreUsuario || res.nombre,
           nombre: res.nombre,
-          email: res.email || this.email || '', 
-          saldo: res.saldo
+          email: res.email || this.email || '',
+          saldo: res.saldo,
+          rol: res.rol || 'User'
         };
         
         this.authService['cacheUser'](perfilUsuario);
