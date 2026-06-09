@@ -13,6 +13,7 @@
     
     <div class="left-actions">
       <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE MESA</button>
+      <button *ngIf="roomId" class="btn-volver-sala" (click)="volverAlLobby()" style="background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid #fff; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-left: 10px;">💬 VOLVER AL LOBBY</button>
     </div>
 
     <div class="center-actions">
@@ -72,6 +73,18 @@
       <div class="modal-buttons">
         <button class="btn-cancel" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
         <button class="btn-confirm" (click)="confirmarSalir()">SALIR</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarConfirmacionLobby">
+    <div class="modal-content exit-modal">
+      <div style="font-size: 3.5rem; text-align: center; margin-bottom: 10px;">💬</div>
+      <h3 style="text-align: center; margin-top: 0;">¿Volver al Lobby?</h3>
+      <p style="text-align: center; color: #ccc;">Volverás a la sala principal con tus amigos.</p>
+      <div class="modal-buttons" style="display: flex; gap: 15px; margin-top: 20px;">
+        <button class="btn-cancel" style="flex: 1; background: transparent; border: 1px solid #666; color: #ccc;" (click)="mostrarConfirmacionLobby = false">CANCELAR</button>
+        <button class="btn-confirm" style="flex: 1; background: linear-gradient(135deg, #00b09b, #96c93d); border: none; color: white;" (click)="confirmarVolverLobby()">VOLVER</button>
       </div>
     </div>
   </div>
@@ -230,6 +243,8 @@
             <span class="status-badge fold" *ngIf="jugador.folded && jugador.saldo > 0">FOLD</span>
             <span class="status-badge allin" *ngIf="jugador.allIn && jugador.saldo > 0">ALL IN</span>
             <span class="status-badge busted" *ngIf="jugador.saldo === 0 && mesa.fase === 4">ELIMINADO</span>
+            <span class="status-badge waiting" *ngIf="!jugador.folded && !jugador.allIn && !jugador.haActuado && mesa.fase !== 4" style="background: rgba(241, 196, 15, 0.2); color: #f1c40f; border: 1px solid #f1c40f;">⏳ PENSANDO</span>
+            <span class="status-badge success" *ngIf="!jugador.folded && !jugador.allIn && jugador.haActuado && mesa.fase !== 4" style="background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71;">✅ APOSTADO</span>
 
             <ng-container *ngIf="mesa.turnoActualEmail === jugador.email && mesa.fase !== 4">
               <div class="turn-timer-bar">

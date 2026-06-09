@@ -24,9 +24,9 @@
           <div class="p-info">
             <span>{{ p }}</span>
             <span class="crown-icon" *ngIf="p === room.creador" title="Creador de la Sala">👑</span>
-            <span class="me-tag" *ngIf="p === currentUser">(Tú)</span>
+            <span class="me-tag" *ngIf="esYo(p)">(Tú)</span>
           </div>
-          <div class="admin-actions" *ngIf="isCreator && p !== currentUser">
+          <div class="admin-actions" *ngIf="isCreator && !esYo(p)">
             <button class="action-btn btn-kick" (click)="expulsarJugador(p, false)" title="Expulsar de la sala">👢 Kick</button>
             <button class="action-btn btn-ban" (click)="expulsarJugador(p, true)" title="Banear permanentemente">🔨 Ban</button>
           </div>
@@ -63,8 +63,8 @@
       <h2 class="section-title">💬 CHAT DE SALA</h2>
       <div class="chat-container">
         <div class="chat-messages scrollable-list" #chatContainer>
-          <div *ngFor="let msg of mensajes" class="chat-message" [ngClass]="{'is-me': msg.usuario === currentUser}">
-            <span class="chat-author">{{ msg.usuario === currentUser ? '(Tú)' : msg.usuario }}:</span>
+          <div *ngFor="let msg of mensajes" class="chat-message" [ngClass]="{'is-me': esYo(msg.usuario)}">
+            <span class="chat-author">{{ esYo(msg.usuario) ? '(Tú)' : msg.usuario }}:</span>
             <span class="chat-text">{{ msg.texto }}</span>
           </div>
         </div>
@@ -74,10 +74,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <div class="active-game-container" *ngIf="gameStarted">
-    <app-blackjack *ngIf="room.juego === 'Blackjack'" [tableIdInput]="roomId"></app-blackjack>
   </div>
 </div>
 
@@ -98,9 +94,39 @@
     <h3>🔒 Hacer sala privada</h3>
     <p>Introduce la contraseña que los jugadores necesitarán para entrar:</p>
     <input type="text" [(ngModel)]="newRoomPassword" placeholder="Nueva contraseña" class="password-input" />
-    <div class="modal-buttons">
-      <button class="btn-cancel" (click)="showSetPasswordModal = false">Cancelar</button>
-      <button class="btn-accept" (click)="confirmarSetPassword()">Hacer Privada</button>
+    <div class="modal-buttons" style="display: flex; gap: 15px; margin-top: 20px;">
+      <button class="btn-cancel" style="flex: 1; background: transparent; border: 1px solid #666; color: #ccc;" (click)="showSetPasswordModal = false">CANCELAR</button>
+      <button class="btn-accept" style="flex: 1; background: linear-gradient(135deg, #00b09b, #96c93d); color: white; border:none;" (click)="confirmarSetPassword()">CONFIRMAR</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showLeaveModal">
+  <div class="modal-content">
+    <div style="font-size: 3.5rem; text-align: center; margin-bottom: 10px;">🚪</div>
+    <h3 style="text-align: center;">¿Abandonar la sala?</h3>
+    <p style="text-align: center; color: #ccc;">Saldrás al vestíbulo principal. Podrás volver a entrar más tarde.</p>
+    <div class="modal-buttons" style="display: flex; gap: 15px; margin-top: 20px;">
+      <button class="btn-cancel" style="flex: 1; background: transparent; border: 1px solid #666; color: #ccc;" (click)="showLeaveModal = false">CANCELAR</button>
+      <button class="btn-accept" style="flex: 1; background: linear-gradient(135deg, #ff416c, #ff4b2b); color: white; border:none;" (click)="confirmarSalirDeSala()">SALIR</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showKickBanModal">
+  <div class="modal-content">
+    <div style="font-size: 3.5rem; text-align: center; margin-bottom: 10px;">
+      {{ isBanAction ? '🔨' : '👢' }}
+    </div>
+    <h3 style="text-align: center;">¿{{ isBanAction ? 'Banear' : 'Expulsar' }} a {{ playerToAction }}?</h3>
+    <p style="text-align: center; color: #ccc;">
+      {{ isBanAction ? 'No podrá volver a entrar a esta sala.' : 'Saldrá de la sala temporalmente.' }}
+    </p>
+    <div class="modal-buttons" style="display: flex; gap: 15px; margin-top: 20px;">
+      <button class="btn-cancel" style="flex: 1; background: transparent; border: 1px solid #666; color: #ccc;" (click)="showKickBanModal = false">CANCELAR</button>
+      <button class="btn-accept" style="flex: 1; background: linear-gradient(135deg, #ff416c, #ff4b2b); color: white; border:none;" (click)="confirmarExpulsion()">
+        {{ isBanAction ? 'BANEAR' : 'EXPULSAR' }}
+      </button>
     </div>
   </div>
 </div>

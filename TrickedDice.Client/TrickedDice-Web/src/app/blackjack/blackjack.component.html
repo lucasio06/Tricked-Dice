@@ -5,7 +5,7 @@
   <div class="top-actions-bar">
     <div class="left-actions">
       <button class="btn-salir-header" (click)="mostrarConfirmacionSalir = true">🚪 SALIR DE MESA</button>
-      <button *ngIf="tableIdInput" class="btn-volver-sala" (click)="volverAlLobby()">💬 VOLVER AL LOBBY</button>
+      <button *ngIf="tableIdInput" class="btn-volver-sala" (click)="mostrarConfirmacionLobby = true">💬 VOLVER AL LOBBY</button>
     </div>
     <div class="center-actions">
       <h1 class="casino-title">BLACKJACK</h1>
@@ -152,12 +152,24 @@
 
 <div class="modal-overlay" *ngIf="mostrarConfirmacionSalir">
   <div class="modal-content exit-modal">
-    <div class="modal-icon">🚪</div>
-    <h3>¿Abandonar la mesa?</h3>
-    <p>Saldrás de la sala y perderás tu asiento.</p>
-    <div class="modal-buttons">
-      <button class="btn-cancel" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
-      <button class="btn-confirm" (click)="confirmarSalir()">SALIR</button>
+    <div style="font-size: 3.5rem; text-align: center; margin-bottom: 10px;">🚪</div>
+    <h3 style="text-align: center; margin-top: 0;">¿Abandonar la mesa?</h3>
+    <p style="text-align: center; color: #ccc;">Saldrás de la partida actual.</p>
+    <div class="modal-buttons" style="display: flex; gap: 15px; margin-top: 20px;">
+      <button class="btn-cancel" style="flex: 1; background: transparent; border: 1px solid #666; color: #ccc;" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
+      <button class="btn-confirm" style="flex: 1; background: linear-gradient(135deg, #ff416c, #ff4b2b); border: none; color: white;" (click)="confirmarSalir()">SALIR</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="mostrarConfirmacionLobby">
+  <div class="modal-content exit-modal">
+    <div style="font-size: 3.5rem; text-align: center; margin-bottom: 10px;">💬</div>
+    <h3 style="text-align: center; margin-top: 0;">¿Volver al Lobby?</h3>
+    <p style="text-align: center; color: #ccc;">Volverás a la sala principal con tus amigos.</p>
+    <div class="modal-buttons" style="display: flex; gap: 15px; margin-top: 20px;">
+      <button class="btn-cancel" style="flex: 1; background: transparent; border: 1px solid #666; color: #ccc;" (click)="mostrarConfirmacionLobby = false">CANCELAR</button>
+      <button class="btn-confirm" style="flex: 1; background: linear-gradient(135deg, #00b09b, #96c93d); border: none; color: white;" (click)="confirmarVolverLobby()">VOLVER</button>
     </div>
   </div>
 </div>

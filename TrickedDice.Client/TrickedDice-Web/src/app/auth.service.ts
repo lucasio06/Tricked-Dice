@@ -62,6 +62,7 @@ export class AuthService {
       tap((res) => {
         localStorage.setItem(STORAGE_TOKEN_KEY, res.token);
         const perfil: UsuarioPerfil = {
+          nombreUsuario: res.nombre,
           nombre: res.nombre,
           email: email,
           saldo: res.saldo,

@@ -71,6 +71,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
 
   mostrarModalResultado: boolean = false;
   mostrarConfirmacionSalir: boolean = false;
+  mostrarConfirmacionLobby: boolean = false;
   esperandoSiguienteRonda: boolean = false;
   bloqueoApuesta: boolean = false;
   mostrarTutorial: boolean = false;
@@ -91,117 +92,132 @@ export class BlackjackComponent implements OnInit, OnDestroy {
   private zone = inject(NgZone);
   private authService = inject(AuthService);
 
-  async ngOnInit() {
-    this.authService.usuario$.subscribe(usuario => {
-      if (usuario) {
-        this.saldoActual = usuario.saldo;
-        this.nombreUsuarioActual = usuario.nombre;
-        this.currentUserEmail = usuario.email?.toLowerCase().trim() || '';
-      }
-    });
+  tiempoRestanteTurno: number = 15;
+  intervaloTurno: any = null;
+  turnoActualIdPrevio: string | null = null;
 
-    this.route.queryParams.subscribe(async params => {
-      this.tableId = this.tableIdInput || params['mesa'] || '';
-      if (!this.tableId) {
-        const randomId = Math.random().toString(36).substring(2, 10);
-        this.tableId = `SOLO_${randomId}`;
+  ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      const mesaUrl = params['mesa'];
+      if (mesaUrl) {
+        this.tableIdInput = mesaUrl;
       }
-
-      await this.signalrService.startConnection('/hubs/blackjack');
       
-      this.signalrService.on("ForceLogout", (emailBaneado: string) => {
-        if (this.currentUserEmail.toLowerCase() === emailBaneado.toLowerCase()) {
-          this.authService.logout();
-          this.toast.error("HAS SIDO BANEADO DEL SERVIDOR.");
+      this.tableId = this.tableIdInput || `SOLO_${Math.random().toString(36).substring(2, 9)}`;
+      
+      this.authService.usuario$.subscribe(usuario => {
+        if (usuario) {
+          this.saldoActual = usuario.saldo;
+          this.nombreUsuarioActual = usuario.nombre;
+          this.currentUserEmail = usuario.email?.toLowerCase().trim() || '';
         }
       });
 
-      await this.signalrService.invoke('JoinTable', this.tableId);
+      this.inicializarSignalR();
+    });
+  }
 
-      this.signalrService.on('MesaActualizada', (mesa: MesaBlackjack) => {
-        this.zone.run(() => { 
-          this.mesa = mesa; 
-          
-          if (this.miPartidaId) {
-            const misDatos = this.getJugadores().find(j => j.id === this.miPartidaId);
-            if (misDatos && !misDatos.partida.terminada && this.esMiTurno()) {
-              const valor = this.getValorMano(misDatos.partida.manoJugador);
-              if (valor >= 21) {
-                setTimeout(() => {
-                  this.plantarse();
-                }, 1000);
-              }
+  private async inicializarSignalR(): Promise<void> {
+    await this.signalrService.startConnection('/hubs/blackjack');
+    
+    this.signalrService.on("ForceLogout", (emailBaneado: string) => {
+      if (this.currentUserEmail.toLowerCase() === emailBaneado.toLowerCase()) {
+        this.authService.logout();
+        this.toast.error("HAS SIDO BANEADO DEL SERVIDOR.");
+      }
+    });
+
+    await this.signalrService.invoke('JoinTable', this.tableId);
+
+    this.signalrService.on('MesaActualizada', (mesa: MesaBlackjack) => {
+      this.zone.run(() => { 
+        this.mesa = mesa; 
+        
+        const turnoActualId = this.getTurnoActualId();
+        if (turnoActualId !== this.turnoActualIdPrevio) {
+          this.turnoActualIdPrevio = turnoActualId;
+          this.iniciarTemporizadorTurno();
+        }
+        
+        if (this.miPartidaId) {
+          const misDatos = this.getJugadores().find(j => j.id === this.miPartidaId);
+          if (misDatos && !misDatos.partida.terminada && this.esMiTurno()) {
+            const valor = this.getValorMano(misDatos.partida.manoJugador);
+            if (valor >= 21) {
+              setTimeout(() => {
+                this.plantarse();
+              }, 1000);
             }
           }
-        });
+        }
       });
+    });
 
-      this.signalrService.on('MesaFinalizada', (data: { mesa: MesaBlackjack, resultados: { [email: string]: ResultadoBlackjack } }) => {
-        this.zone.run(() => {
-          this.mesa = data.mesa;
-          this.bloqueoApuesta = false;
+    this.signalrService.on('MesaFinalizada', (data: { mesa: MesaBlackjack, resultados: { [email: string]: ResultadoBlackjack } }) => {
+      this.zone.run(() => {
+        this.mesa = data.mesa;
+        this.bloqueoApuesta = false;
 
-          let miResultado: ResultadoBlackjack | null = null;
-          if (data.resultados) {
-            const emailKey = Object.keys(data.resultados).find(key => 
-              key.toLowerCase().trim() === this.currentUserEmail ||
-              key.toLowerCase().trim() === this.nombreUsuarioActual.toLowerCase().trim()
-            );
-            if (emailKey) {
-              miResultado = data.resultados[emailKey];
-            }
+        let miResultado: ResultadoBlackjack | null = null;
+        if (data.resultados) {
+          const emailKey = Object.keys(data.resultados).find(key => 
+            key.toLowerCase().trim() === this.currentUserEmail ||
+            key.toLowerCase().trim() === this.nombreUsuarioActual.toLowerCase().trim()
+          );
+          if (emailKey) {
+            miResultado = data.resultados[emailKey];
+          }
+        }
+
+        if (miResultado) {
+          const gano = miResultado.gano;
+          const premio = miResultado.premio || 0;
+          const puntosJugador = miResultado.puntosJugador || 0;
+          const puntosCrupier = miResultado.puntosCrupier || 0;
+          const montoApostado = miResultado.montoApostado || this.montoApuesta;
+
+          let tipo: 'win' | 'lose' | 'push';
+          if (gano) {
+            tipo = 'win';
+            this.sonidoGanar();
+          } else if (premio === montoApostado) {
+            tipo = 'push';
+            this.sonidoEmpate();
+          } else {
+            tipo = 'lose';
+            this.sonidoPerder();
           }
 
-          if (miResultado) {
-            const gano = miResultado.gano;
-            const premio = miResultado.premio || 0;
-            const puntosJugador = miResultado.puntosJugador || 0;
-            const puntosCrupier = miResultado.puntosCrupier || 0;
-            const montoApostado = miResultado.montoApostado || this.montoApuesta;
+          this.mostrarResultado(tipo, premio, puntosJugador, puntosCrupier, montoApostado);
+          this.saldoActual = miResultado.saldoActualizado;
+          this.authService.actualizarSaldoLocal(this.saldoActual);
+          this.agregarAlHistorial(tipo, premio, puntosJugador, puntosCrupier, montoApostado);
+        }
 
-            let tipo: 'win' | 'lose' | 'push';
-            if (gano) {
-              tipo = 'win';
-              this.sonidoGanar();
-            } else if (premio === montoApostado) {
-              tipo = 'push';
-              this.sonidoEmpate();
-            } else {
-              tipo = 'lose';
-              this.sonidoPerder();
-            }
-
-            this.mostrarResultado(tipo, premio, puntosJugador, puntosCrupier, montoApostado);
-            this.saldoActual = miResultado.saldoActualizado;
-            this.authService.actualizarSaldoLocal(this.saldoActual);
-            this.agregarAlHistorial(tipo, premio, puntosJugador, puntosCrupier, montoApostado);
-          }
-
-          if (this.timeoutReinicio) clearTimeout(this.timeoutReinicio);
-          this.timeoutReinicio = setTimeout(() => {
-            this.miPartidaId = null;
-            this.mesa = null;
-            this.esperandoSiguienteRonda = false;
-          }, 3500);
-        });
-      });
-
-      this.signalrService.on('PartidaIniciada', (data: { idPartida: string, saldo: number }) => {
-        this.zone.run(() => {
-          this.miPartidaId = data.idPartida;
+        if (this.timeoutReinicio) clearTimeout(this.timeoutReinicio);
+        this.timeoutReinicio = setTimeout(() => {
+          this.miPartidaId = null;
+          this.mesa = null;
           this.esperandoSiguienteRonda = false;
-          this.bloqueoApuesta = false;
-          this.saldoActual = data.saldo;
-          this.authService.actualizarSaldoLocal(data.saldo);
-          this.sonidoCarta();
-        });
+        }, 3500);
       });
+    });
 
-      this.signalrService.on('Error', (msg: string) => {
-        this.zone.run(() => { 
-          this.toast.error(msg); 
-          this.bloqueoApuesta = false;
-        });
+    this.signalrService.on('PartidaIniciada', (data: { idPartida: string, saldo: number }) => {
+      this.zone.run(() => {
+        this.miPartidaId = data.idPartida;
+        this.esperandoSiguienteRonda = false;
+        this.bloqueoApuesta = false;
+        this.saldoActual = data.saldo;
+        this.authService.actualizarSaldoLocal(data.saldo);
+        this.sonidoCarta();
+      });
+    });
+
+    this.signalrService.on('Error', (msg: string) => {
+      this.zone.run(() => { 
+        this.toast.error(msg); 
+        this.bloqueoApuesta = false;
       });
     });
   }
@@ -210,6 +226,7 @@ export class BlackjackComponent implements OnInit, OnDestroy {
     this.signalrService.stopConnection();
     if (this.tiempoLimpiarResultados) clearTimeout(this.tiempoLimpiarResultados);
     if (this.timeoutReinicio) clearTimeout(this.timeoutReinicio);
+    if (this.intervaloTurno) clearInterval(this.intervaloTurno);
   }
 
   trackByIndex(index: number, obj: any): any {
@@ -388,10 +405,11 @@ export class BlackjackComponent implements OnInit, OnDestroy {
 
   confirmarSalir(): void {
     this.mostrarConfirmacionSalir = false;
-    this.volverAlLobby();
+    this.confirmarVolverLobby();
   }
 
-  volverAlLobby(): void {
+  confirmarVolverLobby(): void {
+    this.mostrarConfirmacionLobby = false;
     if (this.tableId && !this.tableId.startsWith('SOLO_')) {
       const mesas: any[] = JSON.parse(localStorage.getItem('mesasActivas') || '[]');
       const actualizadas = mesas.filter((m: any) => m.id !== this.tableId);
@@ -480,5 +498,29 @@ export class BlackjackComponent implements OnInit, OnDestroy {
       o.start(ctx.currentTime + i * 0.2);
       o.stop(ctx.currentTime + i * 0.2 + 0.15);
     });
+  }
+
+  private iniciarTemporizadorTurno(): void {
+    if (this.intervaloTurno) {
+      clearInterval(this.intervaloTurno);
+      this.intervaloTurno = null;
+    }
+    
+    if (this.getTurnoActualId()) {
+      this.tiempoRestanteTurno = 15;
+      this.intervaloTurno = setInterval(() => {
+        this.zone.run(() => {
+          if (this.tiempoRestanteTurno > 0) {
+            this.tiempoRestanteTurno--;
+          } else {
+            clearInterval(this.intervaloTurno);
+            if (this.esMiTurno()) {
+              this.toast.warning('¡Tiempo agotado! Te has plantado automáticamente.');
+              this.plantarse();
+            }
+          }
+        });
+      }, 1000);
+    }
   }
 }

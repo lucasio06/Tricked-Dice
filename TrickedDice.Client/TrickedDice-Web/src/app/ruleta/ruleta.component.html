@@ -40,6 +40,25 @@
           </div>
         </div>
 
+        <div class="historial-container" style="margin-top: 20px;">
+          <h4 class="historial-title">👥 JUGADORES EN MESA</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px; padding: 0 10px 10px 10px;">
+            <div *ngFor="let j of jugadoresEnMesa" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.4); border-radius: 6px;">
+              <span style="color: #fff; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ j.nombre }} <span *ngIf="j.nombre === currentUser" style="color: #a742f5;">(Tú)</span>
+              </span>
+              <span style="font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; font-weight: bold;" 
+                    [style.background]="j.apostado ? 'rgba(46, 204, 113, 0.2)' : 'rgba(241, 196, 15, 0.2)'"
+                    [style.color]="j.apostado ? '#2ecc71' : '#f1c40f'">
+                {{ j.apostado ? '✅ APOSTADO' : '⏳ PENSANDO' }}
+              </span>
+            </div>
+            <div *ngIf="jugadoresEnMesa.length === 0" style="text-align: center; color: #888; padding: 10px; font-size: 0.9em;">
+              Solo tú en la mesa
+            </div>
+          </div>
+        </div>
+
         <div class="historial-container" style="margin-top: 20px; max-height: 250px; overflow-y: auto;">
           <h4 class="historial-title">HISTORIAL DE APUESTAS</h4>
           <div style="display: flex; flex-direction: column; gap: 8px; padding: 0 10px 10px 10px;">
@@ -244,12 +263,24 @@
 
   <div class="modal-overlay" *ngIf="mostrarConfirmacionSalir">
     <div class="modal-content exit-modal">
-      <div class="modal-icon">🚪</div>
-      <h3>¿Abandonar la mesa?</h3>
-      <p>Saldrás de la sala y perderás tu apuesta actual si no ha girado.</p>
-      <div class="modal-buttons">
-        <button class="btn-cancel" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
-        <button class="btn-confirm" (click)="confirmarSalir()">SALIR</button>
+      <div style="font-size: 3.5rem; text-align: center; margin-bottom: 10px;">🚪</div>
+      <h3 style="text-align: center; margin-top: 0;">¿Abandonar la mesa?</h3>
+      <p style="text-align: center; color: #ccc;">Saldrás de la partida actual.</p>
+      <div class="modal-buttons" style="display: flex; gap: 15px; margin-top: 20px;">
+        <button class="btn-cancel" style="flex: 1; background: transparent; border: 1px solid #666; color: #ccc;" (click)="mostrarConfirmacionSalir = false">CANCELAR</button>
+        <button class="btn-confirm" style="flex: 1; background: linear-gradient(135deg, #ff416c, #ff4b2b); border: none; color: white;" (click)="confirmarSalir()">SALIR</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="mostrarConfirmacionLobby">
+    <div class="modal-content exit-modal">
+      <div style="font-size: 3.5rem; text-align: center; margin-bottom: 10px;">💬</div>
+      <h3 style="text-align: center; margin-top: 0;">¿Volver al Lobby?</h3>
+      <p style="text-align: center; color: #ccc;">Volverás a la sala principal con tus amigos.</p>
+      <div class="modal-buttons" style="display: flex; gap: 15px; margin-top: 20px;">
+        <button class="btn-cancel" style="flex: 1; background: transparent; border: 1px solid #666; color: #ccc;" (click)="mostrarConfirmacionLobby = false">CANCELAR</button>
+        <button class="btn-confirm" style="flex: 1; background: linear-gradient(135deg, #00b09b, #96c93d); border: none; color: white;" (click)="confirmarVolverLobby()">VOLVER</button>
       </div>
     </div>
   </div>
