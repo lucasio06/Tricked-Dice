@@ -402,3 +402,10 @@ FodyWeavers.xsd
 
 # Archivos de configuración de desarrollo (contienen secretos)
 **/appsettings.Development.json
+
+# Carpetas de despliegue del Backend
+**/publish/
+**/publish_output/
+
+# Carpeta de compilación del Frontend (Angular)
+**/dist/

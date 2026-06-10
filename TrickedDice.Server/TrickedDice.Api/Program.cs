@@ -18,7 +18,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.WithOrigins("http://localhost:4200")
+        builder.WithOrigins(
+                    "http://localhost:4200",
+                    "https://tricked-dice.vercel.app"
+                )    
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials();
