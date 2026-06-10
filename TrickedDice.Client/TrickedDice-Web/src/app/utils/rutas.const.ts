@@ -8,7 +8,7 @@ export const RUTAS = {
   videoPoker: '/poker',
   blackjack: '/blackjack',
   recargar: '/recargar',
-  recargarExito: '/recargar/exito',
+  recargarExito: '/recargar-saldo/exito',
   movimientos: '/mis-movimientos',
   admin: '/admin',
   sobreNosotros: '/sobre-nosotros',
