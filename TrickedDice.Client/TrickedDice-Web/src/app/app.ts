@@ -16,7 +16,6 @@ import { FooterComponent } from './shared/footer/footer.component';
 export class App {
   private authService = inject(AuthService);
   
-  // Estos ya no son necesarios, pero los dejo por si se usan en la plantilla (no debería)
   isLoggedIn = false;
   usuarioData: any = null;
 

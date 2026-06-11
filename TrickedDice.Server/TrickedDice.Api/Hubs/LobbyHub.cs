@@ -32,7 +32,6 @@ namespace TrickedDice.Api.Hubs
             }
         }
 
-        // --- MÉTODOS DE SOCIAL / AMIGOS ---
         public async Task GetOnlineUsers() => await Clients.Caller.SendAsync("OnlineUsers", OnlineUsers.Values.Distinct().ToList());
 
         public async Task GetRooms()
@@ -122,8 +121,6 @@ namespace TrickedDice.Api.Hubs
             if (targetConn != null && UserName != null)
                 await Clients.Client(targetConn).SendAsync("ReceiveInvitation", UserName, roomId);
         }
-
-        // --- MÉTODOS DE GESTIÓN DE SALAS ---
 
         public async Task<Room> CreateRoom(string nombre, string juego, bool esPrivada, string contrasena, int maxJugadores)
         {

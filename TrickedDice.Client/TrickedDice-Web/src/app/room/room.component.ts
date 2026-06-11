@@ -22,7 +22,7 @@ interface Room {
 @Component({
   selector: 'app-room',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent], // <-- Eliminado BlackjackComponent de aquí
+  imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './room.component.html',
   styleUrls: ['./room.component.scss']
 })
