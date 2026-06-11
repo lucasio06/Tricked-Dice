@@ -153,7 +153,6 @@ export class RecargarExitoComponent implements OnInit {
     } catch (error: any) {
       console.error('Error en la llamada:', error);
       
-      // Manejar diferentes códigos de error
       if (error.status === 409) {
         this.mostrarError(
           'Esta recarga ya ha sido procesada anteriormente. Tu saldo no se verá afectado.',
