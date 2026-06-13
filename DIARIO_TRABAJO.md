@@ -74,19 +74,6 @@ Se realizan tareas finales de optimización, despliegue y securización del sist
 | 13/06/2026 | Rubén Segovia  | Cierre, revisión cruzada de la memoria técnica final del proyecto y preparación del material audiovisual para la defensa. |
 ---
 
-# Resumen de dedicación (horas estimadas)
-
-Las siguientes horas son una **estimación basada en la carga de trabajo y la actividad registrada en el repositorio Git**:
-
-* Lucas Moreno: 52–57 horas
-* Rubén Segovia: 40–44 horas
-* Samuel Sánchez: 30–35 horas
-* Raúl Díaz: 8–12 horas
-
-**Total estimado del proyecto:** ~130–148 horas
-
----
-
 # Nota final
 
 El desarrollo del proyecto ha sido iterativo, con integración continua mediante Git, dividiendo las tareas por módulos funcionales (backend, frontend, multijugador, pagos e infraestructura), lo que ha permitido una evolución progresiva del sistema hasta su versión final.
