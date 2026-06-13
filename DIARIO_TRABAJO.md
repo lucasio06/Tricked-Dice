@@ -3,8 +3,11 @@
 ## Datos del Proyecto
 
 **Ciclo Formativo:** ASIR (Administración de Sistemas Informáticos en Red)
+
 **Curso Académico:** 2025-2026
+
 **Proyecto:** Tricked Dice (Plataforma de juegos con autenticación, multijugador y pagos)
+
 
 ---
 
