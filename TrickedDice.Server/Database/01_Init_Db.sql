@@ -1,11 +1,4 @@
-CREATE TABLE AUDITORIA_SALDO (
-    IdAuditoria INT IDENTITY(1,1) PRIMARY KEY,
-    IdUsuario INT NOT NULL,
-    SaldoAnterior DECIMAL(18,2) NOT NULL,
-    SaldoNuevo DECIMAL(18,2) NOT NULL,
-    FechaModificacion DATETIME DEFAULT GETDATE(),
-    UsuarioModificador VARCHAR(100)
-);
+USE [db41007];
 GO
 
 CREATE TRIGGER TR_Auditar_Cambio_Saldo
