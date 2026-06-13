@@ -68,19 +68,22 @@ Se realizan tareas finales de optimización, despliegue y securización del sist
 | 01/06/2026 | Samuel Sánchez | Corrección de errores en lobby y optimización de rendimiento.            |
 | 01/06/2026 | Lucas Moreno   | Implementación de middleware global de errores y mejoras de seguridad.   |
 | 01/06/2026 | Lucas Moreno   | Eliminación de credenciales sensibles y configuración de entorno seguro. |
-
+| 10/06/2026 | Rubén Segovia  | Despliegue del backend en MonsterASP para enlazar la API con el frontend en Vercel. |
+| 10/06/2026 | Rubén Segovia  | Gestión perimetral en producción, tramitación e instalación del certificado SSL/TLS con Let's Encrypt para habilitar HTTPS (Puerto 443). |
+| 11/06/2026 | Lucas Moreno   | Resolución de incidencias de red e integración de políticas de origen CORS en `Program.cs` para enlazar de forma segura la API con el dominio de Vercel. |
+| 13/06/2026 | Rubén Segovia  | Cierre, revisión cruzada de la memoria técnica final del proyecto y preparación del material audiovisual para la defensa. |
 ---
 
 # Resumen de dedicación (horas estimadas)
 
 Las siguientes horas son una **estimación basada en la carga de trabajo y la actividad registrada en el repositorio Git**:
 
-* Lucas Moreno: 50–55 horas
-* Rubén Segovia: 30–35 horas
+* Lucas Moreno: 52–57 horas
+* Rubén Segovia: 40–44 horas
 * Samuel Sánchez: 30–35 horas
 * Raúl Díaz: 8–12 horas
 
-**Total estimado del proyecto:** ~125–135 horas
+**Total estimado del proyecto:** ~130–148 horas
 
 ---
 
