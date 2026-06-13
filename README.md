@@ -77,40 +77,63 @@ docker-compose up -d
 ---
 
 ## 7. 📸 Tutorial de uso
+<details>
+<summary><b>Ver</b></summary>
+<br>
+
+
 **Página de inicio**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/7a504df2-4785-4457-a837-d4a3b7c12cc4" />
+
 **Inicio de sesión**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/6e6196a8-6664-4245-9a38-89ed36550aa0" />
+
 **Registro**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/63588221-f52c-4903-86c1-5b2b0f84681c" />
+
 **Recargar saldo**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/a1913fe5-55bf-44b0-ab2d-f59594645df4" />
+
 **Pasarela de pago de Stripe**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/67feaf20-5737-4ff3-a7d0-9d69531e788a" />
+
 **Pago exitoso**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/cb2fd4fa-7d92-48b7-b67f-8ef85ea3b574" />
+
 **Lobby principal**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/0ab84523-9349-407d-9580-ed7cbd71c0dd" />
+
 **Sala pública**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/4504bca7-4ae2-447b-922f-799fa6822e01" />
+
 **Ruleta**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/b8bfddd5-2095-4cf4-bf59-2b1307b63dd4" />
+
 **Blackjack**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/9b70ee90-4dd3-45c6-adb3-6836ef39c263" />
+
 **Poker**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/e9484623-24d5-4a98-8efe-2873fadcc077" />
+
 **Mi perfil**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/d603b719-8133-49cf-985a-4d44a814b9fa" />
+
 **Mis movimientos**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/2f497959-8c08-441d-916e-8115f5c3863e" />
+
 **Sobre nosotros**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/f37af29c-ef7e-448a-a574-61a32c8506f3" />
+
 **Política de privacidad**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/22c8a94e-94e5-4792-a499-017eae8126f3" />
+
 **Soporte**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/9b00921e-3298-4d76-8022-db2e935df155" />
+
 **Panel de administración**
 <img width="2560" height="1392" alt="image" src="https://github.com/user-attachments/assets/37cc316d-e4ec-4f89-94b8-509ad64d6a4c" />
+</details>
+
 
 ---
 
